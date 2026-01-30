@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+dist-ssr/
+dist-electron/
+dist-server/
+*.local
+release/
+out/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# IDE & Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*.sw?
+*.sublime-workspace
+*.sublime-project
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.env.local
+.env.*.local
+
+# Electron
+release/
+*.app
+*.dmg
+*.exe
+*.msi
+
+# Server
+.env
+.env.production
+.env.local
+
+# Data directory (if server mode)
+data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
