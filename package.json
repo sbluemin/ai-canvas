@@ -47,6 +47,7 @@
   "build": {
     "appId": "com.ai-canvas.app",
     "productName": "AI Canvas",
+    "icon": "public/icon.png",
     "directories": {
       "output": "release"
     },
@@ -56,6 +57,7 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
+      "icon": "public/icon.png",
       "target": [
         "dmg",
         "zip"
