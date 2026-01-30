@@ -25,6 +25,15 @@
   min-height: 56px;
   background: var(--bg-primary);
   gap: 16px;
+  -webkit-app-region: drag;
+}
+
+.canvas-header button,
+.canvas-header input,
+.canvas-header .title-display,
+.canvas-header .canvas-actions,
+.canvas-header .header-right {
+  -webkit-app-region: no-drag;
 }
 
 .header-left {

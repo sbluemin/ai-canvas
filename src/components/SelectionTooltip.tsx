@@ -34,7 +34,7 @@ export const SelectionTooltip = ({ editorView }: SelectionTooltipProps) => {
       return;
     }
 
-    tooltipProvider.current = new TooltipProvider({
+    const provider = new TooltipProvider({
       content: container,
       shouldShow: (view) => {
         const { state } = view;
@@ -42,12 +42,14 @@ export const SelectionTooltip = ({ editorView }: SelectionTooltipProps) => {
         const { empty, from, to } = selection;
 
         if (empty) {
+          setSelectedText('');
           return false;
         }
 
         const text = state.doc.textBetween(from, to, ' ').trim();
         
         if (text.length < 2) {
+          setSelectedText('');
           return false;
         }
 
@@ -55,25 +57,38 @@ export const SelectionTooltip = ({ editorView }: SelectionTooltipProps) => {
         return true;
       },
     });
+    
+    tooltipProvider.current = provider;
+    provider.update(editorView);
 
-    const updateTooltip = () => {
-      if (tooltipProvider.current && editorView) {
-        tooltipProvider.current.update(editorView);
+    const handleMouseUp = () => {
+      requestAnimationFrame(() => {
+        if (tooltipProvider.current && editorView) {
+          tooltipProvider.current.update(editorView);
+        }
+      });
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.shiftKey || e.key === 'Shift') {
+        requestAnimationFrame(() => {
+          if (tooltipProvider.current && editorView) {
+            tooltipProvider.current.update(editorView);
+          }
+        });
       }
     };
 
-    updateTooltip();
+    const editorDom = editorView.dom;
+    editorDom.addEventListener('mouseup', handleMouseUp);
+    editorDom.addEventListener('keyup', handleKeyUp);
 
     return () => {
-      tooltipProvider.current?.destroy();
+      editorDom.removeEventListener('mouseup', handleMouseUp);
+      editorDom.removeEventListener('keyup', handleKeyUp);
+      provider.destroy();
     };
   }, [editorView]);
-
-  useEffect(() => {
-    if (tooltipProvider.current && editorView) {
-      tooltipProvider.current.update(editorView);
-    }
-  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +103,10 @@ export const SelectionTooltip = ({ editorView }: SelectionTooltipProps) => {
   const truncatedText = selectedText.length > 50 
     ? selectedText.substring(0, 50) + '...' 
     : selectedText;
+
+  if (!selectedText) {
+    return <div ref={containerRef} style={{ display: 'none' }} className="selection-tooltip-container" />;
+  }
 
   return (
     <div ref={containerRef} className="selection-tooltip-container">

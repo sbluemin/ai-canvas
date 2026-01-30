@@ -1,9 +1,16 @@
 .selection-tooltip-container {
+  position: fixed;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
   user-select: none;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.selection-tooltip-container > * {
+  pointer-events: auto;
 }
 
 .selection-tooltip {
