@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI Canvas 마크">
+  <title>AI Canvas Mark</title>
+  <defs>
+    <linearGradient id="aic-accent" x1="120" y1="360" x2="412" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="0.5" stop-color="#818CF8"/>
+      <stop offset="1" stop-color="#C084FC"/>
+    </linearGradient>
+
+    <linearGradient id="aic-accent2" x1="132" y1="388" x2="404" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5EEAD4"/>
+      <stop offset="0.45" stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+
+    <filter id="aic-soft" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 캔버스 프레임(배경 투명) -->
+  <g transform="translate(256 256) rotate(-8) translate(-256 -256)">
+    <rect x="132" y="156" width="260" height="208" rx="56" fill="white" fill-opacity="0.10" stroke="white" stroke-opacity="0.22" stroke-width="10"/>
+    <rect x="164" y="188" width="196" height="144" rx="44" fill="none" stroke="white" stroke-opacity="0.14" stroke-width="8"/>
+  </g>
+
+  <!-- AI 스트로크 -->
+  <path d="M140 346 C 208 262, 274 244, 372 170" stroke="url(#aic-accent)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" filter="url(#aic-soft)"/>
+  <path d="M146 352 C 214 270, 280 252, 378 176" stroke="url(#aic-accent2)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+
+  <!-- 스파클 + 포인트 -->
+  <path d="M392 116 L408 154 L446 170 L408 186 L392 224 L376 186 L338 170 L376 154 Z" fill="white" fill-opacity="0.95"/>
+  <circle cx="380" cy="182" r="10" fill="url(#aic-accent)"/>
+</svg>

@@ -4,12 +4,12 @@ import './SelectionPopup.css';
 function SparkleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2L9.5 9.5L2 12L9.5 14.5L12 22L14.5 14.5L22 12L14.5 9.5L12 2Z" fill="url(#sparkle-gradient)" />
+      <path d="M12 2L9.5 9.5L2 12L9.5 14.5L12 22L14.5 14.5L22 12L14.5 9.5L12 2Z" fill="url(#aic-sparkle-gradient-popup)" />
       <defs>
-        <linearGradient id="sparkle-gradient" x1="2" y1="2" x2="22" y2="22">
-          <stop stopColor="#4285f4" />
-          <stop offset="0.5" stopColor="#9b72cb" />
-          <stop offset="1" stopColor="#d96570" />
+        <linearGradient id="aic-sparkle-gradient-popup" x1="2" y1="2" x2="22" y2="22">
+          <stop stopColor="#22D3EE" />
+          <stop offset="0.5" stopColor="#818CF8" />
+          <stop offset="1" stopColor="#C084FC" />
         </linearGradient>
       </defs>
     </svg>
