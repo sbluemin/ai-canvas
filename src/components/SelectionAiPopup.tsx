@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { TooltipProvider } from '@milkdown/plugin-tooltip';
 import { EditorView } from '@milkdown/prose/view';
+import { useStore } from '../store/useStore';
+import { api } from '../shared/api';
+import { parseAIResponse } from '../shared/ai/parser';
 import './SelectionAiPopup.css';
 
 function AiMarkIcon() {
@@ -37,6 +40,16 @@ function AiMarkIcon() {
   );
 }
 
+function extractSelectionContext(canvasContent: string, selectedText: string) {
+  const selectionIndex = canvasContent.indexOf(selectedText);
+  if (selectionIndex === -1) {
+    return { before: '', after: '' };
+  }
+  const before = canvasContent.slice(Math.max(0, selectionIndex - 200), selectionIndex);
+  const after = canvasContent.slice(selectionIndex + selectedText.length, selectionIndex + selectedText.length + 200);
+  return { before, after };
+}
+
 interface SelectionAiPopupProps {
   editorView: EditorView | null;
 }
@@ -46,6 +59,9 @@ export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedText, setSelectedText] = useState('');
   const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const { canvasContent, setCanvasContent, addMessage, setLastMessageContent, messages } = useStore();
 
   useEffect(() => {
     const container = containerRef.current;
@@ -109,10 +125,57 @@ export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
     };
   }, [editorView]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('AI 질문 제출:', inputValue, '선택된 텍스트:', selectedText);
+    if (!inputValue.trim() || isLoading) return;
+
+    const question = inputValue.trim();
     setInputValue('');
+    setIsLoading(true);
+
+    const context = extractSelectionContext(canvasContent, selectedText);
+
+    addMessage('user', `[선택: "${selectedText}"] ${question}`);
+    addMessage('assistant', '');
+
+    const history = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    let fullResponse = '';
+
+    await api.chat(
+      question,
+      {
+        onText: (text) => {
+          fullResponse += text;
+        },
+        onError: (error) => {
+          console.error('Selection AI error:', error);
+        },
+        onDone: () => {
+          const parsed = parseAIResponse(fullResponse);
+          if (parsed.success && parsed.data) {
+            setLastMessageContent(parsed.data.message);
+            if (parsed.data.canvasContent) {
+              setCanvasContent(parsed.data.canvasContent);
+            }
+          }
+          setIsLoading(false);
+          setSelectedText('');
+        },
+      },
+      history,
+      {
+        canvasContent,
+        selection: {
+          text: selectedText,
+          before: context.before,
+          after: context.after,
+        },
+      }
+    );
   };
 
   if (!selectedText) {

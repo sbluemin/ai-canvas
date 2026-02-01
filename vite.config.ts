@@ -26,6 +26,9 @@ export default defineConfig({
                 external: electronExternals,
               },
             },
+            resolve: {
+              conditions: ['node'],
+            },
           },
         },
       ]),
@@ -36,12 +39,18 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    // Proxy API requests to Express server for web mode
     proxy: {
       '/api': {
         target: 'http://localhost:50000',
         changeOrigin: true,
       },
     },
+  },
+  optimizeDeps: {
+    exclude: [
+      'ai',
+      'ai-sdk-provider-gemini-cli',
+      '@google/gemini-cli-core',
+    ],
   },
 });

@@ -1,8 +1,18 @@
 import type { ChatStreamCallbacks, ChatHistory } from '../types';
+import { buildPrompt } from '../prompts';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
 export type { ChatStreamCallbacks, ChatHistory };
+
+export interface ChatOptions {
+  canvasContent?: string;
+  selection?: {
+    text: string;
+    before: string;
+    after: string;
+  };
+}
 
 export const api = {
   isElectron,
@@ -56,7 +66,12 @@ export const api = {
     return data.files;
   },
 
-  async chat(prompt: string, callbacks: ChatStreamCallbacks, history: ChatHistory[] = []): Promise<void> {
+  async chat(
+    prompt: string,
+    callbacks: ChatStreamCallbacks,
+    history: ChatHistory[] = [],
+    options?: ChatOptions
+  ): Promise<void> {
     if (isElectron) {
       const removeListener = window.electronAPI.onChatChunk((data) => {
         if (data.text) callbacks.onText(data.text);
@@ -68,7 +83,13 @@ export const api = {
       });
 
       try {
-        await window.electronAPI.chatStream(prompt, history);
+        const fullPrompt = options?.canvasContent !== undefined
+          ? buildPrompt(prompt, options.canvasContent, history, {
+              selection: options.selection,
+            })
+          : prompt;
+        
+        await window.electronAPI.chatStream(fullPrompt, [], {});
       } catch (error) {
         removeListener();
         callbacks.onError(error instanceof Error ? error.message : String(error));
@@ -80,7 +101,7 @@ export const api = {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, history }),
+      body: JSON.stringify({ prompt, history, ...options }),
     });
 
     if (!response.ok || !response.body) {

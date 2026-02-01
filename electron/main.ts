@@ -157,42 +157,55 @@ interface ChatHistory {
   content: string;
 }
 
-ipcMain.handle('chat:stream', async (event, prompt: string, history: ChatHistory[] = []) => {
-  try {
-    const model = geminiProvider(DEFAULT_MODEL);
+interface ChatOptions {
+  system?: string;
+}
 
-    const messages: ModelMessage[] = [
-      ...history.map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      })),
-      { role: 'user' as const, content: prompt },
-    ];
+ipcMain.handle(
+  'chat:stream',
+  async (
+    event,
+    prompt: string,
+    history: ChatHistory[] = [],
+    options?: ChatOptions
+  ) => {
+    try {
+      const model = geminiProvider(DEFAULT_MODEL);
 
-    const result = streamText({
-      model,
-      messages,
-    });
+      const messages: ModelMessage[] = [
+        ...history.map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        })),
+        { role: 'user' as const, content: prompt },
+      ];
 
-    for await (const textPart of result.textStream) {
-      if (!event.sender.isDestroyed()) {
-        event.sender.send('chat:chunk', { text: textPart });
+      const result = streamText({
+        model,
+        system: options?.system,
+        messages,
+      });
+
+      for await (const textPart of result.textStream) {
+        if (!event.sender.isDestroyed()) {
+          event.sender.send('chat:chunk', { text: textPart });
+        }
       }
-    }
 
-    if (!event.sender.isDestroyed()) {
-      event.sender.send('chat:chunk', { done: true });
-    }
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('chat:chunk', { done: true });
+      }
 
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (!event.sender.isDestroyed()) {
-      event.sender.send('chat:chunk', { error: errorMessage });
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('chat:chunk', { error: errorMessage });
+      }
+      return { success: false, error: errorMessage };
     }
-    return { success: false, error: errorMessage };
   }
-});
+);
 
 app.whenReady().then(() => {
   createApplicationMenu();

@@ -11,6 +11,10 @@ export interface ChatHistory {
   content: string;
 }
 
+export interface ChatOptions {
+  system?: string;
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
   
@@ -19,7 +23,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
   readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
   
-  chatStream: (prompt: string, history: ChatHistory[] = []) => ipcRenderer.invoke('chat:stream', prompt, history),
+  chatStream: (prompt: string, history: ChatHistory[] = [], options?: ChatOptions) =>
+    ipcRenderer.invoke('chat:stream', prompt, history, options),
   onChatChunk: (callback: (data: ChatChunkData) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, data: ChatChunkData) => callback(data);
     ipcRenderer.on('chat:chunk', handler);

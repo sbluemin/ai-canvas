@@ -64,6 +64,12 @@ lerna-debug.log*
 *.tsbuildinfo
 tsconfig.tsbuildinfo
 
+# TypeScript compiled output in src (should only be in dist*)
+**/*.js
+**/*.d.ts
+!src/types/**/*.d.ts
+!src/vite-env.d.ts
+
 # Testing - Playwright
 test-results/
 playwright-report/

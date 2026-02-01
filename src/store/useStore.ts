@@ -16,6 +16,7 @@ interface AppState {
 
   addMessage: (role: 'user' | 'assistant', content: string) => void;
   updateLastMessage: (content: string) => void;
+  setLastMessageContent: (content: string) => void;
   setCanvasContent: (content: string) => void;
   setIsLoading: (loading: boolean) => void;
   setCurrentFilePath: (path: string | null) => void;
@@ -79,7 +80,7 @@ AICanvas/
       messages: [
         ...state.messages,
         {
-          id: Date.now().toString(),
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
           role,
           content,
           timestamp: new Date(),
@@ -94,6 +95,18 @@ AICanvas/
         messages[messages.length - 1] = {
           ...messages[messages.length - 1],
           content: messages[messages.length - 1].content + content,
+        };
+      }
+      return { messages };
+    }),
+
+  setLastMessageContent: (content) =>
+    set((state) => {
+      const messages = [...state.messages];
+      if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+        messages[messages.length - 1] = {
+          ...messages[messages.length - 1],
+          content,
         };
       }
       return { messages };

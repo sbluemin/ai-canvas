@@ -39,6 +39,7 @@
 ### AI 모듈 (`src/shared/ai/`)
 - **provider.ts**: Gemini CLI provider (OAuth 인증, `gemini-3-pro-preview` 모델)
 - **stream.ts**: `streamChat()`, `streamChatToSSE()` 스트리밍 유틸리티
+- **parser.ts**: AI 응답 파서 (JSON 추출 + Zod 검증)
 - Electron: IPC `chat:stream` 핸들러 사용
 - 웹 테스트: Vite 미들웨어 `/api/chat` 사용
 
@@ -77,6 +78,7 @@ ai-canvas/
 │   │   ├── ai/                  # AI 서비스 (Gemini CLI)
 │   │   │   ├── provider.ts      # Gemini provider (OAuth)
 │   │   │   ├── stream.ts        # 스트리밍 유틸리티
+│   │   │   ├── parser.ts        # AI 응답 파서
 │   │   │   └── index.ts
 │   │   └── api/                 # 클라이언트 API
 │   │       └── index.ts         # Electron/Web 분기 로직

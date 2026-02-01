@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import Markdown from 'react-markdown';
 import { useStore, Message } from '../store/useStore';
 import { api } from '../shared/api';
+import { parseAIResponse } from '../shared/ai/parser';
 import './ChatPanel.css';
 
 function AICanvasMark() {
@@ -96,8 +98,11 @@ export function ChatPanel() {
   const {
     messages,
     isLoading,
+    canvasContent,
     addMessage,
     updateLastMessage,
+    setLastMessageContent,
+    setCanvasContent,
     setIsLoading,
     applyToCanvas,
   } = useStore();
@@ -121,11 +126,32 @@ export function ChatPanel() {
       content: msg.content,
     }));
 
-    await api.chat(prompt, {
-      onText: (text) => updateLastMessage(text),
-      onError: (error) => updateLastMessage(`\n[오류: ${error}]`),
-      onDone: () => setIsLoading(false),
-    }, history);
+    let fullResponse = '';
+
+    await api.chat(
+      prompt,
+      {
+        onText: (text) => {
+          fullResponse += text;
+          updateLastMessage(text);
+        },
+        onError: (error) => updateLastMessage(`\n[오류: ${error}]`),
+        onDone: () => {
+          const parsed = parseAIResponse(fullResponse);
+          if (parsed.success && parsed.data) {
+            setLastMessageContent(parsed.data.message);
+            if (parsed.data.canvasContent) {
+              setCanvasContent(parsed.data.canvasContent);
+            }
+          } else if (parsed.fallback && parsed.data) {
+            setLastMessageContent(parsed.data.message);
+          }
+          setIsLoading(false);
+        },
+      },
+      history,
+      { canvasContent }
+    );
   };
 
   const handleApplyToCanvas = (content: string) => {
@@ -167,7 +193,15 @@ export function ChatPanel() {
                 </div>
               )}
               <div className="message-content">
-                {msg.content || (isLoading && msg.role === 'assistant' ? <span className="typing-indicator">●●●</span> : '')}
+                {msg.content ? (
+                  msg.role === 'assistant' ? (
+                    <Markdown>{msg.content}</Markdown>
+                  ) : (
+                    msg.content
+                  )
+                ) : (
+                  isLoading && msg.role === 'assistant' && <span className="typing-indicator">●●●</span>
+                )}
               </div>
               {msg.role === 'assistant' && msg.content && (
                 <div className="message-footer">

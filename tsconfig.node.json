@@ -6,7 +6,9 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "outDir": "dist-node",
+    "declaration": true
   },
-  "include": ["vite.config.ts", "src/shared/ai/**/*.ts"]
+  "include": ["vite.config.ts"]
 }
