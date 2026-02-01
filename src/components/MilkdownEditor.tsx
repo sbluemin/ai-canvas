@@ -8,7 +8,7 @@ import { replaceAll, getMarkdown } from '@milkdown/utils';
 import { EditorView } from '@milkdown/prose/view';
 import { useStore } from '../store/useStore';
 import { useEditorContext } from '../context/EditorContext';
-import { SelectionTooltip } from './SelectionTooltip';
+import { SelectionAiPopup } from './SelectionAiPopup';
 import './MilkdownEditor.css';
 
 function MilkdownEditorInner() {
@@ -72,7 +72,7 @@ function MilkdownEditorInner() {
   return (
     <>
       <Milkdown />
-      <SelectionTooltip editorView={editorView} />
+      <SelectionAiPopup editorView={editorView} />
     </>
   );
 }

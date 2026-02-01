@@ -1,28 +1,47 @@
 import { useEffect, useRef, useState } from 'react';
 import { TooltipProvider } from '@milkdown/plugin-tooltip';
 import { EditorView } from '@milkdown/prose/view';
-import './SelectionTooltip.css';
+import './SelectionAiPopup.css';
 
-function SparkleIcon() {
+function AiMarkIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2L9.5 9.5L2 12L9.5 14.5L12 22L14.5 14.5L22 12L14.5 9.5L12 2Z" fill="url(#aic-sparkle-gradient-tooltip)" />
+    <svg width="18" height="18" viewBox="0 0 512 512" fill="none" role="img" aria-label="AI Canvas 마크">
       <defs>
-        <linearGradient id="aic-sparkle-gradient-tooltip" x1="2" y1="2" x2="22" y2="22">
-          <stop stopColor="#22D3EE" />
-          <stop offset="0.5" stopColor="#818CF8" />
-          <stop offset="1" stopColor="#C084FC" />
+        <linearGradient id="aic-accent-popup" x1="120" y1="360" x2="412" y2="132" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#22D3EE"/>
+          <stop offset="0.5" stopColor="#818CF8"/>
+          <stop offset="1" stopColor="#C084FC"/>
         </linearGradient>
+        <linearGradient id="aic-accent2-popup" x1="132" y1="388" x2="404" y2="116" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#5EEAD4"/>
+          <stop offset="0.45" stopColor="#60A5FA"/>
+          <stop offset="1" stopColor="#A78BFA"/>
+        </linearGradient>
+        <filter id="aic-soft-popup" x="-20%" y="-20%" width="140%" height="140%" colorInterpolationFilters="sRGB">
+          <feGaussianBlur stdDeviation="10" result="b"/>
+          <feMerge>
+            <feMergeNode in="b"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
       </defs>
+      <g transform="translate(256 256) rotate(-8) translate(-256 -256)">
+        <rect x="132" y="156" width="260" height="208" rx="56" fill="white" fillOpacity="0.10" stroke="white" strokeOpacity="0.22" strokeWidth="10"/>
+        <rect x="164" y="188" width="196" height="144" rx="44" fill="none" stroke="white" strokeOpacity="0.14" strokeWidth="8"/>
+      </g>
+      <path d="M140 346 C 208 262, 274 244, 372 170" stroke="url(#aic-accent-popup)" strokeWidth="56" strokeLinecap="round" strokeLinejoin="round" filter="url(#aic-soft-popup)"/>
+      <path d="M146 352 C 214 270, 280 252, 378 176" stroke="url(#aic-accent2-popup)" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" opacity="0.55"/>
+      <path d="M392 116 L408 154 L446 170 L408 186 L392 224 L376 186 L338 170 L376 154 Z" fill="white" fillOpacity="0.95"/>
+      <circle cx="380" cy="182" r="10" fill="url(#aic-accent-popup)"/>
     </svg>
   );
 }
 
-interface SelectionTooltipProps {
+interface SelectionAiPopupProps {
   editorView: EditorView | null;
 }
 
-export const SelectionTooltip = ({ editorView }: SelectionTooltipProps) => {
+export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
   const tooltipProvider = useRef<TooltipProvider | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedText, setSelectedText] = useState('');
@@ -96,31 +115,22 @@ export const SelectionTooltip = ({ editorView }: SelectionTooltipProps) => {
     setInputValue('');
   };
 
-  const handleInputMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-  };
-
-  const truncatedText = selectedText.length > 50 
-    ? selectedText.substring(0, 50) + '...' 
-    : selectedText;
-
   if (!selectedText) {
-    return <div ref={containerRef} style={{ display: 'none' }} className="selection-tooltip-container" />;
+    return <div ref={containerRef} style={{ display: 'none' }} className="selection-ai-popup-container" />;
   }
 
   return (
-    <div ref={containerRef} className="selection-tooltip-container">
-      <form className="selection-tooltip" onSubmit={handleSubmit}>
-        <div className="tooltip-icon">
-          <SparkleIcon />
+    <div ref={containerRef} className="selection-ai-popup-container">
+      <form className="selection-ai-popup" onSubmit={handleSubmit}>
+        <div className="ai-popup-icon">
+          <AiMarkIcon />
         </div>
         <input
           type="text"
-          className="tooltip-input"
-          placeholder={`"${truncatedText}" 에 대해 물어보기`}
+          className="ai-popup-input"
+          placeholder="AI에게 물어보기"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onMouseDown={handleInputMouseDown}
         />
       </form>
     </div>

@@ -1,4 +1,4 @@
-.selection-tooltip-container {
+.selection-ai-popup-container {
   position: fixed;
   display: inline-flex;
   flex-direction: column;
@@ -9,11 +9,11 @@
   pointer-events: none;
 }
 
-.selection-tooltip-container > * {
+.selection-ai-popup-container > * {
   pointer-events: auto;
 }
 
-.selection-tooltip {
+.selection-ai-popup {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -27,19 +27,19 @@
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.selection-tooltip:focus-within {
+.selection-ai-popup:focus-within {
   border-color: var(--accent-blue);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--accent-blue);
 }
 
-.tooltip-icon {
+.ai-popup-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.tooltip-input {
+.ai-popup-input {
   flex: 1;
   background: transparent;
   border: none;
@@ -49,6 +49,6 @@
   user-select: text;
 }
 
-.tooltip-input::placeholder {
+.ai-popup-input::placeholder {
   color: var(--text-hint);
 }
