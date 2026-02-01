@@ -1,10 +1,8 @@
+import type { ChatStreamCallbacks } from '../shared/types';
+
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
-export interface ChatStreamCallbacks {
-  onText: (text: string) => void;
-  onError: (error: string) => void;
-  onDone: () => void;
-}
+export type { ChatStreamCallbacks };
 
 export const api = {
   isElectron,

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
-import { ProjectSelector } from './components/ProjectSelector';
+import { CommandBar } from './components/CommandBar';
 import { ChatPanel } from './components/ChatPanel';
 import { CanvasPanel } from './components/CanvasPanel';
 import { useStore } from './store/useStore';
@@ -53,7 +53,7 @@ function App() {
   return (
     <div className="app-container">
       <div className="app-layout">
-        <ProjectSelector />
+        <CommandBar />
         <div className="content-split">
           <Allotment>
             <Allotment.Pane minSize={320} maxSize={480} preferredSize="35%">

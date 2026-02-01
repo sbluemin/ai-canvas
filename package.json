@@ -13,8 +13,8 @@
     "build:server": "tsc -p tsconfig.server.json",
     "preview": "vite preview",
     "electron:dev": "vite build && electron .",
-    "server": "npm run build:web && npm run build:server && node dist-server/index.js",
-    "server:dev": "npm run build:web && tsx server/index.ts"
+    "server": "npm run build:web && npm run build:server && node dist-server/server/index.js",
+    "server:dev": "npm run build:web && tsx src/server/index.ts"
   },
   "dependencies": {
     "@milkdown/core": "^7.18.0",

@@ -1,24 +1,5 @@
 .project-selector {
-  height: 56px;
-  background: #131314;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  -webkit-app-region: drag;
-}
-
-.project-selector-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  -webkit-app-region: no-drag;
-}
-
-.logo-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
 }
 
 .project-dropdown {
