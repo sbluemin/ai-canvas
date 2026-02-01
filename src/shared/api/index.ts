@@ -15,7 +15,7 @@ export interface ChatOptions {
 }
 
 export interface Phase2ChatOptions {
-  prompt: string;
+  userRequest: string;
   canvasContent: string;
   updatePlan: string;
 }
@@ -143,7 +143,7 @@ export const api = {
     options: Phase2ChatOptions,
     callbacks: ChatStreamCallbacks
   ): Promise<void> {
-    const { prompt, canvasContent, updatePlan } = options;
+    const { userRequest, canvasContent, updatePlan } = options;
 
     if (isElectron) {
       const removeListener = window.electronAPI.onChatChunk((data) => {
@@ -156,7 +156,7 @@ export const api = {
       });
 
       try {
-        const fullPrompt = buildPhase2Prompt(prompt, canvasContent, updatePlan);
+        const fullPrompt = buildPhase2Prompt(userRequest, canvasContent, updatePlan);
         await window.electronAPI.chatStream(fullPrompt, [], {});
       } catch (error) {
         removeListener();
@@ -169,7 +169,7 @@ export const api = {
     const response = await fetch('/api/chat/phase2', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, canvasContent, updatePlan }),
+      body: JSON.stringify({ userRequest, canvasContent, updatePlan }),
     });
 
     if (!response.ok || !response.body) {

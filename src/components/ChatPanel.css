@@ -226,93 +226,6 @@
   50% { opacity: 1; }
 }
 
-.message-footer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-left: 32px;
-  margin-top: 8px;
-}
-
-.thinking-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s;
-}
-
-.thinking-toggle:hover {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-}
-
-.feedback-buttons {
-  display: flex;
-  gap: 4px;
-}
-
-.feedback-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.feedback-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-}
-
-.apply-button {
-  background: var(--accent-blue-dim);
-  color: var(--text-primary);
-  border: none;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-left: auto;
-}
-
-.apply-button:hover {
-  background: var(--accent-blue);
-}
-
-.thinking-process {
-  margin-left: 32px;
-  padding: 12px 16px;
-  background: var(--bg-surface);
-  border-radius: var(--radius-md);
-  border-left: 2px solid var(--accent-blue);
-  margin-top: 8px;
-}
-
-.thinking-process p {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-.thinking-process p:last-child {
-  margin-bottom: 0;
-}
-
 .input-area {
   padding: 16px 20px 24px;
   background: #131314;
@@ -320,21 +233,6 @@
 
 .input-wrapper {
   position: relative;
-}
-
-.canvas-badge {
-  position: absolute;
-  top: -8px;
-  left: 16px;
-  background: var(--accent-blue-dim);
-  color: var(--text-primary);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  z-index: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .input-form {
@@ -428,4 +326,26 @@
   50% {
     opacity: 0.6;
   }
+}
+
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-indicator .typing-indicator {
+  font-size: 14px;
+}
+
+.progress-indicator .progress-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.progress-indicator.inline-progress {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
 }

@@ -1,6 +1,16 @@
-import { streamText, type ModelMessage } from 'ai';
-import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
+import { streamText, generateText, type ModelMessage } from 'ai';
+import { 
+  buildPhase1Prompt, 
+  buildPhase2Prompt, 
+  buildCompactPrompt,
+  needsCompaction,
+  formatCompactedHistory,
+  type CompactedHistory,
+} from '../prompts';
+import { validateCompactResponse } from '../prompts/types';
 import { geminiModel, createModel } from './provider';
+
+const COMPACT_MODEL = 'gemini-2.0-flash';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -17,10 +27,11 @@ export interface StreamChatOptions {
     before: string;
     after: string;
   };
+  compactedHistory?: CompactedHistory;
 }
 
 export interface Phase2Options {
-  prompt: string;
+  userRequest: string;
   canvasContent: string;
   updatePlan: string;
   modelId?: string;
@@ -30,18 +41,69 @@ export interface StreamCallbacks {
   onText: (text: string) => void;
   onError: (error: string) => void;
   onDone: () => void;
+  onCompacted?: (compacted: CompactedHistory) => void;
+}
+
+async function compactHistory(
+  history: ChatMessage[],
+  canvasContent: string
+): Promise<CompactedHistory | null> {
+  try {
+    const model = createModel(COMPACT_MODEL);
+    const prompt = buildCompactPrompt(history, canvasContent);
+
+    const result = await generateText({
+      model,
+      messages: [{ role: 'user' as const, content: prompt }],
+    });
+
+    const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return validateCompactResponse(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function buildHistoryForPrompt(
+  history: ChatMessage[],
+  compacted?: CompactedHistory
+): ChatMessage[] {
+  if (compacted) {
+    return [{
+      role: 'assistant' as const,
+      content: formatCompactedHistory(compacted),
+    }];
+  }
+  return history;
 }
 
 export async function streamPhase1(
   options: StreamChatOptions,
   callbacks: StreamCallbacks
 ): Promise<void> {
-  const { prompt, history = [], modelId, canvasContent = '', selection } = options;
+  const { prompt, history = [], modelId, canvasContent = '', selection, compactedHistory } = options;
 
   try {
+    let effectiveHistory = history;
+    let newCompacted = compactedHistory;
+
+    if (!compactedHistory && needsCompaction(history)) {
+      const compacted = await compactHistory(history, canvasContent);
+      if (compacted) {
+        newCompacted = compacted;
+        effectiveHistory = buildHistoryForPrompt(history, newCompacted);
+        callbacks.onCompacted?.(newCompacted);
+      }
+    } else if (compactedHistory) {
+      effectiveHistory = buildHistoryForPrompt(history, compactedHistory);
+    }
+
     const model = modelId ? createModel(modelId) : geminiModel;
     
-    const fullPrompt = buildPhase1Prompt(prompt, canvasContent, history, { selection });
+    const fullPrompt = buildPhase1Prompt(prompt, canvasContent, effectiveHistory, { selection });
 
     const messages: ModelMessage[] = [
       { role: 'user' as const, content: fullPrompt },
@@ -68,12 +130,12 @@ export async function streamPhase2(
   options: Phase2Options,
   callbacks: StreamCallbacks
 ): Promise<void> {
-  const { prompt, canvasContent, updatePlan, modelId } = options;
+  const { userRequest, canvasContent, updatePlan, modelId } = options;
 
   try {
     const model = modelId ? createModel(modelId) : geminiModel;
     
-    const fullPrompt = buildPhase2Prompt(prompt, canvasContent, updatePlan);
+    const fullPrompt = buildPhase2Prompt(userRequest, canvasContent, updatePlan);
 
     const messages: ModelMessage[] = [
       { role: 'user' as const, content: fullPrompt },

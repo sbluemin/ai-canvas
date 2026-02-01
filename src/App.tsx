@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
 import { CommandBar } from './components/CommandBar';
@@ -12,6 +12,13 @@ const DESKTOP_BREAKPOINT = 1024;
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < DESKTOP_BREAKPOINT);
   const { isDrawerOpen, toggleDrawer, closeDrawer } = useStore();
+
+  useLayoutEffect(() => {
+    const root = document.getElementById('root');
+    if (root) {
+      root.classList.add('ready');
+    }
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {

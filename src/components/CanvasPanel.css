@@ -199,40 +199,58 @@
   position: absolute;
   inset: 0;
   background: rgba(19, 19, 20, 0.7);
+  z-index: 10;
+  overflow: hidden;
+  animation: pageCover 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  animation: fadeInOverlay 0.3s ease forwards;
-  backdrop-filter: blur(2px);
 }
 
-@keyframes fadeInOverlay {
-  from {
-    opacity: 0;
+.canvas-updating-overlay.closing {
+  animation: pageReveal 0.5s cubic-bezier(0.4, 0, 1, 1) forwards;
+  backdrop-filter: none;
+}
+
+@keyframes pageCover {
+  0% {
+    clip-path: inset(100% 100% 0 0);
   }
-  to {
-    opacity: 1;
+  100% {
+    clip-path: inset(0 0 0 0);
   }
 }
 
-.updating-indicator {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+@keyframes pageReveal {
+  0% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 100% 100%);
+  }
 }
 
-.spinner-icon {
-  animation: spin 1s linear infinite;
-  color: var(--accent-blue);
+.pulse-indicator {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: rgba(34, 211, 238, 0.8);
+  border-right-color: rgba(96, 165, 250, 0.6);
+  border-bottom-color: rgba(167, 139, 250, 0.4);
+  background: radial-gradient(
+    circle,
+    rgba(96, 165, 250, 0.15) 0%,
+    transparent 70%
+  );
+  box-shadow: 
+    0 0 30px rgba(96, 165, 250, 0.4),
+    0 0 60px rgba(96, 165, 250, 0.3),
+    0 0 100px rgba(167, 139, 250, 0.2);
+  animation: 
+    spin 1s linear infinite,
+    indicatorPulse 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes spin {
@@ -241,5 +259,22 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes indicatorPulse {
+  0%, 100% {
+    opacity: 0.4;
+    box-shadow: 
+      0 0 40px rgba(96, 165, 250, 0.3),
+      0 0 80px rgba(96, 165, 250, 0.2),
+      0 0 130px rgba(167, 139, 250, 0.1);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 
+      0 0 50px rgba(96, 165, 250, 0.5),
+      0 0 105px rgba(96, 165, 250, 0.4),
+      0 0 180px rgba(167, 139, 250, 0.3);
   }
 }

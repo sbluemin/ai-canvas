@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { TooltipProvider } from '@milkdown/plugin-tooltip';
 import { EditorView } from '@milkdown/prose/view';
+import { TextSelection } from '@milkdown/prose/state';
 import { useStore } from '../store/useStore';
-import { api } from '../shared/api';
-import { parseAIResponse } from '../shared/ai/parser';
+import { useChatRequest } from '../hooks/useChatRequest';
 import './SelectionAiPopup.css';
 
 function AiMarkIcon() {
@@ -59,9 +59,9 @@ export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedText, setSelectedText] = useState('');
   const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   
-  const { canvasContent, setCanvasContent, addMessage, setLastMessageContent, messages } = useStore();
+  const { canvasContent, isLoading } = useStore();
+  const { sendMessage } = useChatRequest();
 
   useEffect(() => {
     const container = containerRef.current;
@@ -130,52 +130,26 @@ export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
     if (!inputValue.trim() || isLoading) return;
 
     const question = inputValue.trim();
+    const currentSelection = selectedText;
+    const context = extractSelectionContext(canvasContent, currentSelection);
+    
     setInputValue('');
-    setIsLoading(true);
+    setSelectedText('');
+    
+    if (editorView) {
+      const { state, dispatch } = editorView;
+      const pos = state.selection.from;
+      dispatch(state.tr.setSelection(TextSelection.create(state.doc, pos, pos)));
+      editorView.dom.blur();
+    }
 
-    const context = extractSelectionContext(canvasContent, selectedText);
-
-    addMessage('user', `[선택: "${selectedText}"] ${question}`);
-    addMessage('assistant', '');
-
-    const history = messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
-    let fullResponse = '';
-
-    await api.chat(
-      question,
-      {
-        onText: (text) => {
-          fullResponse += text;
-        },
-        onError: (error) => {
-          console.error('Selection AI error:', error);
-        },
-        onDone: () => {
-          const parsed = parseAIResponse(fullResponse);
-          if (parsed.success && parsed.data) {
-            setLastMessageContent(parsed.data.message);
-            if (parsed.data.canvasContent) {
-              setCanvasContent(parsed.data.canvasContent);
-            }
-          }
-          setIsLoading(false);
-          setSelectedText('');
-        },
+    await sendMessage(question, {
+      selection: {
+        text: currentSelection,
+        before: context.before,
+        after: context.after,
       },
-      history,
-      {
-        canvasContent,
-        selection: {
-          text: selectedText,
-          before: context.before,
-          after: context.after,
-        },
-      }
-    );
+    });
   };
 
   if (!selectedText) {

@@ -15,19 +15,29 @@ function EditIcon() {
   );
 }
 
-function SpinnerIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="spinner-icon">
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
-  );
-}
-
 export function CanvasPanel() {
   const { canvasContent, currentFilePath, setCurrentFilePath, setCanvasContent, aiRun } = useStore();
   const [documentTitle, setDocumentTitle] = useState('AI Canvas - 재사용 가능한 코어 아키텍처');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const isUpdating = aiRun?.phase === 'updating';
+
+  useEffect(() => {
+    if (isUpdating) {
+      setShowOverlay(true);
+      setIsClosing(false);
+    } else if (showOverlay && !isUpdating) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setShowOverlay(false);
+        setIsClosing(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isUpdating, showOverlay]);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -127,12 +137,9 @@ export function CanvasPanel() {
           </div>
           <div className="canvas-content">
             <MilkdownEditor />
-            {aiRun?.phase === 'updating' && (
-              <div className="canvas-updating-overlay">
-                <div className="updating-indicator">
-                  <SpinnerIcon />
-                  <span>캔버스 업데이트 중...</span>
-                </div>
+            {showOverlay && (
+              <div className={`canvas-updating-overlay ${isClosing ? 'closing' : ''}`}>
+                {!isClosing && <div className="pulse-indicator" />}
               </div>
             )}
           </div>

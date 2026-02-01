@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Markdown from 'react-markdown';
 import { useStore, Message } from '../store/useStore';
-import { api } from '../shared/api';
-import { validatePhase1Response } from '../shared/prompts/types';
-import { extractJSON } from '../shared/ai/parser';
+import { useChatRequest } from '../hooks/useChatRequest';
 import './ChatPanel.css';
 
 function AICanvasMark() {
@@ -65,178 +63,24 @@ function SendIcon() {
   );
 }
 
-function ThumbUpIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-    </svg>
-  );
-}
-
-function ThumbDownIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
-
 export function ChatPanel() {
   const [input, setInput] = useState('');
-  const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const currentPromptRef = useRef<string>('');
   
-  const {
-    messages,
-    isLoading,
-    canvasContent,
-    aiRun,
-    addMessage,
-    updateLastMessage,
-    setLastMessageContent,
-    setCanvasContent,
-    setIsLoading,
-    applyToCanvas,
-    startAiRun,
-    setAiPhase,
-    setAiRunResult,
-    saveCanvasSnapshot,
-    clearAiRun,
-  } = useStore();
+  const { messages, isLoading, aiRun } = useStore();
+  const { sendMessage } = useChatRequest();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const runPhase2 = async (prompt: string, updatePlan: string) => {
-    setAiPhase('updating');
-    saveCanvasSnapshot();
-
-    let canvasUpdate = '';
-
-    await api.chatPhase2(
-      {
-        prompt,
-        canvasContent,
-        updatePlan,
-      },
-      {
-        onText: (text) => {
-          canvasUpdate += text;
-        },
-        onError: (error) => {
-          setAiRunResult({ error: { phase: 'updating', message: error } });
-          setAiPhase('failed');
-        },
-        onDone: () => {
-          if (canvasUpdate.trim()) {
-            setCanvasContent(canvasUpdate.trim());
-          }
-          setAiPhase('succeeded');
-          clearAiRun();
-        },
-      }
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const prompt = input.trim();
-    currentPromptRef.current = prompt;
     setInput('');
-    addMessage('user', prompt);
-    addMessage('assistant', '');
-    setIsLoading(true);
-    startAiRun();
-
-    const history = messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
-    let fullResponse = '';
-
-    await api.chat(
-      prompt,
-      {
-        onText: (text) => {
-          fullResponse += text;
-          updateLastMessage(text);
-        },
-        onError: (error) => {
-          updateLastMessage(`\n[오류: ${error}]`);
-          setAiRunResult({ error: { phase: 'evaluating', message: error } });
-          setAiPhase('failed');
-        },
-        onDone: async () => {
-          const jsonText = extractJSON(fullResponse);
-          if (!jsonText) {
-            setLastMessageContent(fullResponse);
-            setIsLoading(false);
-            clearAiRun();
-            return;
-          }
-
-          try {
-            const parsed = JSON.parse(jsonText);
-            const phase1Result = validatePhase1Response(parsed);
-
-            if (phase1Result) {
-              setLastMessageContent(phase1Result.message);
-              setAiRunResult({
-                message: phase1Result.message,
-                needsCanvasUpdate: phase1Result.needsCanvasUpdate,
-                updatePlan: phase1Result.updatePlan,
-              });
-
-              if (phase1Result.needsCanvasUpdate && phase1Result.updatePlan) {
-                await runPhase2(currentPromptRef.current, phase1Result.updatePlan);
-              } else {
-                setAiPhase('succeeded');
-                clearAiRun();
-              }
-            } else {
-              setLastMessageContent(fullResponse);
-              clearAiRun();
-            }
-          } catch {
-            setLastMessageContent(fullResponse);
-            clearAiRun();
-          }
-
-          setIsLoading(false);
-        },
-      },
-      history,
-      { canvasContent }
-    );
-  };
-
-  const handleApplyToCanvas = (content: string) => {
-    applyToCanvas(content);
-  };
-
-  const toggleThinking = (messageId: string) => {
-    setExpandedThinking((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
+    await sendMessage(prompt);
   };
 
   const isUpdatingCanvas = aiRun?.phase === 'updating';
@@ -253,72 +97,65 @@ export function ChatPanel() {
             <p className="hint">프로젝트 아이디어에 대해 물어보세요</p>
           </div>
         ) : (
-          messages.map((msg: Message) => (
-            <div key={msg.id} className={`message ${msg.role}`}>
-              {msg.role === 'assistant' && (
-                <div className="message-header">
-                  <div className="ai-avatar">
-                    <AICanvasMark />
+          messages.map((msg: Message, index: number) => {
+            const isLastAssistantMessage = msg.role === 'assistant' && index === messages.length - 1;
+            const showInlineProgress = isLastAssistantMessage && isUpdatingCanvas && msg.content;
+            
+            return (
+              <div key={msg.id} className={`message ${msg.role}`}>
+                {msg.role === 'assistant' && (
+                  <div className="message-header">
+                    <div className="ai-avatar">
+                      <AICanvasMark />
+                    </div>
+                    <span className="ai-name">AI Canvas</span>
                   </div>
-                  <span className="ai-name">AI Canvas</span>
-                  {isUpdatingCanvas && (
-                    <span className="updating-badge">캔버스 업데이트 중...</span>
+                )}
+                <div className="message-content">
+                  {msg.content ? (
+                    msg.role === 'assistant' ? (
+                      <>
+                        <Markdown>{msg.content}</Markdown>
+                        {showInlineProgress && (
+                          <div className="progress-indicator inline-progress">
+                            <span className="typing-indicator">●●●</span>
+                            <span className="progress-text">캔버스 업데이트 중...</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      msg.content
+                    )
+                  ) : (
+                    isLoading && msg.role === 'assistant' && <span className="typing-indicator">●●●</span>
                   )}
                 </div>
-              )}
-              <div className="message-content">
-                {msg.content ? (
-                  msg.role === 'assistant' ? (
-                    <Markdown>{msg.content}</Markdown>
-                  ) : (
-                    msg.content
-                  )
-                ) : (
-                  isLoading && msg.role === 'assistant' && <span className="typing-indicator">●●●</span>
-                )}
+
               </div>
-              {msg.role === 'assistant' && msg.content && (
-                <div className="message-footer">
-                  <button
-                    className="thinking-toggle"
-                    onClick={() => toggleThinking(msg.id)}
-                  >
-                    <ChevronRightIcon />
-                    <span>생각하는 과정 {expandedThinking.has(msg.id) ? '숨기기' : '표시'}</span>
-                  </button>
-                  <div className="feedback-buttons">
-                    <button className="feedback-btn" title="좋아요">
-                      <ThumbUpIcon />
-                    </button>
-                    <button className="feedback-btn" title="싫어요">
-                      <ThumbDownIcon />
-                    </button>
-                  </div>
-                  <button
-                    className="apply-button"
-                    onClick={() => handleApplyToCanvas(msg.content)}
-                    title="캔버스에 적용"
-                  >
-                    + Canvas
-                  </button>
-                </div>
-              )}
-              {expandedThinking.has(msg.id) && (
-                <div className="thinking-process">
-                  <p>사용자의 요청을 분석하고 있습니다...</p>
-                  <p>관련 정보를 검색 중...</p>
-                  <p>응답을 생성하고 있습니다...</p>
-                </div>
-              )}
+            );
+          })
+        )}
+        {isLoading && !isUpdatingCanvas && (
+          <div className="message assistant">
+            <div className="message-header">
+              <div className="ai-avatar">
+                <AICanvasMark />
+              </div>
+              <span className="ai-name">AI Canvas</span>
             </div>
-          ))
+            <div className="message-content">
+              <div className="progress-indicator">
+                <span className="typing-indicator">●●●</span>
+                <span className="progress-text">응답 생성 중...</span>
+              </div>
+            </div>
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
       <div className="input-area">
         <div className="input-wrapper">
-          <div className="canvas-badge">Canvas</div>
           <form className="input-form" onSubmit={handleSubmit}>
             <button type="button" className="input-action-btn" title="파일 첨부">
               <PlusIcon />
