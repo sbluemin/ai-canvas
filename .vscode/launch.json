@@ -4,25 +4,28 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Electron (개발)",
+            "name": "Electron 개발",
             "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run",
-                "dev"
-            ],
-            "preLaunchTask": "kill: 5173 vite server",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "runtimeArgs": ["run", "dev"],
+            "skipFiles": ["<node_internals>/**"],
             "console": "integratedTerminal"
         },
         {
             "type": "chrome",
             "request": "launch",
-            "name": "웹 테스트 (Vite)",
+            "name": "웹 개발",
             "url": "http://localhost:5173",
             "webRoot": "${workspaceFolder}",
             "preLaunchTask": "npm: dev:web"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "테스트",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["test"],
+            "skipFiles": ["<node_internals>/**"],
+            "console": "integratedTerminal"
         }
     ]
 }

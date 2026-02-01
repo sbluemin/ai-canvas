@@ -8,7 +8,7 @@ import { streamText, type ModelMessage } from 'ai';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+const isDev = process.env.NODE_ENV === 'development' || (!app.isPackaged && process.env.ELECTRON_IS_PACKAGED !== 'true');
 
 const APP_NAME = 'AI Canvas';
 app.setName(APP_NAME);

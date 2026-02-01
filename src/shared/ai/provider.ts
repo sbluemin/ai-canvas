@@ -1,6 +1,6 @@
 import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 
-export const DEFAULT_MODEL = 'gemini-3-pro-preview';
+export const DEFAULT_MODEL = 'gemini-3-flash-preview';
 
 export const geminiProvider = createGeminiProvider({
   authType: 'oauth-personal',

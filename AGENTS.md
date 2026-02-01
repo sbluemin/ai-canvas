@@ -85,7 +85,9 @@ ai-canvas/
 ├── electron/
 │   ├── main.ts                  # IPC 핸들러 (chat:stream 포함)
 │   └── preload.ts               # chatStream, onChatChunk API
-└── vite.config.ts               # Vite 설정 + 웹 테스트용 미들웨어
+├── tests/                       # Playwright 테스트
+│   └── electron-chat.test.ts    # Electron 채팅 테스트
+└── vite.config.ts               # Vite + Electron 설정
 ```
 
 ---
@@ -93,38 +95,16 @@ ai-canvas/
 ## 명령어
 
 ```bash
-# 개발 (macOS에서 앱 이름 "AI Canvas"로 표시하려면 dev:electron 사용)
-npm run dev              # Electron 개발 모드 (메뉴표시줄 "Electron")
-npm run dev:web          # 웹 테스트 모드 (포트 5173, AI 채팅 포함)
-npm run dev:setup        # 개발용 .app 번들 생성 (최초 1회)
-npm run dev:electron     # "AI Canvas" 이름으로 개발 모드 실행
+# 개발
+npm run dev          # Electron 개발 모드
+npm run dev:web      # 웹 개발 모드 (Express 서버 + Vite, 포트 5173)
+
+# 테스트
+npm test             # Playwright 테스트
 
 # 빌드
-npm run build            # Electron 앱 빌드
-npm run build:web        # 웹 정적 빌드
+npm run build        # Electron 앱 프로덕션 빌드
 ```
-
-### macOS 개발 모드 앱 이름 설정
-
-개발 모드에서 macOS 메뉴 표시줄에 "AI Canvas"가 표시되도록 하려면:
-
-```bash
-# 1. 최초 1회: 개발용 .app 번들 생성
-npm run dev:setup
-
-# 2. Vite 개발 서버 시작 (터미널 1)
-npm run dev:web
-
-# 3. 개발용 .app 실행 (터미널 2)
-open "dev-dist/AI Canvas.app"
-```
-
-또는 한 번에 실행:
-```bash
-npm run dev:electron  # setup + open 자동 실행
-```
-
-**참고**: 개발용 .app은 `node_modules/electron/dist/Electron.app`을 복사하여 `Info.plist`의 `CFBundleName`을 "AI Canvas"로 수정한 것입니다.
 
 ---
 
@@ -133,7 +113,7 @@ npm run dev:electron  # setup + open 자동 실행
 | 기능 | Electron (프로덕션) | 웹 테스트 (개발용) |
 |------|---------------------|-------------------|
 | 파일 접근 | 네이티브 파일시스템 | 다이얼로그 prompt |
-| AI 채팅 | IPC `chat:stream` | Vite 미들웨어 `/api/chat` |
+| AI 채팅 | IPC `chat:stream` | Express `/api/chat` (proxy) |
 | 인증 | Gemini CLI OAuth | 동일 |
 
 ---
@@ -148,3 +128,10 @@ gemini  # OAuth 인증 완료
 # 기본 모델: gemini-3-pro-preview
 # 인증 방식: oauth-personal (API 키 불필요)
 ```
+
+---
+
+## 빌드 주의사항
+
+### preload.js는 CJS로 빌드
+Electron sandbox preload는 CommonJS 형식 필요. `npm run dev`와 `npm run build`에서 esbuild로 자동 처리.

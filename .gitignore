@@ -67,3 +67,11 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Playwright
+tests/test-results/
+tests/playwright-report/
+tests/blob-report/
+tests/.auth/
+tests/screenshots/
+test-results/
