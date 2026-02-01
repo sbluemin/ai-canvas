@@ -36,14 +36,6 @@ function AICanvasMark() {
   );
 }
 
-function ChevronDownIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
 function PlusIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -99,8 +91,6 @@ function ChevronRightIcon() {
 
 export function ChatPanel() {
   const [input, setInput] = useState('');
-  const [selectedProject, setSelectedProject] = useState('AI Canvas');
-  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
@@ -149,39 +139,8 @@ export function ChatPanel() {
     });
   };
 
-  const projects = ['AI Canvas', 'New Project', 'My Documents'];
-
   return (
     <div className="chat-panel">
-      <div className="chat-header">
-        <div className="header-left">
-          <div className="gemini-logo">
-            <AICanvasMark />
-          </div>
-          <div className="project-dropdown" onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}>
-            <span className="project-name">{selectedProject}</span>
-            <ChevronDownIcon />
-            {isProjectDropdownOpen && (
-              <div className="project-menu">
-                {projects.map((project) => (
-                  <button
-                    key={project}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedProject(project);
-                      setIsProjectDropdownOpen(false);
-                    }}
-                    className={project === selectedProject ? 'active' : ''}
-                  >
-                    {project}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       <div className="messages-container">
         {messages.length === 0 ? (
           <div className="empty-state">

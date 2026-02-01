@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
+import { ProjectSelector } from './components/ProjectSelector';
 import { ChatPanel } from './components/ChatPanel';
 import { CanvasPanel } from './components/CanvasPanel';
 import { useStore } from './store/useStore';
@@ -51,14 +52,19 @@ function App() {
 
   return (
     <div className="app-container">
-        <Allotment>
-          <Allotment.Pane minSize={320} maxSize={480} preferredSize="35%">
-            <ChatPanel />
-          </Allotment.Pane>
-          <Allotment.Pane minSize={500}>
-            <CanvasPanel />
-          </Allotment.Pane>
-        </Allotment>
+      <div className="app-layout">
+        <ProjectSelector />
+        <div className="content-split">
+          <Allotment>
+            <Allotment.Pane minSize={320} maxSize={480} preferredSize="35%">
+              <ChatPanel />
+            </Allotment.Pane>
+            <Allotment.Pane minSize={500}>
+              <CanvasPanel />
+            </Allotment.Pane>
+          </Allotment>
+        </div>
+      </div>
     </div>
   );
 }

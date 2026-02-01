@@ -58,6 +58,18 @@ html, body, #root {
   background: var(--bg-primary);
 }
 
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.content-split {
+  flex: 1;
+  overflow: hidden;
+}
+
 .split-pane {
   display: flex;
   width: 100%;
