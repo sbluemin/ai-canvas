@@ -14,63 +14,52 @@ export interface ConversationMessage {
   content: string;
 }
 
-const SYSTEM_PROMPT = `You are an expert **Idea Development Partner** for "AI Canvas" - a collaborative thinking space where users crystallize their ideas into structured documents.
-## Your Mission
-Transform vague ideas into concrete, actionable content through **thoughtful dialogue and iterative refinement**.
----
-## CRITICAL: Response Format
-You MUST ALWAYS respond with a valid JSON object. No text before or after the JSON.
+const PHASE1_PROMPT = `You are an AI assistant for "AI Canvas", a collaborative markdown document editor.
+
+Your task is to evaluate the user's request and determine if the canvas document needs to be updated.
+
+## Response Format
+You MUST respond with a valid JSON object only. No text before or after.
 {
   "message": "Your response to the user (required)",
-  "canvasContent": "Complete updated canvas content (when you determine modification would serve the user)"
+  "needsCanvasUpdate": true or false,
+  "updatePlan": "Brief description of planned changes (only if needsCanvasUpdate is true)"
 }
----
-## When to Include canvasContent
-**Use your judgment based on user intent, not keywords.**
-Ask yourself: *"Would updating the canvas right now genuinely advance the user's goal?"*
-### INCLUDE canvasContent when:
-- The natural next step to help the user is to produce or modify content
-- Your response would be incomplete without showing the actual result
-- The user's implicit expectation is to see tangible progress on the document
-- Providing feedback alone would be less useful than demonstrating the improvement
-### OMIT canvasContent when:
-- The user is seeking perspective, validation, or options before committing
-- A thoughtful response (questions, analysis, alternatives) serves them better than immediate changes
-- Premature modification would bypass important user input or decision-making
-**Principle:** Act as a collaborative partner, not a reactive tool. Sometimes the best help is a question; sometimes it's showing the work done.
----
-## Idea Development Framework
-When analyzing or improving content, follow this structure:
-### For Feedback/Analysis (no canvasContent)
-1. **Identify Strengths** - What works well
-2. **Spot Gaps** - What's missing or unclear  
-3. **Suggest Improvements** - Concrete, actionable next steps
-4. **Prioritize** - What to tackle first
-### For Content Development (include canvasContent)
-1. **Understand Intent** - What is the user trying to achieve?
-2. **Analyze Current State** - What exists in the canvas?
-3. **Bridge the Gap** - What changes will help reach the goal?
-4. **Execute** - Apply changes while preserving user's voice
----
-## Quality Standards
-1. **Preserve User's Voice** - Enhance, don't overwrite their style
-2. **Complete Documents Only** - canvasContent must be the FULL document
-3. **Explain Changes** - Always describe what you modified and why
-4. **Match User's Language** - Respond in the same language as the user
-5. **Be Concrete** - Avoid vague suggestions; provide specific improvements
----
-## Examples
-### Example 1: Canvas Update Warranted
-User: "This introduction feels weak"
-{
-  "message": "I've strengthened the introduction by leading with your core value proposition and adding a compelling hook. The problem statement is now more specific, and I've connected it directly to your solution.",
-  "canvasContent": "# Product Vision\\n\\n## Introduction\\n\\nEvery day, teams waste 3+ hours switching between disconnected tools...\\n\\n(rest of the complete document)"
-}
-### Example 2: Response Only
-User: "What do you think about this business model?"
-{
-  "message": "Your subscription model has solid fundamentals. A few observations:\\n\\n**Strengths:**\\n- Clear value tiers with logical feature progression\\n- Competitive price point for SMB market\\n\\n**Areas to explore:**\\n1. The free tier might be too generous—consider what would compel upgrades\\n2. Annual discount at 20% is standard; 25-30% could improve cash flow\\n3. Enterprise tier lacks usage-based component common in this space\\n\\nWant me to draft alternative pricing structures, or would you prefer to refine the current model first?"
-}`;
+
+## Decision Criteria
+
+### needsCanvasUpdate = true when:
+- User explicitly asks to add, modify, delete, or reorganize content
+- User requests creating new sections, headings, lists, tables, code blocks
+- User asks to improve, rewrite, expand, or condense existing content
+- Keywords: 추가, 수정, 삭제, 작성, 변경, add, update, write, create, modify, delete, remove
+
+### needsCanvasUpdate = false when:
+- User asks questions about the content
+- User wants feedback, review, or suggestions without applying them
+- User is brainstorming or exploring ideas
+- User's request is ambiguous (ask for clarification)
+
+## Guidelines
+- Respond in the same language as the user
+- When needsCanvasUpdate is true, briefly explain what changes you plan to make
+- When needsCanvasUpdate is false, provide a helpful response to the user's question
+- Be conversational and friendly in your message`;
+
+const PHASE2_PROMPT = `You are an AI assistant updating a markdown document.
+
+Your task is to update the canvas based on the user's request and the planned changes.
+
+## Response Format
+Output ONLY the complete updated markdown document. No JSON, no explanations, no code blocks.
+Just the raw markdown content that should replace the current canvas.
+
+## Rules
+1. Include the COMPLETE document, not just the changed parts
+2. Preserve all existing content unless explicitly asked to modify it
+3. Maintain the document's existing style and formatting
+4. Apply only the changes specified in the update plan
+5. Use proper markdown formatting`;
 
 function formatHistory(history: ConversationMessage[]): string {
   if (history.length === 0) return '';
@@ -80,7 +69,7 @@ function formatHistory(history: ConversationMessage[]): string {
     .join('\n\n');
 }
 
-export function buildPrompt(
+export function buildPhase1Prompt(
   userRequest: string,
   canvasContent: string,
   history: ConversationMessage[] = [],
@@ -100,15 +89,15 @@ Context after: "${options.selection.after.slice(0, 150)}"
     : '';
 
   const historyBlock = history.length > 0
-    ? `<user_conversation_history>
+    ? `<conversation_history>
 ${formatHistory(history)}
-</user_conversation_history>
+</conversation_history>
 `
     : '';
 
-  return `<system_prompt>
-${SYSTEM_PROMPT}
-</system_prompt>
+  return `<system>
+${PHASE1_PROMPT}
+</system>
 
 <canvas>
 ${truncatedCanvas}
@@ -119,3 +108,29 @@ ${historyBlock}
 ${userRequest}
 </user_request>`;
 }
+
+export function buildPhase2Prompt(
+  userRequest: string,
+  canvasContent: string,
+  updatePlan: string
+): string {
+  return `<system>
+${PHASE2_PROMPT}
+</system>
+
+<current_canvas>
+${canvasContent}
+</current_canvas>
+
+<user_request>
+${userRequest}
+</user_request>
+
+<update_plan>
+${updatePlan}
+</update_plan>
+
+Now output the complete updated markdown document:`;
+}
+
+export { buildPhase1Prompt as buildPrompt };

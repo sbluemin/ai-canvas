@@ -1,5 +1,5 @@
 import type { ChatStreamCallbacks, ChatHistory } from '../types';
-import { buildPrompt } from '../prompts';
+import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
@@ -12,6 +12,12 @@ export interface ChatOptions {
     before: string;
     after: string;
   };
+}
+
+export interface Phase2ChatOptions {
+  prompt: string;
+  canvasContent: string;
+  updatePlan: string;
 }
 
 export const api = {
@@ -84,7 +90,7 @@ export const api = {
 
       try {
         const fullPrompt = options?.canvasContent !== undefined
-          ? buildPrompt(prompt, options.canvasContent, history, {
+          ? buildPhase1Prompt(prompt, options.canvasContent, history, {
               selection: options.selection,
             })
           : prompt;
@@ -106,6 +112,68 @@ export const api = {
 
     if (!response.ok || !response.body) {
       callbacks.onError('채팅 요청 실패');
+      callbacks.onDone();
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.text) callbacks.onText(data.text);
+            if (data.error) callbacks.onError(data.error);
+            if (data.done) callbacks.onDone();
+          } catch { }
+        }
+      }
+    }
+  },
+
+  async chatPhase2(
+    options: Phase2ChatOptions,
+    callbacks: ChatStreamCallbacks
+  ): Promise<void> {
+    const { prompt, canvasContent, updatePlan } = options;
+
+    if (isElectron) {
+      const removeListener = window.electronAPI.onChatChunk((data) => {
+        if (data.text) callbacks.onText(data.text);
+        if (data.error) callbacks.onError(data.error);
+        if (data.done) {
+          removeListener();
+          callbacks.onDone();
+        }
+      });
+
+      try {
+        const fullPrompt = buildPhase2Prompt(prompt, canvasContent, updatePlan);
+        await window.electronAPI.chatStream(fullPrompt, [], {});
+      } catch (error) {
+        removeListener();
+        callbacks.onError(error instanceof Error ? error.message : String(error));
+        callbacks.onDone();
+      }
+      return;
+    }
+
+    const response = await fetch('/api/chat/phase2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, canvasContent, updatePlan }),
+    });
+
+    if (!response.ok || !response.body) {
+      callbacks.onError('캔버스 업데이트 요청 실패');
       callbacks.onDone();
       return;
     }

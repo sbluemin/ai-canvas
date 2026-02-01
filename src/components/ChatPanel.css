@@ -410,3 +410,22 @@
   color: var(--text-muted);
   cursor: not-allowed;
 }
+
+.updating-badge {
+  font-size: 11px;
+  color: var(--accent-blue);
+  background: var(--accent-blue-dim);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: 8px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}

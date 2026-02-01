@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import Markdown from 'react-markdown';
 import { useStore, Message } from '../store/useStore';
 import { api } from '../shared/api';
-import { parseAIResponse } from '../shared/ai/parser';
+import { validatePhase1Response } from '../shared/prompts/types';
+import { extractJSON } from '../shared/ai/parser';
 import './ChatPanel.css';
 
 function AICanvasMark() {
@@ -21,17 +22,14 @@ function AICanvasMark() {
         </linearGradient>
       </defs>
 
-      {/* 캔버스 프레임 */}
       <g transform="translate(12 12) rotate(-8) translate(-12 -12)">
         <rect x="5.9" y="7.1" width="12.2" height="9.8" rx="2.6" fill="white" fillOpacity="0.10" stroke="white" strokeOpacity="0.22" strokeWidth="0.9" />
         <rect x="7.4" y="8.6" width="9.2" height="6.8" rx="2.0" fill="none" stroke="white" strokeOpacity="0.14" strokeWidth="0.7" />
       </g>
 
-      {/* AI 스트로크 */}
       <path d="M6.4 16.2C8.5 13.6 10.6 13.0 13.4 11.3C15.0 10.4 16.2 9.5 17.5 8.2" stroke="url(#aic-accent)" strokeWidth="2.9" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M6.7 16.5C8.8 13.9 10.9 13.3 13.7 11.6C15.3 10.7 16.5 9.8 17.8 8.5" stroke="url(#aic-accent2)" strokeWidth="1.0" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
 
-      {/* 스파클 */}
       <path d="M18.4 4.7L19.2 6.6L21.1 7.4L19.2 8.2L18.4 10.1L17.6 8.2L15.7 7.4L17.6 6.6Z" fill="white" fillOpacity="0.95" />
       <circle cx="17.7" cy="8.8" r="0.9" fill="url(#aic-accent)" />
     </svg>
@@ -95,31 +93,72 @@ export function ChatPanel() {
   const [input, setInput] = useState('');
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const currentPromptRef = useRef<string>('');
+  
   const {
     messages,
     isLoading,
     canvasContent,
+    aiRun,
     addMessage,
     updateLastMessage,
     setLastMessageContent,
     setCanvasContent,
     setIsLoading,
     applyToCanvas,
+    startAiRun,
+    setAiPhase,
+    setAiRunResult,
+    saveCanvasSnapshot,
+    clearAiRun,
   } = useStore();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const runPhase2 = async (prompt: string, updatePlan: string) => {
+    setAiPhase('updating');
+    saveCanvasSnapshot();
+
+    let canvasUpdate = '';
+
+    await api.chatPhase2(
+      {
+        prompt,
+        canvasContent,
+        updatePlan,
+      },
+      {
+        onText: (text) => {
+          canvasUpdate += text;
+        },
+        onError: (error) => {
+          setAiRunResult({ error: { phase: 'updating', message: error } });
+          setAiPhase('failed');
+        },
+        onDone: () => {
+          if (canvasUpdate.trim()) {
+            setCanvasContent(canvasUpdate.trim());
+          }
+          setAiPhase('succeeded');
+          clearAiRun();
+        },
+      }
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const prompt = input.trim();
+    currentPromptRef.current = prompt;
     setInput('');
     addMessage('user', prompt);
     addMessage('assistant', '');
     setIsLoading(true);
+    startAiRun();
 
     const history = messages.map((msg) => ({
       role: msg.role,
@@ -135,17 +174,47 @@ export function ChatPanel() {
           fullResponse += text;
           updateLastMessage(text);
         },
-        onError: (error) => updateLastMessage(`\n[오류: ${error}]`),
-        onDone: () => {
-          const parsed = parseAIResponse(fullResponse);
-          if (parsed.success && parsed.data) {
-            setLastMessageContent(parsed.data.message);
-            if (parsed.data.canvasContent) {
-              setCanvasContent(parsed.data.canvasContent);
-            }
-          } else if (parsed.fallback && parsed.data) {
-            setLastMessageContent(parsed.data.message);
+        onError: (error) => {
+          updateLastMessage(`\n[오류: ${error}]`);
+          setAiRunResult({ error: { phase: 'evaluating', message: error } });
+          setAiPhase('failed');
+        },
+        onDone: async () => {
+          const jsonText = extractJSON(fullResponse);
+          if (!jsonText) {
+            setLastMessageContent(fullResponse);
+            setIsLoading(false);
+            clearAiRun();
+            return;
           }
+
+          try {
+            const parsed = JSON.parse(jsonText);
+            const phase1Result = validatePhase1Response(parsed);
+
+            if (phase1Result) {
+              setLastMessageContent(phase1Result.message);
+              setAiRunResult({
+                message: phase1Result.message,
+                needsCanvasUpdate: phase1Result.needsCanvasUpdate,
+                updatePlan: phase1Result.updatePlan,
+              });
+
+              if (phase1Result.needsCanvasUpdate && phase1Result.updatePlan) {
+                await runPhase2(currentPromptRef.current, phase1Result.updatePlan);
+              } else {
+                setAiPhase('succeeded');
+                clearAiRun();
+              }
+            } else {
+              setLastMessageContent(fullResponse);
+              clearAiRun();
+            }
+          } catch {
+            setLastMessageContent(fullResponse);
+            clearAiRun();
+          }
+
           setIsLoading(false);
         },
       },
@@ -170,6 +239,8 @@ export function ChatPanel() {
     });
   };
 
+  const isUpdatingCanvas = aiRun?.phase === 'updating';
+
   return (
     <div className="chat-panel">
       <div className="messages-container">
@@ -190,6 +261,9 @@ export function ChatPanel() {
                     <AICanvasMark />
                   </div>
                   <span className="ai-name">AI Canvas</span>
+                  {isUpdatingCanvas && (
+                    <span className="updating-badge">캔버스 업데이트 중...</span>
+                  )}
                 </div>
               )}
               <div className="message-content">

@@ -7,12 +7,25 @@ export interface Message {
   timestamp: Date;
 }
 
+export type AiPhase = 'idle' | 'evaluating' | 'updating' | 'succeeded' | 'failed';
+
+export interface AiRunState {
+  runId: string;
+  phase: AiPhase;
+  message?: string;
+  needsCanvasUpdate?: boolean;
+  updatePlan?: string;
+  canvasSnapshot?: string;
+  error?: { phase: 'evaluating' | 'updating'; message: string };
+}
+
 interface AppState {
   messages: Message[];
   canvasContent: string;
   isLoading: boolean;
   currentFilePath: string | null;
   isDrawerOpen: boolean;
+  aiRun: AiRunState | null;
 
   addMessage: (role: 'user' | 'assistant', content: string) => void;
   updateLastMessage: (content: string) => void;
@@ -24,6 +37,16 @@ interface AppState {
   clearMessages: () => void;
   toggleDrawer: () => void;
   closeDrawer: () => void;
+
+  startAiRun: () => string;
+  setAiPhase: (phase: AiPhase) => void;
+  setAiRunResult: (result: Partial<AiRunState>) => void;
+  clearAiRun: () => void;
+  saveCanvasSnapshot: () => void;
+}
+
+function generateRunId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -74,6 +97,7 @@ AICanvas/
   isLoading: false,
   currentFilePath: null,
   isDrawerOpen: false,
+  aiRun: null,
 
   addMessage: (role, content) =>
     set((state) => ({
@@ -127,4 +151,34 @@ AICanvas/
 
   toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
   closeDrawer: () => set({ isDrawerOpen: false }),
+
+  startAiRun: () => {
+    const runId = generateRunId();
+    set({
+      aiRun: {
+        runId,
+        phase: 'evaluating',
+      },
+    });
+    return runId;
+  },
+
+  setAiPhase: (phase) =>
+    set((state) => ({
+      aiRun: state.aiRun ? { ...state.aiRun, phase } : null,
+    })),
+
+  setAiRunResult: (result) =>
+    set((state) => ({
+      aiRun: state.aiRun ? { ...state.aiRun, ...result } : null,
+    })),
+
+  clearAiRun: () => set({ aiRun: null }),
+
+  saveCanvasSnapshot: () =>
+    set((state) => ({
+      aiRun: state.aiRun
+        ? { ...state.aiRun, canvasSnapshot: state.canvasContent }
+        : null,
+    })),
 }));

@@ -194,3 +194,52 @@
 .selection-popup-wrapper > * {
   pointer-events: auto;
 }
+
+.canvas-updating-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(19, 19, 20, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: fadeInOverlay 0.3s ease forwards;
+  backdrop-filter: blur(2px);
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.updating-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.spinner-icon {
+  animation: spin 1s linear infinite;
+  color: var(--accent-blue);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

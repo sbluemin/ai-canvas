@@ -1,5 +1,5 @@
 import { streamText, type ModelMessage } from 'ai';
-import { buildPrompt } from '../prompts';
+import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
 import { geminiModel, createModel } from './provider';
 
 export interface ChatMessage {
@@ -19,24 +19,29 @@ export interface StreamChatOptions {
   };
 }
 
+export interface Phase2Options {
+  prompt: string;
+  canvasContent: string;
+  updatePlan: string;
+  modelId?: string;
+}
+
 export interface StreamCallbacks {
   onText: (text: string) => void;
   onError: (error: string) => void;
   onDone: () => void;
 }
 
-export async function streamChat(
+export async function streamPhase1(
   options: StreamChatOptions,
   callbacks: StreamCallbacks
 ): Promise<void> {
-  const { prompt, history = [], modelId, canvasContent, selection } = options;
+  const { prompt, history = [], modelId, canvasContent = '', selection } = options;
 
   try {
     const model = modelId ? createModel(modelId) : geminiModel;
     
-    const fullPrompt = canvasContent !== undefined
-      ? buildPrompt(prompt, canvasContent, history, { selection })
-      : prompt;
+    const fullPrompt = buildPhase1Prompt(prompt, canvasContent, history, { selection });
 
     const messages: ModelMessage[] = [
       { role: 'user' as const, content: fullPrompt },
@@ -59,17 +64,54 @@ export async function streamChat(
   }
 }
 
+export async function streamPhase2(
+  options: Phase2Options,
+  callbacks: StreamCallbacks
+): Promise<void> {
+  const { prompt, canvasContent, updatePlan, modelId } = options;
+
+  try {
+    const model = modelId ? createModel(modelId) : geminiModel;
+    
+    const fullPrompt = buildPhase2Prompt(prompt, canvasContent, updatePlan);
+
+    const messages: ModelMessage[] = [
+      { role: 'user' as const, content: fullPrompt },
+    ];
+
+    const result = streamText({
+      model,
+      messages,
+    });
+
+    for await (const textPart of result.textStream) {
+      callbacks.onText(textPart);
+    }
+
+    callbacks.onDone();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    callbacks.onError(errorMessage);
+    callbacks.onDone();
+  }
+}
+
+export async function streamChat(
+  options: StreamChatOptions,
+  callbacks: StreamCallbacks
+): Promise<void> {
+  return streamPhase1(options, callbacks);
+}
+
 export async function streamChatToSSE(options: StreamChatOptions): Promise<ReadableStream> {
-  const { prompt, history = [], modelId, canvasContent, selection } = options;
+  const { prompt, history = [], modelId, canvasContent = '', selection } = options;
 
   const encoder = new TextEncoder();
 
   try {
     const model = modelId ? createModel(modelId) : geminiModel;
     
-    const fullPrompt = canvasContent !== undefined
-      ? buildPrompt(prompt, canvasContent, history, { selection })
-      : prompt;
+    const fullPrompt = buildPhase1Prompt(prompt, canvasContent, history, { selection });
 
     const messages: ModelMessage[] = [
       { role: 'user' as const, content: fullPrompt },
