@@ -1,79 +1,28 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
             "type": "node",
             "request": "launch",
-            "name": "서버 모드 (개발)",
+            "name": "Electron (개발)",
             "runtimeExecutable": "npm",
             "runtimeArgs": [
                 "run",
-                "server:dev"
+                "dev"
             ],
+            "preLaunchTask": "kill: 5173 vite server",
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "console": "internalConsole",
-            "env": {
-                "PORT": "50000",
-                "HOST": "0.0.0.0"
-            }
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "서버 모드 (TypeScript 직접 실행)",
-            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
-            "runtimeArgs": [
-                "server/index.ts"
-            ],
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "console": "internalConsole",
-            "env": {
-                "PORT": "50000",
-                "HOST": "0.0.0.0"
-            },
-            "preLaunchTask": "npm: build:web"
+            "console": "integratedTerminal"
         },
         {
             "type": "chrome",
             "request": "launch",
-            "name": "클라이언트 (Vite 개발 서버)",
-            "url": "http://localhost:5173",
-            "webRoot": "${workspaceFolder}",
-            "preLaunchTask": "npm: dev"
-        },
-        {
-            "type": "chrome",
-            "request": "launch",
-            "name": "클라이언트 (웹 모드)",
+            "name": "웹 테스트 (Vite)",
             "url": "http://localhost:5173",
             "webRoot": "${workspaceFolder}",
             "preLaunchTask": "npm: dev:web"
-        },
-        {
-            "type": "chrome",
-            "request": "launch",
-            "name": "클라이언트 (서버 모드 연결)",
-            "url": "http://localhost:50000",
-            "webRoot": "${workspaceFolder}/dist"
-        }
-    ],
-    "compounds": [
-        {
-            "name": "풀스택 (서버 + 클라이언트)",
-            "configurations": [
-                "서버 모드 (개발)",
-                "클라이언트 (서버 모드 연결)"
-            ],
-            "presentation": {
-                "order": 1
-            }
         }
     ]
 }

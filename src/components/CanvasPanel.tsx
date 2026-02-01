@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { MilkdownEditor } from './MilkdownEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorProvider } from '../context/EditorContext';
-import { api } from '../lib/api';
+import { api } from '../shared/api';
 import './CanvasPanel.css';
 
 function EditIcon() {

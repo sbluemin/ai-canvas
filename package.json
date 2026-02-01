@@ -7,14 +7,13 @@
   "scripts": {
     "dev": "vite",
     "dev:web": "vite --mode web",
+    "dev:setup": "./scripts/create-dev-app.sh",
+    "dev:electron": "npm run dev:setup && open \"dev-dist/AI Canvas.app\"",
     "build": "tsc && vite build && electron-builder",
     "build:vite": "tsc && vite build",
     "build:web": "tsc -p tsconfig.json && vite build --mode web",
-    "build:server": "tsc -p tsconfig.server.json",
     "preview": "vite preview",
-    "electron:dev": "vite build && electron .",
-    "server": "npm run build:web && npm run build:server && node dist-server/server/index.js",
-    "server:dev": "npm run build:web && tsx src/server/index.ts"
+    "electron:dev": "vite build && electron ."
   },
   "dependencies": {
     "@milkdown/core": "^7.18.0",
@@ -25,14 +24,14 @@
     "@milkdown/prose": "^7.18.0",
     "@milkdown/react": "^7.18.0",
     "@milkdown/utils": "^7.18.0",
+    "ai": "^6.0.66",
+    "ai-sdk-provider-gemini-cli": "^2.0.1",
     "allotment": "^1.20.5",
-    "express": "^4.21.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",

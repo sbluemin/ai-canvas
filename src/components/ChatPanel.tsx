@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore, Message } from '../store/useStore';
-import { api } from '../lib/api';
+import { api } from '../shared/api';
 import './ChatPanel.css';
 
 function AICanvasMark() {
@@ -116,11 +116,16 @@ export function ChatPanel() {
     addMessage('assistant', '');
     setIsLoading(true);
 
+    const history = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     await api.chat(prompt, {
       onText: (text) => updateLastMessage(text),
       onError: (error) => updateLastMessage(`\n[오류: ${error}]`),
       onDone: () => setIsLoading(false),
-    });
+    }, history);
   };
 
   const handleApplyToCanvas = (content: string) => {

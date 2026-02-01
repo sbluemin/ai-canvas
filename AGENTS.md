@@ -1,12 +1,11 @@
 # AI Canvas - Agent 가이드
 
-> AI와 대화하며 마크다운 문서를 작성하는 크로스 플랫폼 에디터
+> AI와 대화하며 마크다운 문서를 작성하는 **Electron 데스크톱 앱**
 
 ## ⚠️ Agent 필수 지침
 
 **작업 완료 후 이 문서를 반드시 업데이트하세요:**
 - 새 컴포넌트/파일 추가 시 → 프로젝트 구조, 아키텍처 섹션 수정
-- API 변경 시 → API 엔드포인트 테이블 수정
 - 상태 구조 변경 시 → Zustand 인터페이스 수정
 - 새 명령어 추가 시 → 명령어 섹션 수정
 - 기술 스택 변경 시 → 기술 스택 테이블 수정
@@ -18,8 +17,8 @@
 | 영역 | 기술 |
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown (마크다운 WYSIWYG) |
-| Desktop | Electron 34 |
-| Server | Express 4, Node.js 22+ |
+| Desktop | Electron 34 (핵심 플랫폼) |
+| AI | Vercel AI SDK, ai-sdk-provider-gemini-cli (OAuth 인증) |
 | State | Zustand |
 | Styling | CSS Modules |
 
@@ -37,6 +36,12 @@
   - **EditorToolbar**: 서식 도구
   - **SelectionPopup**: 텍스트 선택 시 AI 질문 팝업
 
+### AI 모듈 (`src/shared/ai/`)
+- **provider.ts**: Gemini CLI provider (OAuth 인증, `gemini-3-pro-preview` 모델)
+- **stream.ts**: `streamChat()`, `streamChatToSSE()` 스트리밍 유틸리티
+- Electron: IPC `chat:stream` 핸들러 사용
+- 웹 테스트: Vite 미들웨어 `/api/chat` 사용
+
 ### 상태 관리 (Zustand)
 ```typescript
 // src/store/useStore.ts
@@ -51,17 +56,6 @@ interface AppState {
 
 ---
 
-## API 엔드포인트
-
-| Method | Path | 설명 |
-|--------|------|------|
-| GET | `/api/files?path=<name>` | 파일 읽기 |
-| POST | `/api/files` | 파일 저장 `{ path, content }` |
-| GET | `/api/files/list` | 파일 목록 |
-| POST | `/api/chat` | AI 채팅 (SSE 스트리밍) `{ prompt }` |
-
----
-
 ## 프로젝트 구조
 
 ```
@@ -71,23 +65,27 @@ ai-canvas/
 │   │   ├── CommandBar/          # 상단 커맨드바
 │   │   │   ├── index.tsx
 │   │   │   ├── CommandBar.css
-│   │   │   └── ProjectSelector/ # 프로젝트 선택기
-│   │   │       ├── index.tsx
-│   │   │       └── ProjectSelector.css
+│   │   │   └── ProjectSelector/
 │   │   ├── CanvasPanel.tsx
 │   │   ├── ChatPanel.tsx
 │   │   ├── MilkdownEditor.tsx
 │   │   └── ...
 │   ├── store/useStore.ts        # Zustand 상태
-│   ├── lib/api.ts               # API 추상화
-│   ├── shared/                  # 클라이언트/서버 공용 모듈
+│   ├── shared/
 │   │   ├── types/               # 공용 타입 정의
-│   │   └── utils/               # 공용 유틸리티
-│   ├── server/index.ts          # Express 서버
+│   │   ├── utils/               # 공용 유틸리티
+│   │   ├── ai/                  # AI 서비스 (Gemini CLI)
+│   │   │   ├── provider.ts      # Gemini provider (OAuth)
+│   │   │   ├── stream.ts        # 스트리밍 유틸리티
+│   │   │   └── index.ts
+│   │   └── api/                 # 클라이언트 API
+│   │       └── index.ts         # Electron/Web 분기 로직
 │   ├── App.tsx
 │   └── main.tsx
-├── electron/                    # Electron 메인/프리로드
-└── data/                        # 파일 저장소
+├── electron/
+│   ├── main.ts                  # IPC 핸들러 (chat:stream 포함)
+│   └── preload.ts               # chatStream, onChatChunk API
+└── vite.config.ts               # Vite 설정 + 웹 테스트용 미들웨어
 ```
 
 ---
@@ -95,20 +93,58 @@ ai-canvas/
 ## 명령어
 
 ```bash
-# 개발
-npm run dev          # Electron
-npm run dev:web      # 웹 (포트 5173)
-npm run server:dev   # 서버 (포트 50000)
+# 개발 (macOS에서 앱 이름 "AI Canvas"로 표시하려면 dev:electron 사용)
+npm run dev              # Electron 개발 모드 (메뉴표시줄 "Electron")
+npm run dev:web          # 웹 테스트 모드 (포트 5173, AI 채팅 포함)
+npm run dev:setup        # 개발용 .app 번들 생성 (최초 1회)
+npm run dev:electron     # "AI Canvas" 이름으로 개발 모드 실행
 
 # 빌드
-npm run build        # Electron
-npm run build:web    # 웹
-npm run build:server # 서버
+npm run build            # Electron 앱 빌드
+npm run build:web        # 웹 정적 빌드
 ```
+
+### macOS 개발 모드 앱 이름 설정
+
+개발 모드에서 macOS 메뉴 표시줄에 "AI Canvas"가 표시되도록 하려면:
+
+```bash
+# 1. 최초 1회: 개발용 .app 번들 생성
+npm run dev:setup
+
+# 2. Vite 개발 서버 시작 (터미널 1)
+npm run dev:web
+
+# 3. 개발용 .app 실행 (터미널 2)
+open "dev-dist/AI Canvas.app"
+```
+
+또는 한 번에 실행:
+```bash
+npm run dev:electron  # setup + open 자동 실행
+```
+
+**참고**: 개발용 .app은 `node_modules/electron/dist/Electron.app`을 복사하여 `Info.plist`의 `CFBundleName`을 "AI Canvas"로 수정한 것입니다.
 
 ---
 
 ## 환경별 차이
 
-- **Electron**: 직접 파일시스템 접근, 네이티브 다이얼로그
-- **Web/Server**: REST API 통한 파일 관리, `./data/` 디렉토리 사용
+| 기능 | Electron (프로덕션) | 웹 테스트 (개발용) |
+|------|---------------------|-------------------|
+| 파일 접근 | 네이티브 파일시스템 | 다이얼로그 prompt |
+| AI 채팅 | IPC `chat:stream` | Vite 미들웨어 `/api/chat` |
+| 인증 | Gemini CLI OAuth | 동일 |
+
+---
+
+## AI 설정
+
+```bash
+# Gemini CLI 인증 (최초 1회)
+npm install -g @google/gemini-cli
+gemini  # OAuth 인증 완료
+
+# 기본 모델: gemini-3-pro-preview
+# 인증 방식: oauth-personal (API 키 불필요)
+```

@@ -1,8 +1,8 @@
-import type { ChatStreamCallbacks } from '../shared/types';
+import type { ChatStreamCallbacks, ChatHistory } from '../types';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
-export type { ChatStreamCallbacks };
+export type { ChatStreamCallbacks, ChatHistory };
 
 export const api = {
   isElectron,
@@ -56,17 +56,31 @@ export const api = {
     return data.files;
   },
 
-  async chat(prompt: string, callbacks: ChatStreamCallbacks): Promise<void> {
+  async chat(prompt: string, callbacks: ChatStreamCallbacks, history: ChatHistory[] = []): Promise<void> {
     if (isElectron) {
-      callbacks.onText('Electron 환경에서는 아직 채팅이 지원되지 않습니다.');
-      callbacks.onDone();
+      const removeListener = window.electronAPI.onChatChunk((data) => {
+        if (data.text) callbacks.onText(data.text);
+        if (data.error) callbacks.onError(data.error);
+        if (data.done) {
+          removeListener();
+          callbacks.onDone();
+        }
+      });
+
+      try {
+        await window.electronAPI.chatStream(prompt, history);
+      } catch (error) {
+        removeListener();
+        callbacks.onError(error instanceof Error ? error.message : String(error));
+        callbacks.onDone();
+      }
       return;
     }
 
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, history }),
     });
 
     if (!response.ok || !response.body) {
