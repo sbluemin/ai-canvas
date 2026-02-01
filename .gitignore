@@ -12,6 +12,12 @@ dist-server/
 *.local
 release/
 out/
+build/
+
+# Vite
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
 
 # Logs
 logs/
@@ -27,51 +33,61 @@ lerna-debug.log*
 !.vscode/extensions.json
 !.vscode/settings.json
 !.vscode/launch.json
+!.vscode/tasks.json
 .idea/
 *.swp
 *.swo
 *.sw?
 *.sublime-workspace
 *.sublime-project
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
+
+# Environment variables
+.env
 .env.local
 .env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Electron
-release/
 *.app
 *.dmg
 *.exe
 *.msi
+*.asar
 
-# Server
-.env
-.env.production
-.env.local
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
 
-# Data directory (if server mode)
-data/
+# Testing - Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
+tests/screenshots/
+
+# Testing - Coverage
+coverage/
+.nyc_output/
+
+# Linting cache
+.eslintcache
+.stylelintcache
 
 # OS
 .DS_Store
 Thumbs.db
 
-# TypeScript
-*.tsbuildinfo
+# Data directory (if server mode)
+data/
 
 # Temporary files
 tmp/
 temp/
 *.tmp
-
-# Playwright
-tests/test-results/
-tests/playwright-report/
-tests/blob-report/
-tests/.auth/
-tests/screenshots/
-test-results/

@@ -25,7 +25,8 @@
             "runtimeExecutable": "npm",
             "runtimeArgs": ["test"],
             "skipFiles": ["<node_internals>/**"],
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "preLaunchTask": "build:test"
         }
     ]
 }
