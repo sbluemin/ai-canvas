@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown (마크다운 WYSIWYG) |
 | Desktop | Electron 34 (핵심 플랫폼) |
-| AI | Vercel AI SDK, ai-sdk-provider-gemini-cli (OAuth 인증) |
+| AI | Cloud Code Assist API (네이티브 OAuth 인증) |
 | State | Zustand |
 | Styling | CSS Modules |
 
@@ -30,18 +30,26 @@
 - **App.tsx**: 루트 - 반응형 레이아웃 (데스크톱: Allotment 분할, 모바일: Drawer)
 - **CommandBar**: 상단 커맨드 바
   - **ProjectSelector**: 프로젝트 선택 드롭다운
+  - **GeminiAuthButton**: Gemini OAuth 로그인 버튼
 - **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍)
 - **CanvasPanel**: 우측 에디터 패널
   - **MilkdownEditor**: 마크다운 WYSIWYG
   - **EditorToolbar**: 서식 도구
   - **SelectionPopup**: 텍스트 선택 시 AI 질문 팝업
 
-### AI 모듈 (`src/shared/ai/`)
-- **provider.ts**: Gemini CLI provider (OAuth 인증, `gemini-3-pro-preview` 모델)
-- **stream.ts**: `streamChat()`, `streamChatToSSE()` 스트리밍 유틸리티
-- **parser.ts**: AI 응답 파서 (JSON 추출 + Zod 검증)
-- Electron: IPC `chat:stream` 핸들러 사용
-- 웹 테스트: Vite 미들웨어 `/api/chat` 사용
+### AI 인증 (`electron/auth.ts`)
+- PKCE 기반 OAuth 2.0 흐름
+- Cloud Code Assist API (`cloudcode-pa.googleapis.com`)
+- safeStorage를 통한 안전한 토큰 저장
+- 자동 토큰 갱신
+
+### API 모듈 (`src/api/`)
+- **index.ts**: Electron/Web 분기 로직, IPC 래퍼
+
+### 프롬프트 시스템 (`src/prompts/`)
+- **system.ts**: Phase 1/2 프롬프트 빌더, 히스토리 압축
+- **types.ts**: AI 응답 스키마 (Zod 검증)
+- **canvas.ts**: 캔버스 컨텍스트 포맷팅, 토큰 추정
 
 ### 상태 관리 (Zustand)
 ```typescript
@@ -52,6 +60,8 @@ interface AppState {
   isLoading: boolean;            // AI 응답 대기
   currentFilePath: string | null;
   isDrawerOpen: boolean;         // 모바일 드로어
+  isAuthenticated: boolean;      // Gemini 인증 상태
+  authLoading: boolean;          // 인증 로딩 상태
 }
 ```
 
@@ -66,27 +76,34 @@ ai-canvas/
 │   │   ├── CommandBar/          # 상단 커맨드바
 │   │   │   ├── index.tsx
 │   │   │   ├── CommandBar.css
-│   │   │   └── ProjectSelector/
+│   │   │   ├── ProjectSelector/
+│   │   │   └── GeminiAuthButton/  # OAuth 로그인 버튼
 │   │   ├── CanvasPanel.tsx
 │   │   ├── ChatPanel.tsx
 │   │   ├── MilkdownEditor.tsx
 │   │   └── ...
 │   ├── store/useStore.ts        # Zustand 상태
-│   ├── shared/
-│   │   ├── types/               # 공용 타입 정의
-│   │   ├── utils/               # 공용 유틸리티
-│   │   ├── ai/                  # AI 서비스 (Gemini CLI)
-│   │   │   ├── provider.ts      # Gemini provider (OAuth)
-│   │   │   ├── stream.ts        # 스트리밍 유틸리티
-│   │   │   ├── parser.ts        # AI 응답 파서
-│   │   │   └── index.ts
-│   │   └── api/                 # 클라이언트 API
-│   │       └── index.ts         # Electron/Web 분기 로직
+│   ├── hooks/useChatRequest.ts  # 채팅 요청 훅 (Phase 1/2 흐름)
+│   ├── api/                     # 클라이언트 API
+│   │   └── index.ts             # Electron/Web 분기 로직
+│   ├── prompts/                 # AI 프롬프트 시스템
+│   │   ├── system.ts            # Phase 1/2 프롬프트 빌더
+│   │   ├── types.ts             # 응답 스키마 (Zod)
+│   │   ├── canvas.ts            # 캔버스 컨텍스트 유틸
+│   │   └── index.ts
+│   ├── types/                   # 공용 타입 정의
+│   │   ├── api.ts
+│   │   ├── chat.ts
+│   │   └── index.ts
+│   ├── utils/                   # 공용 유틸리티
+│   │   ├── parser.ts            # AI 응답 파서 (JSON 추출)
+│   │   └── index.ts
 │   ├── App.tsx
 │   └── main.tsx
 ├── electron/
-│   ├── main.ts                  # IPC 핸들러 (chat:stream 포함)
-│   └── preload.ts               # chatStream, onChatChunk API
+│   ├── main.ts                  # IPC 핸들러, Cloud Code Assist 스트리밍
+│   ├── auth.ts                  # OAuth 매니저 (PKCE, 토큰 관리)
+│   └── preload.ts               # chatStream, auth API
 ├── tests/                       # Playwright 테스트
 │   └── electron-chat.test.ts    # Electron 채팅 테스트
 └── vite.config.ts               # Vite + Electron 설정
@@ -99,7 +116,6 @@ ai-canvas/
 ```bash
 # 개발
 npm run dev          # Electron 개발 모드
-npm run dev:web      # 웹 개발 모드 (Express 서버 + Vite, 포트 5173)
 
 # 테스트
 npm test             # Playwright 테스트
@@ -112,24 +128,25 @@ npm run build        # Electron 앱 프로덕션 빌드
 
 ## 환경별 차이
 
-| 기능 | Electron (프로덕션) | 웹 테스트 (개발용) |
-|------|---------------------|-------------------|
-| 파일 접근 | 네이티브 파일시스템 | 다이얼로그 prompt |
-| AI 채팅 | IPC `chat:stream` | Express `/api/chat` (proxy) |
-| 인증 | Gemini CLI OAuth | 동일 |
+| 기능 | Electron (프로덕션) |
+|------|---------------------|
+| 파일 접근 | 네이티브 파일시스템 |
+| AI 채팅 | IPC `chat:stream` → Cloud Code Assist API |
+| 인증 | 네이티브 OAuth (electron/auth.ts) |
 
 ---
 
 ## AI 설정
 
-```bash
-# Gemini CLI 인증 (최초 1회)
-npm install -g @google/gemini-cli
-gemini  # OAuth 인증 완료
+인증은 앱 내에서 직접 수행됩니다:
+1. 앱 실행
+2. 우측 상단 Gemini 버튼 클릭
+3. 브라우저에서 Google OAuth 인증
+4. 자동으로 앱에 인증 완료
 
-# 기본 모델: gemini-3-pro-preview
-# 인증 방식: oauth-personal (API 키 불필요)
-```
+- 기본 모델: `gemini-2.0-flash`
+- API: Cloud Code Assist (`cloudcode-pa.googleapis.com`)
+- 토큰 저장: `~/Library/Application Support/AI Canvas/gemini-auth.enc` (암호화)
 
 ---
 

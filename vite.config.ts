@@ -7,9 +7,6 @@ const isWebMode = process.env.npm_lifecycle_event?.includes('web') || process.ar
 
 const electronExternals = [
   'electron',
-  'ai',
-  'ai-sdk-provider-gemini-cli',
-  '@google/gemini-cli-core',
 ];
 
 export default defineConfig({
@@ -46,11 +43,5 @@ export default defineConfig({
       },
     },
   },
-  optimizeDeps: {
-    exclude: [
-      'ai',
-      'ai-sdk-provider-gemini-cli',
-      '@google/gemini-cli-core',
-    ],
-  },
+  optimizeDeps: {},
 });

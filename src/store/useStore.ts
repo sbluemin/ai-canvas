@@ -26,6 +26,9 @@ interface AppState {
   currentFilePath: string | null;
   isDrawerOpen: boolean;
   aiRun: AiRunState | null;
+  
+  isAuthenticated: boolean;
+  authLoading: boolean;
 
   addMessage: (role: 'user' | 'assistant', content: string) => void;
   updateLastMessage: (content: string) => void;
@@ -43,6 +46,9 @@ interface AppState {
   setAiRunResult: (result: Partial<AiRunState>) => void;
   clearAiRun: () => void;
   saveCanvasSnapshot: () => void;
+  
+  setAuthStatus: (isAuthenticated: boolean) => void;
+  setAuthLoading: (loading: boolean) => void;
 }
 
 function generateRunId(): string {
@@ -51,6 +57,8 @@ function generateRunId(): string {
 
 export const useStore = create<AppState>((set) => ({
   messages: [],
+  isAuthenticated: false,
+  authLoading: true,
   canvasContent: `# AI Canvas - 재사용 가능한 코어 아키텍처
 
 ## 기술 스택 개요
@@ -181,4 +189,7 @@ AICanvas/
         ? { ...state.aiRun, canvasSnapshot: state.canvasContent }
         : null,
     })),
+
+  setAuthStatus: (isAuthenticated) => set({ isAuthenticated }),
+  setAuthLoading: (authLoading) => set({ authLoading }),
 }));

@@ -1,5 +1,6 @@
 import './CommandBar.css';
 import { ProjectSelector } from './ProjectSelector';
+import { GeminiAuthButton } from './GeminiAuthButton';
 
 function AICanvasMark() {
   return (
@@ -42,6 +43,9 @@ export function CommandBar() {
           <AICanvasMark />
         </div>
         <ProjectSelector />
+      </div>
+      <div className="command-bar-right">
+        <GeminiAuthButton />
       </div>
     </div>
   );

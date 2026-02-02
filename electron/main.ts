@@ -2,8 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
-import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
-import { streamText, type ModelMessage } from 'ai';
+import * as gemini from './gemini';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,12 +13,6 @@ const APP_NAME = 'AI Canvas';
 app.setName(APP_NAME);
 
 let mainWindow: BrowserWindow | null = null;
-
-const geminiProvider = createGeminiProvider({
-  authType: 'oauth-personal',
-});
-
-const DEFAULT_MODEL = 'gemini-3-pro-preview';
 
 function getIconPath(): string {
   if (isDev) {
@@ -152,60 +145,32 @@ ipcMain.handle('fs:readFile', async (_event, filePath: string) => {
   return await fs.readFile(filePath, 'utf-8');
 });
 
-interface ChatHistory {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface ChatOptions {
-  system?: string;
-}
-
-ipcMain.handle(
-  'chat:stream',
-  async (
-    event,
-    prompt: string,
-    history: ChatHistory[] = [],
-    options?: ChatOptions
-  ) => {
-    try {
-      const model = geminiProvider(DEFAULT_MODEL);
-
-      const messages: ModelMessage[] = [
-        ...history.map((msg) => ({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-        })),
-        { role: 'user' as const, content: prompt },
-      ];
-
-      const result = streamText({
-        model,
-        system: options?.system,
-        messages,
-      });
-
-      for await (const textPart of result.textStream) {
-        if (!event.sender.isDestroyed()) {
-          event.sender.send('chat:chunk', { text: textPart });
-        }
-      }
-
-      if (!event.sender.isDestroyed()) {
-        event.sender.send('chat:chunk', { done: true });
-      }
-
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!event.sender.isDestroyed()) {
-        event.sender.send('chat:chunk', { error: errorMessage });
-      }
-      return { success: false, error: errorMessage };
-    }
+ipcMain.handle('gemini:auth:start', async () => {
+  try {
+    await gemini.startAuth();
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
   }
-);
+});
+
+ipcMain.handle('gemini:auth:status', async () => {
+  return await gemini.getAuthStatus();
+});
+
+ipcMain.handle('gemini:auth:logout', async () => {
+  await gemini.logout();
+  return { success: true };
+});
+
+ipcMain.handle('gemini:chat', async (event, prompt: string) => {
+  const auth = await gemini.getValidAccessToken();
+  if (!auth) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  return gemini.chat(event, auth, { prompt });
+});
 
 app.whenReady().then(() => {
   createApplicationMenu();

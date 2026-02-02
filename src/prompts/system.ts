@@ -1,4 +1,4 @@
-import { truncateToFit, estimateTokens } from './canvas';
+import { truncateToFit } from './canvas';
 
 export interface PromptOptions {
   maxCanvasLength?: number;
@@ -12,65 +12,6 @@ export interface PromptOptions {
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
-}
-
-export interface CompactedHistory {
-  summary: string;
-  keyDecisions: string[];
-  canvasState: string;
-  pendingItems: string[];
-}
-
-export interface HistoryContext {
-  messages: ConversationMessage[];
-  compacted?: CompactedHistory;
-}
-
-export const HISTORY_TOKEN_LIMIT = 2000;
-
-export function needsCompaction(history: ConversationMessage[]): boolean {
-  const historyText = formatHistory(history);
-  const tokens = estimateTokens(historyText);
-  return tokens > HISTORY_TOKEN_LIMIT;
-}
-
-export function formatCompactedHistory(compacted: CompactedHistory): string {
-  const parts: string[] = [];
-  
-  parts.push(`[CONVERSATION SUMMARY]: ${compacted.summary}`);
-  
-  if (compacted.keyDecisions.length > 0) {
-    parts.push(`[KEY DECISIONS]: ${compacted.keyDecisions.join('; ')}`);
-  }
-  
-  if (compacted.canvasState) {
-    parts.push(`[CANVAS STATE]: ${compacted.canvasState}`);
-  }
-  
-  if (compacted.pendingItems.length > 0) {
-    parts.push(`[PENDING]: ${compacted.pendingItems.join('; ')}`);
-  }
-  
-  return parts.join('\n');
-}
-
-export function buildCompactPrompt(
-  history: ConversationMessage[],
-  canvasContent: string
-): string {
-  return `<system>
-${COMPACT_PROMPT}
-</system>
-
-<conversation_history>
-${formatHistory(history)}
-</conversation_history>
-
-<current_canvas_summary>
-${truncateToFit(canvasContent, 500)}
-</current_canvas_summary>
-
-Compress the above conversation into the specified JSON format.`;
 }
 
 export function buildPhase1Prompt(
@@ -142,28 +83,6 @@ function formatHistory(history: ConversationMessage[]): string {
     .map(msg => `[${msg.role.toUpperCase()}]: ${msg.content}`)
     .join('\n\n');
 }
-
-const COMPACT_PROMPT = `
-[ROLE]
-You are a **Conversation Compactor** for "AI Canvas".
-
-[GOAL]
-Summarize the conversation history into a concise context that preserves essential information for future interactions.
-
-[RESPONSE FORMAT]
-You MUST respond with a valid JSON object only. No text before or after.
-{
-  "summary": "Concise summary of the conversation (required)",
-  "keyDecisions": ["List of important decisions made"],
-  "canvasState": "Brief description of the current canvas state",
-  "pendingItems": ["Any unresolved topics or next steps"]
-}
-
-[GUIDELINES]
-- **Preserve Critical Context** - User preferences, decisions, and document goals
-- **Be Concise** - Maximum 500 words total
-- **Maintain Continuity** - Enable seamless conversation resumption
-- **Match User's Language** - Summarize in the same language as the conversation`;
 
 const PHASE1_PROMPT = `
 [ROLE]
@@ -277,6 +196,3 @@ Your message should:
   "message": "I've strengthened the introduction by leading with your core value proposition and adding a compelling hook. The problem statement is now more specific, and I've connected it directly to your solution. The rest of the document structure remains intact.",
   "canvasContent": "# Product Vision\\n\\n## Introduction\\n\\nEvery day, teams waste 3+ hours..."
 }`;
-
-export { buildPhase1Prompt as buildPrompt };
-export { COMPACT_PROMPT };

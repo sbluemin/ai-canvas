@@ -1,18 +1,25 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-export interface ChatChunkData {
+export interface AuthStatus {
+  isAuthenticated: boolean;
+  expiresAt?: number;
+}
+
+export interface AuthResult {
+  success: boolean;
+  error?: string;
+}
+
+export interface ChatResponse {
+  success: boolean;
+  content?: string;
+  error?: string;
+}
+
+export interface ChatChunk {
   text?: string;
   error?: string;
   done?: boolean;
-}
-
-export interface ChatHistory {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-export interface ChatOptions {
-  system?: string;
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -23,11 +30,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
   readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
   
-  chatStream: (prompt: string, history: ChatHistory[] = [], options?: ChatOptions) =>
-    ipcRenderer.invoke('chat:stream', prompt, history, options),
-  onChatChunk: (callback: (data: ChatChunkData) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: ChatChunkData) => callback(data);
-    ipcRenderer.on('chat:chunk', handler);
-    return () => ipcRenderer.removeListener('chat:chunk', handler);
+  gemini: {
+    authStart: (): Promise<AuthResult> => ipcRenderer.invoke('gemini:auth:start'),
+    authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('gemini:auth:status'),
+    authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('gemini:auth:logout'),
+    chat: (prompt: string): Promise<ChatResponse> => ipcRenderer.invoke('gemini:chat', prompt),
+    onChatChunk: (callback: (chunk: ChatChunk) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, chunk: ChatChunk) => callback(chunk);
+      ipcRenderer.on('gemini:chat:chunk', listener);
+      return () => ipcRenderer.removeListener('gemini:chat:chunk', listener);
+    },
   },
 });

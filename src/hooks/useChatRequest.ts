@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { api } from '../shared/api';
-import { extractJSON } from '../shared/ai/parser';
-import { validatePhase1Response, validatePhase2Response } from '../shared/prompts/types';
+import { api } from '../api';
+import { extractJSON } from '../utils/parser';
+import { validatePhase1Response, validatePhase2Response } from '../prompts/types';
 
 export interface SelectionContext {
   text: string;
@@ -31,6 +31,7 @@ export function useChatRequest() {
 
   const runPhase2 = useCallback(
     async (userRequest: string, updatePlan: string) => {
+      console.log('[runPhase2] Starting Phase 2');
       setAiPhase('updating');
       saveCanvasSnapshot();
 
@@ -45,16 +46,20 @@ export function useChatRequest() {
         },
         {
           onText: (text) => {
-            fullResponse += text;
+            fullResponse = text;
           },
           onError: (error) => {
+            console.error('[runPhase2] Error:', error);
             setAiRunResult({ error: { phase: 'updating', message: error } });
             setAiPhase('failed');
             setIsLoading(false);
           },
           onDone: () => {
+            console.log('[runPhase2] onDone called, fullResponse length:', fullResponse.length);
             const jsonText = extractJSON(fullResponse);
+            console.log('[runPhase2] Extracted JSON:', jsonText?.slice(0, 200));
             if (!jsonText) {
+              console.error('[runPhase2] No JSON found in response');
               setAiPhase('failed');
               clearAiRun();
               setIsLoading(false);
@@ -66,13 +71,16 @@ export function useChatRequest() {
               const phase2Result = validatePhase2Response(parsed);
 
               if (phase2Result) {
+                console.log('[runPhase2] Phase 2 succeeded');
                 updateLastMessage('\n\n' + phase2Result.message);
                 setCanvasContent(phase2Result.canvasContent);
                 setAiPhase('succeeded');
               } else {
+                console.error('[runPhase2] Invalid Phase 2 response');
                 setAiPhase('failed');
               }
-            } catch {
+            } catch (e) {
+              console.error('[runPhase2] JSON parse error:', e);
               setAiPhase('failed');
             }
 
@@ -81,6 +89,7 @@ export function useChatRequest() {
           },
         }
       );
+      console.log('[runPhase2] api.chatPhase2 completed');
     },
     [setAiPhase, saveCanvasSnapshot, setAiRunResult, setIsLoading, clearAiRun, updateLastMessage, setCanvasContent]
   );
@@ -104,7 +113,7 @@ export function useChatRequest() {
         prompt,
         {
           onText: (text) => {
-            fullResponse += text;
+            fullResponse = text;
           },
           onError: (error) => {
             addMessage('assistant', `오류가 발생했습니다: ${error}`);
@@ -114,8 +123,11 @@ export function useChatRequest() {
             clearAiRun();
           },
           onDone: async () => {
+            console.log('[sendMessage] onDone called, fullResponse length:', fullResponse.length);
             const jsonText = extractJSON(fullResponse);
+            console.log('[sendMessage] Extracted JSON:', jsonText?.slice(0, 200));
             if (!jsonText) {
+              console.log('[sendMessage] No JSON found, showing raw response');
               addMessage('assistant', fullResponse);
               setIsLoading(false);
               clearAiRun();
@@ -125,6 +137,7 @@ export function useChatRequest() {
             try {
               const parsed = JSON.parse(jsonText);
               const phase1Result = validatePhase1Response(parsed);
+              console.log('[sendMessage] Phase 1 result:', phase1Result);
 
               if (phase1Result) {
                 setAiRunResult({
@@ -134,8 +147,10 @@ export function useChatRequest() {
                 });
 
                 if (phase1Result.needsCanvasUpdate && phase1Result.updatePlan) {
+                  console.log('[sendMessage] Starting Phase 2...');
                   addMessage('assistant', phase1Result.message);
                   await runPhase2(prompt, phase1Result.updatePlan);
+                  console.log('[sendMessage] Phase 2 completed');
                 } else {
                   addMessage('assistant', phase1Result.message);
                   setAiPhase('succeeded');
@@ -148,7 +163,8 @@ export function useChatRequest() {
                 clearAiRun();
                 setIsLoading(false);
               }
-            } catch {
+            } catch (e) {
+              console.error('[sendMessage] Error processing response:', e);
               try {
                 const parsed = JSON.parse(jsonText);
                 const messageOnly = parsed?.message || fullResponse;

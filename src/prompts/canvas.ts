@@ -1,9 +1,3 @@
-export interface FormatOptions {
-  maxTokens?: number;
-  maxCharacters?: number;
-  preserveHeaders?: boolean;
-}
-
 export function estimateTokens(text: string): number {
   if (!text || text.length === 0) {
     return 0;
@@ -251,26 +245,4 @@ function simpleTruncate(
 
   result = result.replace(/\n$/, '');
   return result + '\n\n[... content truncated ...]';
-}
-
-export function formatCanvasContext(content: string, options?: FormatOptions): string {
-  const opts: Required<FormatOptions> = {
-    maxTokens: options?.maxTokens ?? 1000,
-    maxCharacters: options?.maxCharacters ?? 4000,
-    preserveHeaders: options?.preserveHeaders ?? true,
-  };
-
-  if (!content || content.trim().length === 0) {
-    return '<canvas-context>\n[빈 캔버스]\n</canvas-context>';
-  }
-
-  const effectiveMaxTokens = Math.min(opts.maxTokens, Math.floor(opts.maxCharacters / 4));
-
-  const truncatedContent = opts.preserveHeaders
-    ? truncateToFit(content, effectiveMaxTokens)
-    : simpleTruncate(content, opts.maxCharacters, findCodeBlockBoundaries(content));
-
-  return `<canvas-context>
-${truncatedContent}
-</canvas-context>`;
 }
