@@ -5,9 +5,12 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  provider?: CanvasProvider;
 }
 
 export type AiPhase = 'idle' | 'evaluating' | 'updating' | 'succeeded' | 'failed';
+
+export type CanvasProvider = 'gemini' | 'codex';
 
 export interface AiRunState {
   runId: string;
@@ -19,35 +22,57 @@ export interface AiRunState {
   error?: { phase: 'evaluating' | 'updating'; message: string };
 }
 
+export type ProviderAiRunState = Record<CanvasProvider, AiRunState | null>;
+
 interface AppState {
   messages: Message[];
-  canvasContent: string;
+  activeCanvasProvider: CanvasProvider;
+  geminiCanvasContent: string;
+  codexCanvasContent: string;
   isLoading: boolean;
   currentFilePath: string | null;
   isDrawerOpen: boolean;
+  isChatPopupOpen: boolean;
+  isClosingChatPopup: boolean;
+  shouldTriggerChatOpen: boolean;
   aiRun: AiRunState | null;
+  providerAiRun: ProviderAiRunState;
   
   isAuthenticated: boolean;
   authLoading: boolean;
   isCodexAuthenticated: boolean;
   codexAuthLoading: boolean;
 
-  addMessage: (role: 'user' | 'assistant', content: string) => void;
-  updateLastMessage: (content: string) => void;
-  setLastMessageContent: (content: string) => void;
+  addMessage: (role: 'user' | 'assistant', content: string, provider?: CanvasProvider) => void;
+  updateLastMessage: (content: string, provider?: CanvasProvider) => void;
+  setLastMessageContent: (content: string, provider?: CanvasProvider) => void;
   setCanvasContent: (content: string) => void;
+  setProviderCanvasContent: (provider: CanvasProvider, content: string) => void;
+  setAllCanvasContent: (content: string) => void;
+  setActiveCanvasProvider: (provider: CanvasProvider) => void;
   setIsLoading: (loading: boolean) => void;
   setCurrentFilePath: (path: string | null) => void;
   applyToCanvas: (content: string) => void;
   clearMessages: () => void;
   toggleDrawer: () => void;
   closeDrawer: () => void;
+  toggleChatPopup: () => void;
+  openChatPopup: () => void;
+  closeChatPopup: () => void;
+  requestCloseChatPopup: () => void;
+  finishCloseChatPopup: () => void;
+  triggerChatOpen: () => void;
+  clearChatOpenTrigger: () => void;
 
   startAiRun: () => string;
   setAiPhase: (phase: AiPhase) => void;
   setAiRunResult: (result: Partial<AiRunState>) => void;
   clearAiRun: () => void;
   saveCanvasSnapshot: () => void;
+  
+  startProviderAiRun: (provider: CanvasProvider) => string;
+  setProviderAiPhase: (provider: CanvasProvider, phase: AiPhase) => void;
+  clearProviderAiRun: (provider: CanvasProvider) => void;
   
   setAuthStatus: (isAuthenticated: boolean) => void;
   setAuthLoading: (loading: boolean) => void;
@@ -59,13 +84,7 @@ function generateRunId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export const useStore = create<AppState>((set) => ({
-  messages: [],
-  isAuthenticated: false,
-  authLoading: true,
-  isCodexAuthenticated: false,
-  codexAuthLoading: true,
-  canvasContent: `# AI Canvas - 재사용 가능한 코어 아키텍처
+const DEFAULT_CANVAS_CONTENT = `# AI Canvas - 재사용 가능한 코어 아키텍처
 
 ## 기술 스택 개요
 
@@ -107,13 +126,27 @@ AICanvas/
 - **실시간 AI 채팅**: SSE 기반 스트리밍 응답
 - **마크다운 WYSIWYG**: Milkdown 기반 풍부한 편집 경험
 - **다크 테마**: Gemini Canvas 스타일의 모던 UI
-`,
+`;
+
+export const useStore = create<AppState>((set) => ({
+  messages: [],
+  isAuthenticated: false,
+  authLoading: true,
+  isCodexAuthenticated: false,
+  codexAuthLoading: true,
+  activeCanvasProvider: 'gemini',
+  geminiCanvasContent: DEFAULT_CANVAS_CONTENT,
+  codexCanvasContent: DEFAULT_CANVAS_CONTENT,
   isLoading: false,
   currentFilePath: null,
   isDrawerOpen: false,
+  isChatPopupOpen: false,
+  isClosingChatPopup: false,
+  shouldTriggerChatOpen: false,
   aiRun: null,
+  providerAiRun: { gemini: null, codex: null },
 
-  addMessage: (role, content) =>
+  addMessage: (role, content, provider) =>
     set((state) => ({
       messages: [
         ...state.messages,
@@ -122,49 +155,92 @@ AICanvas/
           role,
           content,
           timestamp: new Date(),
+          provider,
         },
       ],
     })),
 
-  updateLastMessage: (content) =>
+  updateLastMessage: (content, provider) =>
     set((state) => {
       const messages = [...state.messages];
-      if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
-        messages[messages.length - 1] = {
-          ...messages[messages.length - 1],
-          content: messages[messages.length - 1].content + content,
+      const lastMsgIndex = provider
+        ? messages.map((m, i) => ({ m, i })).filter(({ m }) => m.role === 'assistant' && m.provider === provider).pop()?.i
+        : messages.length - 1;
+      if (lastMsgIndex !== undefined && messages[lastMsgIndex]?.role === 'assistant') {
+        messages[lastMsgIndex] = {
+          ...messages[lastMsgIndex],
+          content: messages[lastMsgIndex].content + content,
         };
       }
       return { messages };
     }),
 
-  setLastMessageContent: (content) =>
+  setLastMessageContent: (content, provider) =>
     set((state) => {
       const messages = [...state.messages];
-      if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
-        messages[messages.length - 1] = {
-          ...messages[messages.length - 1],
+      const lastMsgIndex = provider
+        ? messages.map((m, i) => ({ m, i })).filter(({ m }) => m.role === 'assistant' && m.provider === provider).pop()?.i
+        : messages.length - 1;
+      if (lastMsgIndex !== undefined && messages[lastMsgIndex]?.role === 'assistant') {
+        messages[lastMsgIndex] = {
+          ...messages[lastMsgIndex],
           content,
         };
       }
       return { messages };
     }),
 
-  setCanvasContent: (content) => set({ canvasContent: content }),
+  setCanvasContent: (content) =>
+    set((state) => {
+      if (state.activeCanvasProvider === 'gemini') {
+        return { geminiCanvasContent: content };
+      } else {
+        return { codexCanvasContent: content };
+      }
+    }),
+
+  setProviderCanvasContent: (provider, content) =>
+    set(() => {
+      if (provider === 'gemini') {
+        return { geminiCanvasContent: content };
+      } else {
+        return { codexCanvasContent: content };
+      }
+    }),
+
+  setAllCanvasContent: (content) =>
+    set({ geminiCanvasContent: content, codexCanvasContent: content }),
+
+  setActiveCanvasProvider: (provider) => set({ activeCanvasProvider: provider }),
 
   setIsLoading: (loading) => set({ isLoading: loading }),
 
   setCurrentFilePath: (path) => set({ currentFilePath: path }),
 
   applyToCanvas: (content) =>
-    set((state) => ({
-      canvasContent: state.canvasContent + '\n\n' + content,
-    })),
+    set((state) => {
+      const currentContent = state.activeCanvasProvider === 'gemini' 
+        ? state.geminiCanvasContent 
+        : state.codexCanvasContent;
+      const newContent = currentContent + '\n\n' + content;
+      if (state.activeCanvasProvider === 'gemini') {
+        return { geminiCanvasContent: newContent };
+      } else {
+        return { codexCanvasContent: newContent };
+      }
+    }),
 
   clearMessages: () => set({ messages: [] }),
 
   toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
   closeDrawer: () => set({ isDrawerOpen: false }),
+  toggleChatPopup: () => set((state) => ({ isChatPopupOpen: !state.isChatPopupOpen })),
+  openChatPopup: () => set({ isChatPopupOpen: true, isClosingChatPopup: false }),
+  closeChatPopup: () => set({ isChatPopupOpen: false, isClosingChatPopup: false }),
+  requestCloseChatPopup: () => set({ isClosingChatPopup: true }),
+  finishCloseChatPopup: () => set({ isChatPopupOpen: false, isClosingChatPopup: false }),
+  triggerChatOpen: () => set({ shouldTriggerChatOpen: true }),
+  clearChatOpenTrigger: () => set({ shouldTriggerChatOpen: false }),
 
   startAiRun: () => {
     const runId = generateRunId();
@@ -190,14 +266,53 @@ AICanvas/
   clearAiRun: () => set({ aiRun: null }),
 
   saveCanvasSnapshot: () =>
-    set((state) => ({
-      aiRun: state.aiRun
-        ? { ...state.aiRun, canvasSnapshot: state.canvasContent }
-        : null,
-    })),
+    set((state) => {
+      const currentContent = state.activeCanvasProvider === 'gemini' 
+        ? state.geminiCanvasContent 
+        : state.codexCanvasContent;
+      return {
+        aiRun: state.aiRun
+          ? { ...state.aiRun, canvasSnapshot: currentContent }
+          : null,
+      };
+    }),
 
   setAuthStatus: (isAuthenticated) => set({ isAuthenticated }),
   setAuthLoading: (authLoading) => set({ authLoading }),
   setCodexAuthStatus: (isCodexAuthenticated) => set({ isCodexAuthenticated }),
   setCodexAuthLoading: (codexAuthLoading) => set({ codexAuthLoading }),
+
+  startProviderAiRun: (provider) => {
+    const runId = generateRunId();
+    set((state) => ({
+      providerAiRun: {
+        ...state.providerAiRun,
+        [provider]: { runId, phase: 'evaluating' as AiPhase },
+      },
+    }));
+    return runId;
+  },
+
+  setProviderAiPhase: (provider, phase) =>
+    set((state) => ({
+      providerAiRun: {
+        ...state.providerAiRun,
+        [provider]: state.providerAiRun[provider]
+          ? { ...state.providerAiRun[provider], phase }
+          : null,
+      },
+    })),
+
+  clearProviderAiRun: (provider) =>
+    set((state) => ({
+      providerAiRun: {
+        ...state.providerAiRun,
+        [provider]: null,
+      },
+    })),
 }));
+
+export const selectCanvasContent = (state: AppState) =>
+  state.activeCanvasProvider === 'gemini'
+    ? state.geminiCanvasContent
+    : state.codexCanvasContent;

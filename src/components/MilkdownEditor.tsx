@@ -6,13 +6,20 @@ import { history } from '@milkdown/plugin-history';
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react';
 import { replaceAll, getMarkdown } from '@milkdown/utils';
 import { EditorView } from '@milkdown/prose/view';
-import { useStore } from '../store/useStore';
+import { useStore, CanvasProvider } from '../store/useStore';
 import { useEditorContext } from '../context/EditorContext';
 import { SelectionAiPopup } from './SelectionAiPopup';
 import './MilkdownEditor.css';
 
-function MilkdownEditorInner() {
-  const { canvasContent, setCanvasContent } = useStore();
+interface MilkdownEditorProps {
+  provider: CanvasProvider;
+}
+
+function MilkdownEditorInner({ provider }: MilkdownEditorProps) {
+  const { setProviderCanvasContent, geminiCanvasContent, codexCanvasContent } = useStore();
+  
+  const canvasContent = provider === 'gemini' ? geminiCanvasContent : codexCanvasContent;
+  
   const { editorRef } = useEditorContext();
   const [editorView, setEditorView] = useState<EditorView | null>(null);
 
@@ -61,27 +68,27 @@ function MilkdownEditorInner() {
       if (editor) {
         const markdown = editor.action(getMarkdown());
         if (markdown !== canvasContent) {
-          setCanvasContent(markdown);
+          setProviderCanvasContent(provider, markdown);
         }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [get, setCanvasContent, canvasContent]);
+  }, [get, setProviderCanvasContent, canvasContent, provider]);
 
   return (
     <>
       <Milkdown />
-      <SelectionAiPopup editorView={editorView} />
+      <SelectionAiPopup editorView={editorView} provider={provider} />
     </>
   );
 }
 
-export function MilkdownEditor() {
+export function MilkdownEditor({ provider }: MilkdownEditorProps) {
   return (
-    <MilkdownProvider>
+    <MilkdownProvider key={provider}>
       <div className="milkdown-wrapper">
-        <MilkdownEditorInner />
+        <MilkdownEditorInner provider={provider} />
       </div>
     </MilkdownProvider>
   );

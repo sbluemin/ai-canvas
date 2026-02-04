@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TooltipProvider } from '@milkdown/plugin-tooltip';
 import { EditorView } from '@milkdown/prose/view';
 import { TextSelection } from '@milkdown/prose/state';
-import { useStore } from '../store/useStore';
+import { useStore, selectCanvasContent, CanvasProvider } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import './SelectionAiPopup.css';
 
@@ -52,15 +52,17 @@ function extractSelectionContext(canvasContent: string, selectedText: string) {
 
 interface SelectionAiPopupProps {
   editorView: EditorView | null;
+  provider: CanvasProvider;
 }
 
-export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
+export const SelectionAiPopup = ({ editorView, provider }: SelectionAiPopupProps) => {
   const tooltipProvider = useRef<TooltipProvider | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedText, setSelectedText] = useState('');
   const [inputValue, setInputValue] = useState('');
   
-  const { canvasContent, isLoading } = useStore();
+  const { isLoading, triggerChatOpen } = useStore();
+  const canvasContent = useStore(selectCanvasContent);
   const { sendMessage } = useChatRequest();
 
   useEffect(() => {
@@ -69,7 +71,7 @@ export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
       return;
     }
 
-    const provider = new TooltipProvider({
+    const tooltipProviderInstance = new TooltipProvider({
       content: container,
       shouldShow: (view) => {
         const { state } = view;
@@ -93,8 +95,8 @@ export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
       },
     });
     
-    tooltipProvider.current = provider;
-    provider.update(editorView);
+    tooltipProvider.current = tooltipProviderInstance;
+    tooltipProviderInstance.update(editorView);
 
     const handleMouseUp = () => {
       requestAnimationFrame(() => {
@@ -114,14 +116,28 @@ export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
       }
     };
 
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (container.contains(target)) {
+        return;
+      }
+      if (editorView.dom.contains(target)) {
+        return;
+      }
+      setSelectedText('');
+      setInputValue('');
+    };
+
     const editorDom = editorView.dom;
     editorDom.addEventListener('mouseup', handleMouseUp);
     editorDom.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
       editorDom.removeEventListener('mouseup', handleMouseUp);
       editorDom.removeEventListener('keyup', handleKeyUp);
-      provider.destroy();
+      document.removeEventListener('mousedown', handleClickOutside);
+      tooltipProviderInstance.destroy();
     };
   }, [editorView]);
 
@@ -143,12 +159,15 @@ export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
       editorView.dom.blur();
     }
 
+    triggerChatOpen();
+
     await sendMessage(question, {
       selection: {
         text: currentSelection,
         before: context.before,
         after: context.after,
       },
+      targetProvider: provider,
     });
   };
 

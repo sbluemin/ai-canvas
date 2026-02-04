@@ -2,7 +2,8 @@ import type { ValidTokenResult, ChatRequest, ChatResult } from './types';
 import type { IpcMainInvokeEvent } from 'electron';
 
 const CODEX_BASE_URL = 'https://chatgpt.com/backend-api';
-const DEFAULT_MODEL = 'o4-mini';
+const DEFAULT_MODEL = 'gpt-5.2';
+const DEFAULT_REASONING = 'low';
 
 const CODEX_HEADERS = {
   'User-Agent': 'ai-canvas/1.0.0',
@@ -19,13 +20,11 @@ async function* streamGenerateContent(
 
   const requestBody: Record<string, unknown> = {
     model: DEFAULT_MODEL,
+    instructions: systemInstruction || 'You are a helpful AI assistant.',
+    reasoning: { effort: DEFAULT_REASONING },
     stream: true,
+    store: false,
     input: [
-      ...(systemInstruction ? [{
-        type: 'message',
-        role: 'developer',
-        content: systemInstruction,
-      }] : []),
       {
         type: 'message',
         role: 'user',

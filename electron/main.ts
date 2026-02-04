@@ -129,21 +129,9 @@ ipcMain.handle('dialog:showSaveDialog', async () => {
   return result.canceled ? null : result.filePath;
 });
 
-ipcMain.handle('dialog:showOpenDialog', async () => {
-  const result = await dialog.showOpenDialog({
-    filters: [{ name: 'Markdown', extensions: ['md'] }],
-    properties: ['openFile'],
-  });
-  return result.canceled ? null : result.filePaths[0];
-});
-
 ipcMain.handle('fs:writeFile', async (_event, filePath: string, content: string) => {
   await fs.writeFile(filePath, content, 'utf-8');
   return true;
-});
-
-ipcMain.handle('fs:readFile', async (_event, filePath: string) => {
-  return await fs.readFile(filePath, 'utf-8');
 });
 
 ipcMain.handle('gemini:auth:start', async () => {

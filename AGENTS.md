@@ -27,16 +27,17 @@
 ## 아키텍처
 
 ### 레이아웃
-- **App.tsx**: 루트 - 반응형 레이아웃 (데스크톱: Allotment 분할, 모바일: Drawer)
+- **App.tsx**: 루트 - 반응형 레이아웃 (데스크톱: Allotment 좌우 분할, 모바일: 단일 캔버스)
 - **CommandBar**: 상단 커맨드 바
   - **ProjectSelector**: 프로젝트 선택 드롭다운
   - **CodexAuthButton**: Codex (OpenAI) OAuth 로그인 버튼
   - **GeminiAuthButton**: Gemini OAuth 로그인 버튼
-- **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍)
-- **CanvasPanel**: 우측 에디터 패널
-  - **MilkdownEditor**: 마크다운 WYSIWYG
+- **CanvasPanel** (x2): Gemini/Codex 캔버스를 좌우로 동시 표시
+  - **MilkdownEditor**: 마크다운 WYSIWYG (provider별 독립)
   - **EditorToolbar**: 서식 도구
   - **SelectionPopup**: 텍스트 선택 시 AI 질문 팝업
+- **FloatingChatButton**: 우측 하단 고정 채팅 버튼
+- **ChatPopup**: 우측에서 슬라이드되는 채팅 패널 (SSE 스트리밍)
 
 ### AI 인증
 - **Gemini** (`electron/gemini/auth.ts`): PKCE OAuth 2.0, Cloud Code Assist API
@@ -56,10 +57,13 @@
 // src/store/useStore.ts
 interface AppState {
   messages: Message[];           // 채팅 히스토리
-  canvasContent: string;         // 에디터 콘텐츠
+  geminiCanvasContent: string;   // Gemini 에디터 콘텐츠
+  codexCanvasContent: string;    // Codex 에디터 콘텐츠
+  activeCanvasProvider: CanvasProvider; // 활성 provider
   isLoading: boolean;            // AI 응답 대기
   currentFilePath: string | null;
   isDrawerOpen: boolean;         // 모바일 드로어
+  isChatPopupOpen: boolean;      // 채팅 팝업 열림 상태
   isAuthenticated: boolean;      // Gemini 인증 상태
   authLoading: boolean;          // Gemini 인증 로딩
   isCodexAuthenticated: boolean; // Codex 인증 상태

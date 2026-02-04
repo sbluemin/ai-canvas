@@ -95,7 +95,7 @@ Understand user intent and determine whether the canvas needs modification, acti
 [RESPONSE FORMAT]
 You MUST respond with a valid JSON object only. No text before or after.
 {
-  "message": "Your response to the user (required)",
+  "message": "(MARKDOWN) Your response to the user - be as concise as possible (required)",
   "needsCanvasUpdate": true or false,
   "updatePlan": "Detailed plan of what changes to make (required when needsCanvasUpdate is true)"
 }
@@ -167,7 +167,7 @@ You will receive:
 [RESPONSE FORMAT]
 You MUST respond with a valid JSON object only. No text before or after.
 {
-  "message": "Explain what you changed and why (required)",
+  "message": "(MARKDOWN) Explain what you changed and why - be as concise as possible (required)",
   "canvasContent": "The complete updated markdown document (required)"
 }
 

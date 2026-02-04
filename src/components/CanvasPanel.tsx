@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useStore } from '../store/useStore';
+import { Gemini, OpenAI } from '@lobehub/icons';
+import { useStore, CanvasProvider } from '../store/useStore';
 import { MilkdownEditor } from './MilkdownEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorProvider } from '../context/EditorContext';
@@ -15,15 +16,23 @@ function EditIcon() {
   );
 }
 
-export function CanvasPanel() {
-  const { canvasContent, currentFilePath, setCurrentFilePath, setCanvasContent, aiRun } = useStore();
+interface CanvasPanelProps {
+  provider: CanvasProvider;
+}
+
+export function CanvasPanel({ provider }: CanvasPanelProps) {
+  const { currentFilePath, setCurrentFilePath, providerAiRun, geminiCanvasContent, codexCanvasContent } = useStore();
+  
+  const canvasContent = provider === 'gemini' ? geminiCanvasContent : codexCanvasContent;
+  const providerRun = providerAiRun[provider];
+  
   const [documentTitle, setDocumentTitle] = useState('AI Canvas - 재사용 가능한 코어 아키텍처');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  const isUpdating = aiRun?.phase === 'updating';
+  const isUpdating = providerRun?.phase === 'updating';
 
   useEffect(() => {
     if (isUpdating) {
@@ -62,24 +71,6 @@ export function CanvasPanel() {
     }
   };
 
-  const handleLoad = async () => {
-    try {
-      const result = await api.showOpenDialog();
-      if (!result) return;
-      const content = await api.readFile(result);
-      setCanvasContent(content);
-      setCurrentFilePath(result);
-    } catch (error) {
-      alert(`로드 실패: ${error}`);
-    }
-  };
-
-  const handleNew = () => {
-    setCanvasContent('# 새 프로젝트\n\n프로젝트 아이디어를 여기에 작성하세요...');
-    setCurrentFilePath(null);
-    setDocumentTitle('새 문서');
-  };
-
   const handleTitleSubmit = () => {
     setIsEditingTitle(false);
   };
@@ -94,10 +85,14 @@ export function CanvasPanel() {
 
   return (
     <EditorProvider>
-      <div className="canvas-panel">
+      <div className={`canvas-panel provider-${provider}`}>
         <div className="canvas-wrapper">
           <div className="canvas-header">
             <div className="header-left">
+              <div className="provider-badge">
+                {provider === 'gemini' ? <Gemini.Color size={20} /> : <OpenAI size={20} />}
+                <span className="provider-name">{provider === 'gemini' ? 'Gemini' : 'Codex'}</span>
+              </div>
               <div className="document-title-area">
                 {isEditingTitle ? (
                   <input
@@ -123,12 +118,6 @@ export function CanvasPanel() {
               <EditorToolbar />
               <div className="header-divider" />
               <div className="canvas-actions">
-                <button onClick={handleNew} title="새 문서">
-                  새로 만들기
-                </button>
-                <button onClick={handleLoad} title="파일 열기">
-                  열기
-                </button>
                 <button onClick={handleSave} className="save-btn" title="저장">
                   저장
                 </button>
@@ -136,7 +125,7 @@ export function CanvasPanel() {
             </div>
           </div>
           <div className="canvas-content">
-            <MilkdownEditor />
+            <MilkdownEditor provider={provider} />
             {showOverlay && (
               <div className={`canvas-updating-overlay ${isClosing ? 'closing' : ''}`}>
                 {!isClosing && <div className="pulse-indicator" />}
