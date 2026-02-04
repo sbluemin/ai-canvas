@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown (마크다운 WYSIWYG) |
 | Desktop | Electron 34 (핵심 플랫폼) |
-| AI | Cloud Code Assist API (네이티브 OAuth 인증) |
+| AI | Cloud Code Assist API (Gemini), OpenAI Codex API (다중 프로바이더 OAuth 인증) |
 | State | Zustand |
 | Styling | CSS Modules |
 
@@ -30,6 +30,7 @@
 - **App.tsx**: 루트 - 반응형 레이아웃 (데스크톱: Allotment 분할, 모바일: Drawer)
 - **CommandBar**: 상단 커맨드 바
   - **ProjectSelector**: 프로젝트 선택 드롭다운
+  - **CodexAuthButton**: Codex (OpenAI) OAuth 로그인 버튼
   - **GeminiAuthButton**: Gemini OAuth 로그인 버튼
 - **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍)
 - **CanvasPanel**: 우측 에디터 패널
@@ -37,11 +38,10 @@
   - **EditorToolbar**: 서식 도구
   - **SelectionPopup**: 텍스트 선택 시 AI 질문 팝업
 
-### AI 인증 (`electron/auth.ts`)
-- PKCE 기반 OAuth 2.0 흐름
-- Cloud Code Assist API (`cloudcode-pa.googleapis.com`)
-- safeStorage를 통한 안전한 토큰 저장
-- 자동 토큰 갱신
+### AI 인증
+- **Gemini** (`electron/gemini/auth.ts`): PKCE OAuth 2.0, Cloud Code Assist API
+- **Codex** (`electron/codex/auth.ts`): PKCE OAuth 2.0, OpenAI auth (`auth.openai.com`)
+- 공통: safeStorage 암호화 토큰 저장, 자동 갱신
 
 ### API 모듈 (`src/api/`)
 - **index.ts**: Electron/Web 분기 로직, IPC 래퍼
@@ -61,7 +61,9 @@ interface AppState {
   currentFilePath: string | null;
   isDrawerOpen: boolean;         // 모바일 드로어
   isAuthenticated: boolean;      // Gemini 인증 상태
-  authLoading: boolean;          // 인증 로딩 상태
+  authLoading: boolean;          // Gemini 인증 로딩
+  isCodexAuthenticated: boolean; // Codex 인증 상태
+  codexAuthLoading: boolean;     // Codex 인증 로딩
 }
 ```
 
@@ -77,7 +79,8 @@ ai-canvas/
 │   │   │   ├── index.tsx
 │   │   │   ├── CommandBar.css
 │   │   │   ├── ProjectSelector/
-│   │   │   └── GeminiAuthButton/  # OAuth 로그인 버튼
+│   │   │   ├── CodexAuthButton/    # Codex OAuth 로그인 버튼
+│   │   │   └── GeminiAuthButton/  # Gemini OAuth 로그인 버튼
 │   │   ├── CanvasPanel.tsx
 │   │   ├── ChatPanel.tsx
 │   │   ├── MilkdownEditor.tsx
@@ -101,9 +104,18 @@ ai-canvas/
 │   ├── App.tsx
 │   └── main.tsx
 ├── electron/
-│   ├── main.ts                  # IPC 핸들러, Cloud Code Assist 스트리밍
-│   ├── auth.ts                  # OAuth 매니저 (PKCE, 토큰 관리)
-│   └── preload.ts               # chatStream, auth API
+│   ├── main.ts                  # IPC 핸들러 (Gemini + Codex)
+│   ├── preload.ts               # Electron API (gemini, codex 프로바이더)
+│   ├── gemini/                  # Gemini 프로바이더
+│   │   ├── auth.ts              # Google OAuth (PKCE)
+│   │   ├── chat.ts              # Cloud Code Assist 스트리밍
+│   │   ├── types.ts
+│   │   └── index.ts
+│   └── codex/                   # Codex 프로바이더
+│       ├── auth.ts              # OpenAI OAuth (PKCE)
+│       ├── chat.ts              # ChatGPT backend 스트리밍
+│       ├── types.ts
+│       └── index.ts
 ├── tests/                       # Playwright 테스트
 │   └── electron-chat.test.ts    # Electron 채팅 테스트
 └── vite.config.ts               # Vite + Electron 설정
@@ -131,22 +143,27 @@ npm run build        # Electron 앱 프로덕션 빌드
 | 기능 | Electron (프로덕션) |
 |------|---------------------|
 | 파일 접근 | 네이티브 파일시스템 |
-| AI 채팅 | IPC `chat:stream` → Cloud Code Assist API |
-| 인증 | 네이티브 OAuth (electron/auth.ts) |
+| AI 채팅 (Gemini) | IPC `gemini:chat` → Cloud Code Assist API |
+| AI 채팅 (Codex) | IPC `codex:chat` → ChatGPT Backend API |
+| 인증 | Gemini (`electron/gemini/auth.ts`), Codex (`electron/codex/auth.ts`) |
 
 ---
 
 ## AI 설정
 
 인증은 앱 내에서 직접 수행됩니다:
-1. 앱 실행
-2. 우측 상단 Gemini 버튼 클릭
-3. 브라우저에서 Google OAuth 인증
-4. 자동으로 앱에 인증 완료
 
-- 기본 모델: `gemini-2.0-flash`
-- API: Cloud Code Assist (`cloudcode-pa.googleapis.com`)
-- 토큰 저장: `~/Library/Application Support/AI Canvas/gemini-auth.enc` (암호화)
+### Gemini
+1. 우측 상단 Gemini 버튼 클릭
+2. 브라우저에서 Google OAuth 인증
+3. 기본 모델: `gemini-3-flash-preview`
+4. 토큰: `~/Library/Application Support/AI Canvas/gemini-auth.enc`
+
+### Codex (OpenAI)
+1. 우측 상단 Codex 버튼 클릭 (Gemini 왼쪽)
+2. 브라우저에서 OpenAI OAuth 인증
+3. 기본 모델: `o4-mini`
+4. 토큰: `~/Library/Application Support/AI Canvas/codex-auth.enc`
 
 ---
 

@@ -1,0 +1,152 @@
+.codex-auth-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.codex-auth-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.codex-auth-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.05);
+}
+
+.codex-auth-button:active {
+  transform: scale(0.95);
+}
+
+.codex-auth-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.codex-auth-button.loading {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.codex-auth-button.authenticated {
+  background: rgba(16, 163, 127, 0.12);
+}
+
+.codex-auth-button.authenticated:hover {
+  background: rgba(16, 163, 127, 0.22);
+}
+
+.codex-auth-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: #10A37F;
+  border-radius: 50%;
+  border: 2px solid #131314;
+  animation: codex-pulse 2s ease-in-out infinite;
+}
+
+@keyframes codex-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 163, 127, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 163, 127, 0);
+  }
+}
+
+.codex-auth-spinner {
+  animation: codex-spin 1s linear infinite;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes codex-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.codex-auth-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1f1f23;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 160px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: codex-fadeIn 0.15s ease-out;
+}
+
+@keyframes codex-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.codex-auth-tooltip-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 12px;
+  color: #10A37F;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.codex-status-dot {
+  width: 8px;
+  height: 8px;
+  background: #10A37F;
+  border-radius: 50%;
+  animation: codex-pulse 2s ease-in-out infinite;
+}
+
+.codex-logout-button {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.codex-logout-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.codex-logout-button:active {
+  transform: scale(0.98);
+}
+
+.codex-logout-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

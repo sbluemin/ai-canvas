@@ -20,7 +20,7 @@ interface ChatChunk {
   done?: boolean;
 }
 
-interface GeminiAPI {
+interface ProviderAPI {
   authStart: () => Promise<AuthResult>;
   authStatus: () => Promise<AuthStatus>;
   authLogout: () => Promise<AuthResult>;
@@ -34,7 +34,8 @@ interface ElectronAPI {
   showOpenDialog: () => Promise<string | null>;
   writeFile: (filePath: string, content: string) => Promise<boolean>;
   readFile: (filePath: string) => Promise<string>;
-  gemini: GeminiAPI;
+  gemini: ProviderAPI;
+  codex: ProviderAPI;
 }
 
 declare global {

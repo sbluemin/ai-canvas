@@ -29,6 +29,8 @@ interface AppState {
   
   isAuthenticated: boolean;
   authLoading: boolean;
+  isCodexAuthenticated: boolean;
+  codexAuthLoading: boolean;
 
   addMessage: (role: 'user' | 'assistant', content: string) => void;
   updateLastMessage: (content: string) => void;
@@ -49,6 +51,8 @@ interface AppState {
   
   setAuthStatus: (isAuthenticated: boolean) => void;
   setAuthLoading: (loading: boolean) => void;
+  setCodexAuthStatus: (isAuthenticated: boolean) => void;
+  setCodexAuthLoading: (loading: boolean) => void;
 }
 
 function generateRunId(): string {
@@ -59,6 +63,8 @@ export const useStore = create<AppState>((set) => ({
   messages: [],
   isAuthenticated: false,
   authLoading: true,
+  isCodexAuthenticated: false,
+  codexAuthLoading: true,
   canvasContent: `# AI Canvas - 재사용 가능한 코어 아키텍처
 
 ## 기술 스택 개요
@@ -192,4 +198,6 @@ AICanvas/
 
   setAuthStatus: (isAuthenticated) => set({ isAuthenticated }),
   setAuthLoading: (authLoading) => set({ authLoading }),
+  setCodexAuthStatus: (isCodexAuthenticated) => set({ isCodexAuthenticated }),
+  setCodexAuthLoading: (codexAuthLoading) => set({ codexAuthLoading }),
 }));

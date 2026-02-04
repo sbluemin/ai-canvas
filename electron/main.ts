@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import * as gemini from './gemini';
+import * as codex from './codex';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -170,6 +171,33 @@ ipcMain.handle('gemini:chat', async (event, prompt: string) => {
     return { success: false, error: 'Not authenticated' };
   }
   return gemini.chat(event, auth, { prompt });
+});
+
+ipcMain.handle('codex:auth:start', async () => {
+  try {
+    await codex.startAuth();
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
+ipcMain.handle('codex:auth:status', async () => {
+  return await codex.getAuthStatus();
+});
+
+ipcMain.handle('codex:auth:logout', async () => {
+  await codex.logout();
+  return { success: true };
+});
+
+ipcMain.handle('codex:chat', async (event, prompt: string) => {
+  const auth = await codex.getValidAccessToken();
+  if (!auth) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  return codex.chat(event, auth, { prompt });
 });
 
 app.whenReady().then(() => {

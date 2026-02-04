@@ -41,4 +41,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('gemini:chat:chunk', listener);
     },
   },
+
+  codex: {
+    authStart: (): Promise<AuthResult> => ipcRenderer.invoke('codex:auth:start'),
+    authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('codex:auth:status'),
+    authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('codex:auth:logout'),
+    chat: (prompt: string): Promise<ChatResponse> => ipcRenderer.invoke('codex:chat', prompt),
+    onChatChunk: (callback: (chunk: ChatChunk) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, chunk: ChatChunk) => callback(chunk);
+      ipcRenderer.on('codex:chat:chunk', listener);
+      return () => ipcRenderer.removeListener('codex:chat:chunk', listener);
+    },
+  },
 });
