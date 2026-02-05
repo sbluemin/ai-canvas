@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import * as gemini from './gemini';
 import * as codex from './codex';
+import * as anthropic from './anthropic';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -186,6 +187,25 @@ ipcMain.handle('codex:chat', async (event, prompt: string) => {
     return { success: false, error: 'Not authenticated' };
   }
   return codex.chat(event, auth, { prompt });
+});
+
+ipcMain.handle('anthropic:auth:start', async () => {
+  try {
+    await anthropic.startAuth();
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
+ipcMain.handle('anthropic:auth:status', async () => {
+  return await anthropic.getAuthStatus();
+});
+
+ipcMain.handle('anthropic:auth:logout', async () => {
+  await anthropic.logout();
+  return { success: true };
 });
 
 app.whenReady().then(() => {

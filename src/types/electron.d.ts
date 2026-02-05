@@ -28,6 +28,12 @@ interface ProviderAPI {
   onChatChunk: (callback: (chunk: ChatChunk) => void) => () => void;
 }
 
+interface AuthOnlyProviderAPI {
+  authStart: () => Promise<AuthResult>;
+  authStatus: () => Promise<AuthStatus>;
+  authLogout: () => Promise<AuthResult>;
+}
+
 interface ElectronAPI {
   platform: NodeJS.Platform;
   showSaveDialog: () => Promise<string | null>;
@@ -36,6 +42,7 @@ interface ElectronAPI {
   readFile: (filePath: string) => Promise<string>;
   gemini: ProviderAPI;
   codex: ProviderAPI;
+  anthropic: AuthOnlyProviderAPI;
 }
 
 declare global {

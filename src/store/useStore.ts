@@ -42,6 +42,8 @@ interface AppState {
   authLoading: boolean;
   isCodexAuthenticated: boolean;
   codexAuthLoading: boolean;
+  isAnthropicAuthenticated: boolean;
+  anthropicAuthLoading: boolean;
 
   addMessage: (role: 'user' | 'assistant', content: string, provider?: CanvasProvider) => void;
   updateLastMessage: (content: string, provider?: CanvasProvider) => void;
@@ -78,6 +80,8 @@ interface AppState {
   setAuthLoading: (loading: boolean) => void;
   setCodexAuthStatus: (isAuthenticated: boolean) => void;
   setCodexAuthLoading: (loading: boolean) => void;
+  setAnthropicAuthStatus: (isAuthenticated: boolean) => void;
+  setAnthropicAuthLoading: (loading: boolean) => void;
 }
 
 function generateRunId(): string {
@@ -134,6 +138,8 @@ export const useStore = create<AppState>((set) => ({
   authLoading: true,
   isCodexAuthenticated: false,
   codexAuthLoading: true,
+  isAnthropicAuthenticated: false,
+  anthropicAuthLoading: true,
   activeCanvasProvider: 'gemini',
   geminiCanvasContent: DEFAULT_CANVAS_CONTENT,
   codexCanvasContent: DEFAULT_CANVAS_CONTENT,
@@ -281,6 +287,8 @@ export const useStore = create<AppState>((set) => ({
   setAuthLoading: (authLoading) => set({ authLoading }),
   setCodexAuthStatus: (isCodexAuthenticated) => set({ isCodexAuthenticated }),
   setCodexAuthLoading: (codexAuthLoading) => set({ codexAuthLoading }),
+  setAnthropicAuthStatus: (isAnthropicAuthenticated) => set({ isAnthropicAuthenticated }),
+  setAnthropicAuthLoading: (anthropicAuthLoading) => set({ anthropicAuthLoading }),
 
   startProviderAiRun: (provider) => {
     const runId = generateRunId();

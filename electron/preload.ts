@@ -51,4 +51,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('codex:chat:chunk', listener);
     },
   },
+
+  anthropic: {
+    authStart: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:start'),
+    authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('anthropic:auth:status'),
+    authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:logout'),
+  },
 });

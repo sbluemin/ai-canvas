@@ -31,6 +31,7 @@
 - **CommandBar**: 상단 커맨드 바
   - **ProjectSelector**: 프로젝트 선택 드롭다운
   - **CodexAuthButton**: Codex (OpenAI) OAuth 로그인 버튼
+  - **AnthropicAuthButton**: Claude (Anthropic) OAuth 로그인 버튼
   - **GeminiAuthButton**: Gemini OAuth 로그인 버튼
 - **CanvasPanel** (x2): Gemini/Codex 캔버스를 좌우로 동시 표시
   - **MilkdownEditor**: 마크다운 WYSIWYG (provider별 독립)
@@ -42,6 +43,7 @@
 ### AI 인증
 - **Gemini** (`electron/gemini/auth.ts`): PKCE OAuth 2.0, Cloud Code Assist API
 - **Codex** (`electron/codex/auth.ts`): PKCE OAuth 2.0, OpenAI auth (`auth.openai.com`)
+- **Anthropic** (`electron/anthropic/auth.ts`): PKCE OAuth 2.0, Claude/Console OAuth
 - 공통: safeStorage 암호화 토큰 저장, 자동 갱신
 
 ### API 모듈 (`src/api/`)
@@ -68,6 +70,8 @@ interface AppState {
   authLoading: boolean;          // Gemini 인증 로딩
   isCodexAuthenticated: boolean; // Codex 인증 상태
   codexAuthLoading: boolean;     // Codex 인증 로딩
+  isAnthropicAuthenticated: boolean; // Anthropic 인증 상태
+  anthropicAuthLoading: boolean; // Anthropic 인증 로딩
 }
 ```
 
@@ -84,6 +88,7 @@ ai-canvas/
 │   │   │   ├── CommandBar.css
 │   │   │   ├── ProjectSelector/
 │   │   │   ├── CodexAuthButton/    # Codex OAuth 로그인 버튼
+│   │   │   ├── AnthropicAuthButton/ # Anthropic OAuth 로그인 버튼
 │   │   │   └── GeminiAuthButton/  # Gemini OAuth 로그인 버튼
 │   │   ├── CanvasPanel.tsx
 │   │   ├── ChatPanel.tsx
@@ -113,6 +118,10 @@ ai-canvas/
 │   ├── gemini/                  # Gemini 프로바이더
 │   │   ├── auth.ts              # Google OAuth (PKCE)
 │   │   ├── chat.ts              # Cloud Code Assist 스트리밍
+│   │   ├── types.ts
+│   │   └── index.ts
+│   ├── anthropic/               # Anthropic 프로바이더
+│   │   ├── auth.ts              # Anthropic OAuth (PKCE)
 │   │   ├── types.ts
 │   │   └── index.ts
 │   └── codex/                   # Codex 프로바이더
@@ -149,7 +158,7 @@ npm run build        # Electron 앱 프로덕션 빌드
 | 파일 접근 | 네이티브 파일시스템 |
 | AI 채팅 (Gemini) | IPC `gemini:chat` → Cloud Code Assist API |
 | AI 채팅 (Codex) | IPC `codex:chat` → ChatGPT Backend API |
-| 인증 | Gemini (`electron/gemini/auth.ts`), Codex (`electron/codex/auth.ts`) |
+| 인증 | Gemini (`electron/gemini/auth.ts`), Codex (`electron/codex/auth.ts`), Anthropic (`electron/anthropic/auth.ts`) |
 
 ---
 
@@ -168,6 +177,11 @@ npm run build        # Electron 앱 프로덕션 빌드
 2. 브라우저에서 OpenAI OAuth 인증
 3. 기본 모델: `o4-mini`
 4. 토큰: `~/Library/Application Support/AI Canvas/codex-auth.enc`
+
+### Anthropic (Claude)
+1. 우측 상단 Claude 버튼 클릭 (Codex와 Gemini 사이)
+2. 브라우저에서 Anthropic OAuth 인증
+3. 토큰: `~/Library/Application Support/AI Canvas/anthropic-auth.enc`
 
 ---
 

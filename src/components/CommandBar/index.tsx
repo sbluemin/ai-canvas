@@ -1,6 +1,7 @@
 import './CommandBar.css';
 import { ProjectSelector } from './ProjectSelector';
 import { CodexAuthButton } from './CodexAuthButton';
+import { AnthropicAuthButton } from './AnthropicAuthButton';
 import { GeminiAuthButton } from './GeminiAuthButton';
 
 function AICanvasMark() {
@@ -46,6 +47,7 @@ export function CommandBar() {
         <ProjectSelector />
       </div>
       <div className="command-bar-right">
+        <AnthropicAuthButton />
         <CodexAuthButton />
         <GeminiAuthButton />
       </div>
