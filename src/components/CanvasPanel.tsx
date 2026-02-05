@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Gemini, OpenAI } from '@lobehub/icons';
-import { useStore, CanvasProvider } from '../store/useStore';
+import { Gemini } from '@lobehub/icons';
+import { useStore } from '../store/useStore';
 import { MilkdownEditor } from './MilkdownEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorProvider } from '../context/EditorContext';
@@ -16,23 +16,15 @@ function EditIcon() {
   );
 }
 
-interface CanvasPanelProps {
-  provider: CanvasProvider;
-}
-
-export function CanvasPanel({ provider }: CanvasPanelProps) {
-  const { currentFilePath, setCurrentFilePath, providerAiRun, geminiCanvasContent, codexCanvasContent } = useStore();
-  
-  const canvasContent = provider === 'gemini' ? geminiCanvasContent : codexCanvasContent;
-  const providerRun = providerAiRun[provider];
-  
+export function CanvasPanel() {
+  const { canvasContent, currentFilePath, setCurrentFilePath, aiRun } = useStore();
   const [documentTitle, setDocumentTitle] = useState('AI Canvas - 재사용 가능한 코어 아키텍처');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  const isUpdating = providerRun?.phase === 'updating';
+  const isUpdating = aiRun?.phase === 'updating';
 
   useEffect(() => {
     if (isUpdating) {
@@ -85,13 +77,13 @@ export function CanvasPanel({ provider }: CanvasPanelProps) {
 
   return (
     <EditorProvider>
-      <div className={`canvas-panel provider-${provider}`}>
+      <div className="canvas-panel">
         <div className="canvas-wrapper">
           <div className="canvas-header">
             <div className="header-left">
               <div className="provider-badge">
-                {provider === 'gemini' ? <Gemini.Color size={20} /> : <OpenAI size={20} />}
-                <span className="provider-name">{provider === 'gemini' ? 'Gemini' : 'Codex'}</span>
+                <Gemini.Color size={20} />
+                <span className="provider-name">Gemini</span>
               </div>
               <div className="document-title-area">
                 {isEditingTitle ? (
@@ -125,7 +117,7 @@ export function CanvasPanel({ provider }: CanvasPanelProps) {
             </div>
           </div>
           <div className="canvas-content">
-            <MilkdownEditor provider={provider} />
+            <MilkdownEditor />
             {showOverlay && (
               <div className={`canvas-updating-overlay ${isClosing ? 'closing' : ''}`}>
                 {!isClosing && <div className="pulse-indicator" />}

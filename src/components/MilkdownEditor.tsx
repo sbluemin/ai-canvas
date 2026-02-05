@@ -6,19 +6,13 @@ import { history } from '@milkdown/plugin-history';
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react';
 import { replaceAll, getMarkdown } from '@milkdown/utils';
 import { EditorView } from '@milkdown/prose/view';
-import { useStore, CanvasProvider } from '../store/useStore';
+import { useStore } from '../store/useStore';
 import { useEditorContext } from '../context/EditorContext';
 import { SelectionAiPopup } from './SelectionAiPopup';
 import './MilkdownEditor.css';
 
-interface MilkdownEditorProps {
-  provider: CanvasProvider;
-}
-
-function MilkdownEditorInner({ provider }: MilkdownEditorProps) {
-  const { setProviderCanvasContent, geminiCanvasContent, codexCanvasContent } = useStore();
-  
-  const canvasContent = provider === 'gemini' ? geminiCanvasContent : codexCanvasContent;
+function MilkdownEditorInner() {
+  const { setCanvasContent, canvasContent } = useStore();
   
   const { editorRef } = useEditorContext();
   const [editorView, setEditorView] = useState<EditorView | null>(null);
@@ -68,27 +62,27 @@ function MilkdownEditorInner({ provider }: MilkdownEditorProps) {
       if (editor) {
         const markdown = editor.action(getMarkdown());
         if (markdown !== canvasContent) {
-          setProviderCanvasContent(provider, markdown);
+          setCanvasContent(markdown);
         }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [get, setProviderCanvasContent, canvasContent, provider]);
+  }, [get, setCanvasContent, canvasContent]);
 
   return (
     <>
       <Milkdown />
-      <SelectionAiPopup editorView={editorView} provider={provider} />
+      <SelectionAiPopup editorView={editorView} />
     </>
   );
 }
 
-export function MilkdownEditor({ provider }: MilkdownEditorProps) {
+export function MilkdownEditor() {
   return (
-    <MilkdownProvider key={provider}>
+    <MilkdownProvider>
       <div className="milkdown-wrapper">
-        <MilkdownEditorInner provider={provider} />
+        <MilkdownEditorInner />
       </div>
     </MilkdownProvider>
   );

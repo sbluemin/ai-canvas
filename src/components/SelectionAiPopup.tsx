@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TooltipProvider } from '@milkdown/plugin-tooltip';
 import { EditorView } from '@milkdown/prose/view';
 import { TextSelection } from '@milkdown/prose/state';
-import { useStore, selectCanvasContent, CanvasProvider } from '../store/useStore';
+import { useStore } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import './SelectionAiPopup.css';
 
@@ -52,17 +52,15 @@ function extractSelectionContext(canvasContent: string, selectedText: string) {
 
 interface SelectionAiPopupProps {
   editorView: EditorView | null;
-  provider: CanvasProvider;
 }
 
-export const SelectionAiPopup = ({ editorView, provider }: SelectionAiPopupProps) => {
+export const SelectionAiPopup = ({ editorView }: SelectionAiPopupProps) => {
   const tooltipProvider = useRef<TooltipProvider | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedText, setSelectedText] = useState('');
   const [inputValue, setInputValue] = useState('');
   
-  const { isLoading, triggerChatOpen } = useStore();
-  const canvasContent = useStore(selectCanvasContent);
+  const { isLoading, canvasContent } = useStore();
   const { sendMessage } = useChatRequest();
 
   useEffect(() => {
@@ -159,15 +157,12 @@ export const SelectionAiPopup = ({ editorView, provider }: SelectionAiPopupProps
       editorView.dom.blur();
     }
 
-    triggerChatOpen();
-
     await sendMessage(question, {
       selection: {
         text: currentSelection,
         before: context.before,
         after: context.after,
       },
-      targetProvider: provider,
     });
   };
 

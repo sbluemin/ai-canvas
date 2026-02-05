@@ -1,6 +1,5 @@
 import type { ChatStreamCallbacks, ChatHistory } from '../types';
 import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
-import type { CanvasProvider } from '../store/useStore';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
@@ -30,6 +29,23 @@ export const api = {
     }
     const filename = prompt('저장할 파일명을 입력하세요 (예: document.md)');
     return filename ? filename : null;
+  },
+
+  async showOpenDialog(): Promise<string | null> {
+    if (isElectron) {
+      return window.electronAPI.showOpenDialog();
+    }
+    const filename = prompt('열 파일명을 입력하세요 (예: document.md)');
+    return filename ? filename : null;
+  },
+
+  async readFile(filePath: string): Promise<string> {
+    if (isElectron) {
+      return window.electronAPI.readFile(filePath);
+    }
+    const response = await fetch(`/api/files?path=${encodeURIComponent(filePath)}`);
+    if (!response.ok) throw new Error('파일 읽기 실패');
+    return response.text();
   },
 
   async writeFile(filePath: string, content: string): Promise<boolean> {
@@ -136,110 +152,5 @@ export const api = {
 
     callbacks.onError('Chat is only available in Electron environment');
     callbacks.onDone();
-  },
-
-  async chatWithProvider(
-    provider: CanvasProvider,
-    prompt: string,
-    callbacks: ChatStreamCallbacks,
-    history: ChatHistory[] = [],
-    options?: ChatOptions
-  ): Promise<void> {
-    const fullPrompt = options?.canvasContent !== undefined
-      ? buildPhase1Prompt(prompt, options.canvasContent, history, {
-          selection: options.selection,
-        })
-      : prompt;
-
-    if (!isElectron) {
-      callbacks.onError('Chat is only available in Electron environment');
-      callbacks.onDone();
-      return;
-    }
-
-    const providerApi = provider === 'gemini' 
-      ? window.electronAPI.gemini 
-      : window.electronAPI.codex;
-
-    return new Promise((resolve) => {
-      let accumulatedText = '';
-      
-      const unsubscribe = providerApi.onChatChunk((chunk) => {
-        if (chunk.text) {
-          accumulatedText += chunk.text;
-          callbacks.onText(accumulatedText);
-        }
-        if (chunk.error) {
-          callbacks.onError(chunk.error);
-          unsubscribe();
-          callbacks.onDone();
-          resolve();
-        }
-        if (chunk.done) {
-          unsubscribe();
-          callbacks.onDone();
-          resolve();
-        }
-      });
-
-      providerApi.chat(fullPrompt).then((result) => {
-        if (!result.success && result.error) {
-          callbacks.onError(result.error);
-          unsubscribe();
-          callbacks.onDone();
-          resolve();
-        }
-      });
-    });
-  },
-
-  async chatPhase2WithProvider(
-    provider: CanvasProvider,
-    options: Phase2ChatOptions,
-    callbacks: ChatStreamCallbacks
-  ): Promise<void> {
-    const { userRequest, canvasContent, updatePlan } = options;
-    const fullPrompt = buildPhase2Prompt(userRequest, canvasContent, updatePlan);
-
-    if (!isElectron) {
-      callbacks.onError('Chat is only available in Electron environment');
-      callbacks.onDone();
-      return;
-    }
-
-    const providerApi = provider === 'gemini'
-      ? window.electronAPI.gemini
-      : window.electronAPI.codex;
-
-    return new Promise((resolve) => {
-      let accumulatedText = '';
-      
-      const unsubscribe = providerApi.onChatChunk((chunk) => {
-        if (chunk.text) {
-          accumulatedText += chunk.text;
-          callbacks.onText(accumulatedText);
-        }
-        if (chunk.error) {
-          callbacks.onError(chunk.error);
-          unsubscribe();
-          callbacks.onDone();
-          resolve();
-        }
-        if (chunk.done) {
-          unsubscribe();
-          callbacks.onDone();
-          resolve();
-        }
-      });
-
-      providerApi.chat(fullPrompt).then((result) => {
-        if (!result.success && result.error) {
-          callbacks.onError(result.error);
-          unsubscribe();
-          callbacks.onDone();
-          resolve();
-        }
-      });
-    });
   },
 };

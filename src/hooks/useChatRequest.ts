@@ -1,9 +1,8 @@
 import { useCallback } from 'react';
-import { useStore, type CanvasProvider } from '../store/useStore';
+import { useStore } from '../store/useStore';
 import { api } from '../api';
 import { extractJSON } from '../utils/parser';
 import { validatePhase1Response, validatePhase2Response } from '../prompts/types';
-import type { ChatHistory } from '../types';
 
 export interface SelectionContext {
   text: string;
@@ -13,45 +12,32 @@ export interface SelectionContext {
 
 export interface ChatRequestOptions {
   selection?: SelectionContext;
-  updateAllProviders?: boolean;
-  targetProvider?: CanvasProvider;
 }
 
 export function useChatRequest() {
   const {
     messages,
+    canvasContent,
     addMessage,
     updateLastMessage,
-    setProviderCanvasContent,
+    setCanvasContent,
     setIsLoading,
     startAiRun,
     setAiPhase,
+    setAiRunResult,
     saveCanvasSnapshot,
     clearAiRun,
-    isAuthenticated,
-    isCodexAuthenticated,
-    startProviderAiRun,
-    setProviderAiPhase,
-    clearProviderAiRun,
   } = useStore();
 
-  const runPhase2ForProvider = useCallback(
-    async (
-      provider: CanvasProvider,
-      userRequest: string,
-      updatePlan: string
-    ) => {
-      console.log(`[runPhase2] Starting Phase 2 for ${provider}`);
-      
-      const state = useStore.getState();
-      const currentCanvasContent = provider === 'gemini' 
-        ? state.geminiCanvasContent 
-        : state.codexCanvasContent;
+  const runPhase2 = useCallback(
+    async (userRequest: string, updatePlan: string) => {
+      setAiPhase('updating');
+      saveCanvasSnapshot();
 
       let fullResponse = '';
+      const currentCanvasContent = useStore.getState().canvasContent;
 
-      await api.chatPhase2WithProvider(
-        provider,
+      await api.chatPhase2(
         {
           userRequest,
           canvasContent: currentCanvasContent,
@@ -62,14 +48,16 @@ export function useChatRequest() {
             fullResponse = text;
           },
           onError: (error) => {
-            console.error(`[runPhase2] Error for ${provider}:`, error);
-            updateLastMessage(`\n\n❌ 캔버스 업데이트 실패: ${error}`, provider);
+            setAiRunResult({ error: { phase: 'updating', message: error } });
+            setAiPhase('failed');
+            setIsLoading(false);
           },
           onDone: () => {
-            console.log(`[runPhase2] onDone for ${provider}, response length:`, fullResponse.length);
             const jsonText = extractJSON(fullResponse);
             if (!jsonText) {
-              console.error(`[runPhase2] No JSON found for ${provider}`);
+              setAiPhase('failed');
+              clearAiRun();
+              setIsLoading(false);
               return;
             }
 
@@ -78,56 +66,59 @@ export function useChatRequest() {
               const phase2Result = validatePhase2Response(parsed);
 
               if (phase2Result) {
-                console.log(`[runPhase2] Phase 2 succeeded for ${provider}`);
-                updateLastMessage('\n\n' + phase2Result.message, provider);
-                setProviderCanvasContent(provider, phase2Result.canvasContent);
+                updateLastMessage('\n\n' + phase2Result.message);
+                setCanvasContent(phase2Result.canvasContent);
+                setAiPhase('succeeded');
+              } else {
+                setAiPhase('failed');
               }
-            } catch (e) {
-              console.error(`[runPhase2] JSON parse error for ${provider}:`, e);
+            } catch {
+              setAiPhase('failed');
             }
+
+            clearAiRun();
+            setIsLoading(false);
           },
         }
       );
     },
-    [updateLastMessage, setProviderCanvasContent]
+    [setAiPhase, saveCanvasSnapshot, setAiRunResult, setIsLoading, clearAiRun, updateLastMessage, setCanvasContent]
   );
 
-  const sendMessageToProvider = useCallback(
-    async (
-      provider: CanvasProvider,
-      prompt: string,
-      history: ChatHistory[],
-      options?: ChatRequestOptions
-    ) => {
-      const state = useStore.getState();
-      const providerCanvasContent = provider === 'gemini'
-        ? state.geminiCanvasContent
-        : state.codexCanvasContent;
+  const sendMessage = useCallback(
+    async (prompt: string, options?: ChatRequestOptions) => {
+      if (!prompt.trim()) return;
 
-      startProviderAiRun(provider);
-      addMessage('assistant', '', provider);
+      addMessage('user', prompt);
+      setIsLoading(true);
+      startAiRun();
+
+      const history = messages.map((msg) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      }));
 
       let fullResponse = '';
 
-      await api.chatWithProvider(
-        provider,
+      await api.chat(
         prompt,
         {
           onText: (text) => {
             fullResponse = text;
           },
           onError: (error) => {
-            updateLastMessage(`오류가 발생했습니다: ${error}`, provider);
-            clearProviderAiRun(provider);
+            addMessage('assistant', `오류가 발생했습니다: ${error}`);
+            setAiRunResult({ error: { phase: 'evaluating', message: error } });
+            setAiPhase('failed');
+            setIsLoading(false);
+            clearAiRun();
           },
           onDone: async () => {
-            console.log(`[sendMessage] onDone for ${provider}, response length:`, fullResponse.length);
             const jsonText = extractJSON(fullResponse);
-            
             if (!jsonText) {
-              console.log(`[sendMessage] No JSON found for ${provider}, showing raw response`);
-              updateLastMessage(fullResponse || '응답 없음', provider);
-              clearProviderAiRun(provider);
+              addMessage('assistant', fullResponse);
+              setIsLoading(false);
+              clearAiRun();
               return;
             }
 
@@ -136,103 +127,57 @@ export function useChatRequest() {
               const phase1Result = validatePhase1Response(parsed);
 
               if (phase1Result) {
-                updateLastMessage(phase1Result.message, provider);
+                setAiRunResult({
+                  message: phase1Result.message,
+                  needsCanvasUpdate: phase1Result.needsCanvasUpdate,
+                  updatePlan: phase1Result.updatePlan,
+                });
 
                 if (phase1Result.needsCanvasUpdate && phase1Result.updatePlan) {
-                  console.log(`[sendMessage] Starting Phase 2 for ${provider}...`);
-                  setProviderAiPhase(provider, 'updating');
-                  await runPhase2ForProvider(provider, prompt, phase1Result.updatePlan);
+                  addMessage('assistant', phase1Result.message);
+                  await runPhase2(prompt, phase1Result.updatePlan);
+                } else {
+                  addMessage('assistant', phase1Result.message);
+                  setAiPhase('succeeded');
+                  clearAiRun();
+                  setIsLoading(false);
                 }
               } else {
                 const messageOnly = parsed?.message || fullResponse;
-                updateLastMessage(messageOnly, provider);
+                addMessage('assistant', messageOnly);
+                clearAiRun();
+                setIsLoading(false);
               }
-            } catch (e) {
-              console.error(`[sendMessage] Error processing response for ${provider}:`, e);
+            } catch {
               try {
                 const parsed = JSON.parse(jsonText);
                 const messageOnly = parsed?.message || fullResponse;
-                updateLastMessage(messageOnly, provider);
+                addMessage('assistant', messageOnly);
               } catch {
-                updateLastMessage(fullResponse, provider);
+                addMessage('assistant', fullResponse);
               }
-            } finally {
-              setProviderAiPhase(provider, 'succeeded');
-              clearProviderAiRun(provider);
+              clearAiRun();
+              setIsLoading(false);
             }
           },
         },
         history,
         {
-          canvasContent: providerCanvasContent,
+          canvasContent,
           selection: options?.selection,
         }
       );
     },
-    [addMessage, updateLastMessage, runPhase2ForProvider, startProviderAiRun, setProviderAiPhase, clearProviderAiRun]
-  );
-
-  const sendMessage = useCallback(
-    async (prompt: string, options?: ChatRequestOptions) => {
-      if (!prompt.trim()) return;
-
-      const activeProviders: CanvasProvider[] = [];
-      
-      if (options?.targetProvider) {
-        const target = options.targetProvider;
-        const isTargetAuthenticated = target === 'gemini' ? isAuthenticated : isCodexAuthenticated;
-        if (isTargetAuthenticated) {
-          activeProviders.push(target);
-        }
-      } else {
-        if (isAuthenticated) activeProviders.push('gemini');
-        if (isCodexAuthenticated) activeProviders.push('codex');
-      }
-
-      if (activeProviders.length === 0) {
-        addMessage('assistant', '로그인된 AI 프로바이더가 없습니다. Gemini 또는 Codex에 로그인해주세요.');
-        return;
-      }
-
-      if (options?.targetProvider) {
-        addMessage('user', prompt, options.targetProvider);
-      } else {
-        addMessage('user', prompt);
-      }
-
-      setIsLoading(true);
-      startAiRun();
-      setAiPhase('evaluating');
-      saveCanvasSnapshot();
-
-      const history = messages.map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      }));
-
-      try {
-        await Promise.all(
-          activeProviders.map((provider) =>
-            sendMessageToProvider(provider, prompt, history, options)
-          )
-        );
-      } finally {
-        setAiPhase('succeeded');
-        clearAiRun();
-        setIsLoading(false);
-      }
-    },
     [
       messages,
+      canvasContent,
       addMessage,
       setIsLoading,
       startAiRun,
+      setAiRunResult,
       setAiPhase,
-      saveCanvasSnapshot,
       clearAiRun,
-      isAuthenticated,
-      isCodexAuthenticated,
-      sendMessageToProvider,
+      runPhase2,
     ]
   );
 
