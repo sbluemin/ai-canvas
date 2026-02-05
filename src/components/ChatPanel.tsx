@@ -69,7 +69,7 @@ export function ChatPanel() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { messages, isLoading, aiRun, isAuthenticated } = useStore();
+  const { messages, isLoading, aiRun, isAuthenticated, activeProvider } = useStore();
   const { sendMessage } = useChatRequest();
 
   useEffect(() => {
@@ -86,6 +86,7 @@ export function ChatPanel() {
   };
 
   const isUpdatingCanvas = aiRun?.phase === 'updating';
+  const hasFailed = aiRun?.phase === 'failed';
 
   return (
     <div className="chat-panel">
@@ -98,11 +99,14 @@ export function ChatPanel() {
             <h3>무엇을 도와드릴까요?</h3>
             <p className="hint">프로젝트 아이디어에 대해 물어보세요</p>
             {!isAuthenticated && (
-              <p className="auth-hint">우측 상단의 Gemini 버튼으로 로그인하세요</p>
+              <p className="auth-hint">우측 상단의 {activeProvider === 'openai' ? 'OpenAI' : activeProvider === 'anthropic' ? 'Anthropic' : 'Gemini'} 버튼으로 로그인하세요</p>
             )}
           </div>
         ) : (
           messages.map((msg: Message, index: number) => {
+            if (msg.role === 'assistant' && !msg.content) {
+              return null;
+            }
             const isLastAssistantMessage = msg.role === 'assistant' && index === messages.length - 1;
             const showInlineProgress = isLastAssistantMessage && isUpdatingCanvas && msg.content;
             
@@ -140,7 +144,7 @@ export function ChatPanel() {
             );
           })
         )}
-        {isLoading && !isUpdatingCanvas && (
+        {isLoading && !isUpdatingCanvas && !hasFailed && (
           <div className="message assistant">
             <div className="message-header">
               <div className="ai-avatar">

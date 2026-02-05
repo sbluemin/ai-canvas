@@ -4,6 +4,7 @@ import 'allotment/dist/style.css';
 import { CommandBar } from './components/CommandBar';
 import { ChatPanel } from './components/ChatPanel';
 import { CanvasPanel } from './components/CanvasPanel';
+import { ErrorPopup } from './components/ErrorPopup';
 import { useStore } from './store/useStore';
 import './App.css';
 
@@ -53,6 +54,7 @@ function App() {
         <div className="mobile-canvas">
           <CanvasPanel />
         </div>
+        <ErrorPopup />
       </div>
     );
   }
@@ -72,6 +74,7 @@ function App() {
           </Allotment>
         </div>
       </div>
+      <ErrorPopup />
     </div>
   );
 }

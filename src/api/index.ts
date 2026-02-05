@@ -65,7 +65,8 @@ export const api = {
     prompt: string,
     callbacks: ChatStreamCallbacks,
     history: ChatHistory[] = [],
-    options?: ChatOptions
+    options?: ChatOptions,
+    provider: 'gemini' | 'openai' | 'anthropic' = 'gemini'
   ): Promise<void> {
     const fullPrompt = options?.canvasContent !== undefined
       ? buildPhase1Prompt(prompt, options.canvasContent, history, {
@@ -74,10 +75,19 @@ export const api = {
       : prompt;
 
     if (isElectron) {
+      const apiName = provider === 'openai' ? 'codex' : provider;
+      const api = (window.electronAPI as any)[apiName];
+
+      if (!api) {
+        callbacks.onError(`Provider ${provider} is not supported`);
+        callbacks.onDone();
+        return;
+      }
+
       return new Promise((resolve) => {
         let accumulatedText = '';
         
-        const unsubscribe = window.electronAPI.gemini.onChatChunk((chunk) => {
+        const unsubscribe = api.onChatChunk((chunk: any) => {
           if (chunk.text) {
             accumulatedText += chunk.text;
             callbacks.onText(accumulatedText);
@@ -95,7 +105,7 @@ export const api = {
           }
         });
 
-        window.electronAPI.gemini.chat(fullPrompt).then((result) => {
+        api.chat(fullPrompt).then((result: any) => {
           if (!result.success && result.error) {
             callbacks.onError(result.error);
             unsubscribe();
@@ -112,16 +122,26 @@ export const api = {
 
   async chatPhase2(
     options: Phase2ChatOptions,
-    callbacks: ChatStreamCallbacks
+    callbacks: ChatStreamCallbacks,
+    provider: 'gemini' | 'openai' | 'anthropic' = 'gemini'
   ): Promise<void> {
     const { userRequest, canvasContent, updatePlan } = options;
     const fullPrompt = buildPhase2Prompt(userRequest, canvasContent, updatePlan);
 
     if (isElectron) {
+      const apiName = provider === 'openai' ? 'codex' : provider;
+      const api = (window.electronAPI as any)[apiName];
+
+      if (!api) {
+        callbacks.onError(`Provider ${provider} is not supported`);
+        callbacks.onDone();
+        return;
+      }
+
       return new Promise((resolve) => {
         let accumulatedText = '';
         
-        const unsubscribe = window.electronAPI.gemini.onChatChunk((chunk) => {
+        const unsubscribe = api.onChatChunk((chunk: any) => {
           if (chunk.text) {
             accumulatedText += chunk.text;
             callbacks.onText(accumulatedText);
@@ -139,7 +159,7 @@ export const api = {
           }
         });
 
-        window.electronAPI.gemini.chat(fullPrompt).then((result) => {
+        api.chat(fullPrompt).then((result: any) => {
           if (!result.success && result.error) {
             callbacks.onError(result.error);
             unsubscribe();

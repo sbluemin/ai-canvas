@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { AiProvider } from '../types/chat';
 
 export interface Message {
   id: string;
@@ -19,6 +20,12 @@ export interface AiRunState {
   error?: { phase: 'evaluating' | 'updating'; message: string };
 }
 
+export interface ErrorInfo {
+  title: string;
+  message: string;
+  details?: string;
+}
+
 interface AppState {
   messages: Message[];
   canvasContent: string;
@@ -26,6 +33,8 @@ interface AppState {
   currentFilePath: string | null;
   isDrawerOpen: boolean;
   aiRun: AiRunState | null;
+  activeProvider: AiProvider;
+  errorPopup: ErrorInfo | null;
   
   // 인증 상태
   isAuthenticated: boolean;
@@ -36,6 +45,8 @@ interface AppState {
   anthropicAuthLoading: boolean;
 
   addMessage: (role: 'user' | 'assistant', content: string) => void;
+  removeLastUserMessage: () => void;
+  removeLastAssistantMessage: () => void;
   updateLastMessage: (content: string) => void;
   setLastMessageContent: (content: string) => void;
   setCanvasContent: (content: string) => void;
@@ -50,6 +61,7 @@ interface AppState {
   setAiPhase: (phase: AiPhase) => void;
   setAiRunResult: (result: Partial<AiRunState>) => void;
   clearAiRun: () => void;
+  setActiveProvider: (provider: AiProvider) => void;
   saveCanvasSnapshot: () => void;
   
   setAuthStatus: (isAuthenticated: boolean) => void;
@@ -58,6 +70,9 @@ interface AppState {
   setCodexAuthLoading: (loading: boolean) => void;
   setAnthropicAuthStatus: (isAuthenticated: boolean) => void;
   setAnthropicAuthLoading: (loading: boolean) => void;
+  
+  showError: (error: ErrorInfo) => void;
+  clearError: () => void;
 }
 
 function generateRunId(): string {
@@ -121,6 +136,8 @@ export const useStore = create<AppState>((set) => ({
   currentFilePath: null,
   isDrawerOpen: false,
   aiRun: null,
+  activeProvider: 'gemini',
+  errorPopup: null,
 
   addMessage: (role, content) =>
     set((state) => ({
@@ -134,6 +151,24 @@ export const useStore = create<AppState>((set) => ({
         },
       ],
     })),
+
+  removeLastUserMessage: () =>
+    set((state) => {
+      const messages = [...state.messages];
+      if (messages.length > 0 && messages[messages.length - 1].role === 'user') {
+        messages.pop();
+      }
+      return { messages };
+    }),
+
+  removeLastAssistantMessage: () =>
+    set((state) => {
+      const messages = [...state.messages];
+      if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+        messages.pop();
+      }
+      return { messages };
+    }),
 
   updateLastMessage: (content) =>
     set((state) => {
@@ -197,6 +232,7 @@ export const useStore = create<AppState>((set) => ({
     })),
 
   clearAiRun: () => set({ aiRun: null }),
+  setActiveProvider: (provider) => set({ activeProvider: provider }),
 
   saveCanvasSnapshot: () =>
     set((state) => ({
@@ -211,4 +247,7 @@ export const useStore = create<AppState>((set) => ({
   setCodexAuthLoading: (codexAuthLoading) => set({ codexAuthLoading }),
   setAnthropicAuthStatus: (isAnthropicAuthenticated) => set({ isAnthropicAuthenticated }),
   setAnthropicAuthLoading: (anthropicAuthLoading) => set({ anthropicAuthLoading }),
+  
+  showError: (error) => set({ errorPopup: error }),
+  clearError: () => set({ errorPopup: null }),
 }));

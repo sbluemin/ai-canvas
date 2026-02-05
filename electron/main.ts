@@ -208,6 +208,14 @@ ipcMain.handle('anthropic:auth:logout', async () => {
   return { success: true };
 });
 
+ipcMain.handle('anthropic:chat', async (event, prompt: string) => {
+  const auth = await anthropic.getValidAccessToken();
+  if (!auth) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  return anthropic.chat(event, auth, { prompt });
+});
+
 app.whenReady().then(() => {
   createApplicationMenu();
 

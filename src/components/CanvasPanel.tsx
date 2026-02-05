@@ -1,11 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { Gemini } from '@lobehub/icons';
+import { Gemini, OpenAI, Claude } from '@lobehub/icons';
 import { useStore } from '../store/useStore';
+import { AiProvider } from '../types/chat';
 import { MilkdownEditor } from './MilkdownEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorProvider } from '../context/EditorContext';
 import { api } from '../api';
 import './CanvasPanel.css';
+
+const providers: { id: AiProvider; name: string; Icon: any }[] = [
+  { id: 'gemini', name: 'Gemini', Icon: Gemini.Color || Gemini },
+  { id: 'openai', name: 'OpenAI', Icon: OpenAI },
+  { id: 'anthropic', name: 'Anthropic', Icon: Claude.Color || Claude },
+];
 
 function EditIcon() {
   return (
@@ -17,14 +24,31 @@ function EditIcon() {
 }
 
 export function CanvasPanel() {
-  const { canvasContent, currentFilePath, setCurrentFilePath, aiRun } = useStore();
+  const { canvasContent, currentFilePath, setCurrentFilePath, aiRun, activeProvider, setActiveProvider } = useStore();
   const [documentTitle, setDocumentTitle] = useState('AI Canvas - 재사용 가능한 코어 아키텍처');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isProviderMenuOpen, setIsProviderMenuOpen] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const providerMenuRef = useRef<HTMLDivElement>(null);
 
   const isUpdating = aiRun?.phase === 'updating';
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (providerMenuRef.current && !providerMenuRef.current.contains(event.target as Node)) {
+        setIsProviderMenuOpen(false);
+      }
+    }
+
+    if (isProviderMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProviderMenuOpen]);
 
   useEffect(() => {
     if (isUpdating) {
@@ -81,9 +105,45 @@ export function CanvasPanel() {
         <div className="canvas-wrapper">
           <div className="canvas-header">
             <div className="header-left">
-              <div className="provider-badge">
-                <Gemini.Color size={20} />
-                <span className="provider-name">Gemini</span>
+              <div className="provider-select" ref={providerMenuRef}>
+                <button 
+                  className={`provider-badge-btn ${isProviderMenuOpen ? 'active' : ''}`}
+                  onClick={() => setIsProviderMenuOpen(!isProviderMenuOpen)}
+                >
+                  {(() => {
+                    const active = providers.find(p => p.id === activeProvider);
+                    return active ? <active.Icon size={20} /> : null;
+                  })()}
+                  <span className="provider-name">
+                    {providers.find(p => p.id === activeProvider)?.name}
+                  </span>
+                  <svg className="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                
+                {isProviderMenuOpen && (
+                  <div className="provider-dropdown">
+                    {providers.map((provider) => (
+                      <button
+                        key={provider.id}
+                        className={`provider-option ${activeProvider === provider.id ? 'selected' : ''}`}
+                        onClick={() => {
+                          setActiveProvider(provider.id);
+                          setIsProviderMenuOpen(false);
+                        }}
+                      >
+                        <provider.Icon size={18} />
+                        <span>{provider.name}</span>
+                        {activeProvider === provider.id && (
+                          <svg className="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="document-title-area">
                 {isEditingTitle ? (

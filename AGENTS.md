@@ -36,6 +36,7 @@
   - **MilkdownEditor**: 마크다운 WYSIWYG
   - **EditorToolbar**: 서식 도구
   - **SelectionAiPopup**: 텍스트 선택 시 AI 질문 팝업
+- **ErrorPopup**: AI 요청 오류 팝업
 
 ### AI 인증
 - **Gemini** (`electron/gemini/auth.ts`): PKCE OAuth 2.0, Cloud Code Assist API
@@ -59,8 +60,14 @@ interface AppState {
   currentFilePath: string | null;
   isDrawerOpen: boolean;         // 모바일 드로어
   aiRun: AiRunState | null;      // AI 실행 상태
-  isAuthenticated: boolean;      // Gemini 인증 상태
+  activeProvider: AiProvider;
+  errorPopup: ErrorInfo | null;  // 오류 팝업
+  isAuthenticated: boolean;      // 현재 Provider 인증 상태
   authLoading: boolean;          // 인증 로딩
+  isCodexAuthenticated: boolean;
+  codexAuthLoading: boolean;
+  isAnthropicAuthenticated: boolean;
+  anthropicAuthLoading: boolean;
 }
 ```
 
@@ -80,6 +87,8 @@ ai-canvas/
 │   │   ├── CanvasPanel.tsx      # 마크다운 에디터 패널
 │   │   ├── ChatPanel.tsx        # AI 채팅 패널
 │   │   ├── ChatPanel.css
+│   │   ├── ErrorPopup.tsx       # 오류 팝업
+│   │   ├── ErrorPopup.css
 │   │   ├── MilkdownEditor.tsx   # Milkdown 래퍼
 │   │   ├── EditorToolbar.tsx    # 에디터 도구모음
 │   │   ├── SelectionAiPopup.tsx # 텍스트 선택 AI 팝업
