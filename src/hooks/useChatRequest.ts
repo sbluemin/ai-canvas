@@ -1,8 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useStore, ErrorInfo } from '../store/useStore';
 import { api } from '../api';
-import { extractJSON } from '../utils/parser';
-import { validatePhase1Response, validatePhase2Response } from '../prompts/types';
 
 export interface SelectionContext {
   text: string;
@@ -104,69 +102,77 @@ export function useChatRequest() {
     showError,
   } = useStore();
 
-  const runPhase2 = useCallback(
-    async (userRequest: string, updatePlan: string) => {
-      setAiPhase('updating');
-      saveCanvasSnapshot();
+  const currentRunIdRef = useRef<string | null>(null);
 
-      let hasError = false;
-      let fullResponse = '';
-      const currentCanvasContent = useStore.getState().canvasContent;
+  useEffect(() => {
+    if (!api.isElectron) return;
 
-      await api.chatPhase2(
-        {
-          userRequest,
-          canvasContent: currentCanvasContent,
-          updatePlan,
-        },
-        {
-          onText: (text) => {
-            fullResponse = text;
-          },
-          onError: (error) => {
-            hasError = true;
+    const unsubscribe = api.onChatEvent((event) => {
+      if (event.runId !== currentRunIdRef.current) {
+        return;
+      }
+
+      switch (event.type) {
+        case 'phase':
+          setAiPhase(event.phase === 'evaluating' ? 'evaluating' : 'updating');
+          if (event.phase === 'updating') {
+            saveCanvasSnapshot();
+          }
+          break;
+
+        case 'phase1_result':
+          setAiRunResult({
+            message: event.message,
+            needsCanvasUpdate: event.needsCanvasUpdate,
+            updatePlan: event.updatePlan,
+          });
+          addMessage('assistant', event.message, activeProvider);
+          break;
+
+        case 'phase2_result':
+          updateLastMessage('\n\n' + event.message);
+          setCanvasContent(event.canvasContent);
+          setAiPhase('succeeded');
+          break;
+
+        case 'error':
+          if (event.phase === 'evaluating') {
+            removeLastUserMessage();
+          } else {
             removeLastAssistantMessage();
             removeLastUserMessage();
-            showError(parseApiError(error));
-            setAiRunResult({ error: { phase: 'updating', message: error } });
-            setAiPhase('failed');
-            setIsLoading(false);
-            clearAiRun();
-          },
-          onDone: () => {
-            if (hasError) return;
-            const jsonText = extractJSON(fullResponse);
-            if (!jsonText) {
-              setAiPhase('failed');
-              clearAiRun();
-              setIsLoading(false);
-              return;
-            }
+          }
+          showError(parseApiError(event.error));
+          setAiRunResult({ error: { phase: event.phase, message: event.error } });
+          setAiPhase('failed');
+          setIsLoading(false);
+          clearAiRun();
+          currentRunIdRef.current = null;
+          break;
 
-            try {
-              const parsed = JSON.parse(jsonText);
-              const phase2Result = validatePhase2Response(parsed);
+        case 'done':
+          setIsLoading(false);
+          clearAiRun();
+          currentRunIdRef.current = null;
+          break;
+      }
+    });
 
-              if (phase2Result) {
-                updateLastMessage('\n\n' + phase2Result.message);
-                setCanvasContent(phase2Result.canvasContent);
-                setAiPhase('succeeded');
-              } else {
-                setAiPhase('failed');
-              }
-            } catch {
-              setAiPhase('failed');
-            }
-
-            clearAiRun();
-            setIsLoading(false);
-          },
-        },
-        activeProvider
-      );
-    },
-    [setAiPhase, saveCanvasSnapshot, setAiRunResult, setIsLoading, clearAiRun, updateLastMessage, setCanvasContent, activeProvider, showError, removeLastAssistantMessage, removeLastUserMessage]
-  );
+    return unsubscribe;
+  }, [
+    addMessage,
+    updateLastMessage,
+    setCanvasContent,
+    setAiPhase,
+    setAiRunResult,
+    saveCanvasSnapshot,
+    clearAiRun,
+    setIsLoading,
+    activeProvider,
+    showError,
+    removeLastUserMessage,
+    removeLastAssistantMessage,
+  ]);
 
   const sendMessage = useCallback(
     async (prompt: string, options?: ChatRequestOptions) => {
@@ -174,7 +180,8 @@ export function useChatRequest() {
 
       addMessage('user', prompt);
       setIsLoading(true);
-      startAiRun();
+      const runId = startAiRun();
+      currentRunIdRef.current = runId;
 
       const history = messages.map((msg) => ({
         role: msg.role as 'user' | 'assistant',
@@ -182,80 +189,24 @@ export function useChatRequest() {
         ...(msg.provider ? { provider: msg.provider } : {}),
       }));
 
-      let hasError = false;
-      let fullResponse = '';
-
-      await api.chat(
+      const result = await api.chat(
+        runId,
         prompt,
-        {
-          onText: (text) => {
-            fullResponse = text;
-          },
-          onError: (error) => {
-            hasError = true;
-            removeLastUserMessage();
-            showError(parseApiError(error));
-            setAiRunResult({ error: { phase: 'evaluating', message: error } });
-            setAiPhase('failed');
-            setIsLoading(false);
-            clearAiRun();
-          },
-          onDone: async () => {
-            if (hasError) return;
-            const jsonText = extractJSON(fullResponse);
-            if (!jsonText) {
-              addMessage('assistant', fullResponse, activeProvider);
-              setIsLoading(false);
-              clearAiRun();
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(jsonText);
-              const phase1Result = validatePhase1Response(parsed);
-
-              if (phase1Result) {
-                setAiRunResult({
-                   message: phase1Result.message,
-                  needsCanvasUpdate: phase1Result.needsCanvasUpdate,
-                  updatePlan: phase1Result.updatePlan,
-                });
-
-                if (phase1Result.needsCanvasUpdate && phase1Result.updatePlan) {
-                  addMessage('assistant', phase1Result.message, activeProvider);
-                  await runPhase2(prompt, phase1Result.updatePlan);
-                } else {
-                  addMessage('assistant', phase1Result.message, activeProvider);
-                  setAiPhase('succeeded');
-                  clearAiRun();
-                  setIsLoading(false);
-                }
-              } else {
-                const messageOnly = parsed?.message || fullResponse;
-                addMessage('assistant', messageOnly, activeProvider);
-                clearAiRun();
-                setIsLoading(false);
-              }
-            } catch {
-              try {
-                const parsed = JSON.parse(jsonText);
-                const messageOnly = parsed?.message || fullResponse;
-                addMessage('assistant', messageOnly, activeProvider);
-              } catch {
-                addMessage('assistant', fullResponse, activeProvider);
-              }
-              clearAiRun();
-              setIsLoading(false);
-            }
-          },
-        },
         history,
-        {
-          canvasContent,
-          selection: options?.selection,
-        },
-        activeProvider
+        canvasContent,
+        activeProvider,
+        options
       );
+
+      if (!result.success && result.error) {
+        removeLastUserMessage();
+        showError(parseApiError(result.error));
+        setAiRunResult({ error: { phase: 'evaluating', message: result.error } });
+        setAiPhase('failed');
+        setIsLoading(false);
+        clearAiRun();
+        currentRunIdRef.current = null;
+      }
     },
     [
       messages,
@@ -267,7 +218,6 @@ export function useChatRequest() {
       setAiRunResult,
       setAiPhase,
       clearAiRun,
-      runPhase2,
       activeProvider,
       showError,
     ]

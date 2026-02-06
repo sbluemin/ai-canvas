@@ -1,23 +1,22 @@
-import type { ChatStreamCallbacks, ChatHistory, AiProvider } from '../types';
-import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
+import type { AiProvider } from '../types';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
-export type { ChatStreamCallbacks, ChatHistory, AiProvider };
+type AiChatEvent =
+  | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
+  | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
+  | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
+  | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
+  | { runId: string; type: 'done' };
 
-export interface ChatOptions {
-  canvasContent?: string;
+export type { AiProvider };
+
+export interface ChatRequestOptions {
   selection?: {
     text: string;
     before: string;
     after: string;
   };
-}
-
-export interface Phase2ChatOptions {
-  userRequest: string;
-  canvasContent: string;
-  updatePlan: string;
 }
 
 export const api = {
@@ -61,130 +60,38 @@ export const api = {
     return true;
   },
 
+  /**
+   * AI 채팅 요청 (통합 IPC)
+   */
   async chat(
+    runId: string,
     prompt: string,
-    callbacks: ChatStreamCallbacks,
-    history: ChatHistory[] = [],
-    options?: ChatOptions,
-    provider: AiProvider = 'gemini'
-  ): Promise<void> {
-    const fullPrompt = options?.canvasContent !== undefined
-      ? buildPhase1Prompt(prompt, options.canvasContent, history, {
-          selection: options.selection,
-        })
-      : prompt;
-
-    if (isElectron) {
-      // Provider 이름을 API 이름으로 매핑
-      const apiNameMap: Record<AiProvider, string> = {
-        gemini: 'gemini',
-        openai: 'codex',
-        anthropic: 'anthropic',
-        copilot: 'copilot',
-      };
-      const apiName = apiNameMap[provider] || provider;
-      const api = (window.electronAPI as any)[apiName];
-
-      if (!api) {
-        callbacks.onError(`Provider ${provider} is not supported`);
-        callbacks.onDone();
-        return;
-      }
-
-      return new Promise((resolve) => {
-        let accumulatedText = '';
-        
-        const unsubscribe = api.onChatChunk((chunk: any) => {
-          if (chunk.text) {
-            accumulatedText += chunk.text;
-            callbacks.onText(accumulatedText);
-          }
-          if (chunk.error) {
-            callbacks.onError(chunk.error);
-            unsubscribe();
-            callbacks.onDone();
-            resolve();
-          }
-          if (chunk.done) {
-            unsubscribe();
-            callbacks.onDone();
-            resolve();
-          }
-        });
-
-        api.chat(fullPrompt).then((result: any) => {
-          if (!result.success && result.error) {
-            callbacks.onError(result.error);
-            unsubscribe();
-            callbacks.onDone();
-            resolve();
-          }
-        });
-      });
+    history: { role: 'user' | 'assistant'; content: string; provider?: AiProvider }[],
+    canvasContent: string,
+    provider: AiProvider,
+    options?: ChatRequestOptions
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) {
+      return { success: false, error: 'Chat is only available in Electron environment' };
     }
 
-    callbacks.onError('Chat is only available in Electron environment');
-    callbacks.onDone();
+    return window.electronAPI.ai.chat({
+      runId,
+      provider,
+      prompt,
+      history,
+      canvasContent,
+      selection: options?.selection,
+    });
   },
 
-  async chatPhase2(
-    options: Phase2ChatOptions,
-    callbacks: ChatStreamCallbacks,
-    provider: AiProvider = 'gemini'
-  ): Promise<void> {
-    const { userRequest, canvasContent, updatePlan } = options;
-    const fullPrompt = buildPhase2Prompt(userRequest, canvasContent, updatePlan);
-
-    if (isElectron) {
-      // Provider 이름을 API 이름으로 매핑
-      const apiNameMap: Record<AiProvider, string> = {
-        gemini: 'gemini',
-        openai: 'codex',
-        anthropic: 'anthropic',
-        copilot: 'copilot',
-      };
-      const apiName = apiNameMap[provider] || provider;
-      const api = (window.electronAPI as any)[apiName];
-
-      if (!api) {
-        callbacks.onError(`Provider ${provider} is not supported`);
-        callbacks.onDone();
-        return;
-      }
-
-      return new Promise((resolve) => {
-        let accumulatedText = '';
-        
-        const unsubscribe = api.onChatChunk((chunk: any) => {
-          if (chunk.text) {
-            accumulatedText += chunk.text;
-            callbacks.onText(accumulatedText);
-          }
-          if (chunk.error) {
-            callbacks.onError(chunk.error);
-            unsubscribe();
-            callbacks.onDone();
-            resolve();
-          }
-          if (chunk.done) {
-            unsubscribe();
-            callbacks.onDone();
-            resolve();
-          }
-        });
-
-        api.chat(fullPrompt).then((result: any) => {
-          if (!result.success && result.error) {
-            callbacks.onError(result.error);
-            unsubscribe();
-            callbacks.onDone();
-            resolve();
-          }
-        });
-      });
+  /**
+   * AI 채팅 이벤트 구독
+   */
+  onChatEvent(callback: (event: AiChatEvent) => void): () => void {
+    if (!isElectron) {
+      return () => {};
     }
-
-    callbacks.onError('Chat is only available in Electron environment');
-    callbacks.onDone();
+    return window.electronAPI.ai.onChatEvent(callback);
   },
 };

@@ -22,57 +22,65 @@ export interface ChatChunk {
   done?: boolean;
 }
 
+export type AiProvider = 'gemini' | 'openai' | 'anthropic' | 'copilot';
+
+export interface AiChatRequest {
+  runId: string;
+  provider: AiProvider;
+  prompt: string;
+  history: { role: 'user' | 'assistant'; content: string; provider?: AiProvider }[];
+  canvasContent: string;
+  selection?: {
+    text: string;
+    before: string;
+    after: string;
+  };
+}
+
+export type AiChatEvent =
+  | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
+  | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
+  | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
+  | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
+  | { runId: string; type: 'done' };
+
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
   
   showSaveDialog: () => ipcRenderer.invoke('dialog:showSaveDialog'),
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
   
+  ai: {
+    chat: (request: AiChatRequest): Promise<{ success: boolean; error?: string }> => 
+      ipcRenderer.invoke('ai:chat', request),
+    onChatEvent: (callback: (event: AiChatEvent) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, evt: AiChatEvent) => callback(evt);
+      ipcRenderer.on('ai:chat:event', listener);
+      return () => ipcRenderer.removeListener('ai:chat:event', listener);
+    },
+  },
+
   gemini: {
     authStart: (): Promise<AuthResult> => ipcRenderer.invoke('gemini:auth:start'),
     authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('gemini:auth:status'),
     authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('gemini:auth:logout'),
-    chat: (prompt: string): Promise<ChatResponse> => ipcRenderer.invoke('gemini:chat', prompt),
-    onChatChunk: (callback: (chunk: ChatChunk) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, chunk: ChatChunk) => callback(chunk);
-      ipcRenderer.on('gemini:chat:chunk', listener);
-      return () => ipcRenderer.removeListener('gemini:chat:chunk', listener);
-    },
   },
 
   codex: {
     authStart: (): Promise<AuthResult> => ipcRenderer.invoke('codex:auth:start'),
     authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('codex:auth:status'),
     authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('codex:auth:logout'),
-    chat: (prompt: string): Promise<ChatResponse> => ipcRenderer.invoke('codex:chat', prompt),
-    onChatChunk: (callback: (chunk: ChatChunk) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, chunk: ChatChunk) => callback(chunk);
-      ipcRenderer.on('codex:chat:chunk', listener);
-      return () => ipcRenderer.removeListener('codex:chat:chunk', listener);
-    },
   },
 
   anthropic: {
     authStart: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:start'),
     authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('anthropic:auth:status'),
     authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:logout'),
-    chat: (prompt: string): Promise<ChatResponse> => ipcRenderer.invoke('anthropic:chat', prompt),
-    onChatChunk: (callback: (chunk: ChatChunk) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, chunk: ChatChunk) => callback(chunk);
-      ipcRenderer.on('anthropic:chat:chunk', listener);
-      return () => ipcRenderer.removeListener('anthropic:chat:chunk', listener);
-    },
   },
 
   copilot: {
     authStart: (): Promise<AuthResult> => ipcRenderer.invoke('copilot:auth:start'),
     authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('copilot:auth:status'),
     authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('copilot:auth:logout'),
-    chat: (prompt: string): Promise<ChatResponse> => ipcRenderer.invoke('copilot:chat', prompt),
-    onChatChunk: (callback: (chunk: ChatChunk) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, chunk: ChatChunk) => callback(chunk);
-      ipcRenderer.on('copilot:chat:chunk', listener);
-      return () => ipcRenderer.removeListener('copilot:chat:chunk', listener);
-    },
   },
 });

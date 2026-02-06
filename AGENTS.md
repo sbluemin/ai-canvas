@@ -40,15 +40,27 @@
 
 ### AI 인증
 - **Gemini** (`electron/gemini/auth.ts`): PKCE OAuth 2.0, Cloud Code Assist API
+- **Codex** (`electron/codex/auth.ts`): OpenAI OAuth 2.0
+- **Anthropic** (`electron/anthropic/auth.ts`): Anthropic OAuth 2.0
+- **Copilot** (`electron/copilot/auth.ts`): GitHub Copilot OAuth 2.0
 - safeStorage 암호화 토큰 저장, 자동 갱신
+
+### AI 오케스트레이션 (`electron/ai/`)
+- **workflow.ts**: Phase 1/2 실행 흐름 제어, 이벤트 송신
+- **providerAdapter.ts**: Provider별 chat 함수 통합 호출
+- **parser.ts**: Phase 1/2 응답 JSON 파싱 및 fallback 처리
+- **types.ts**: AI 요청/응답/이벤트 타입 정의
+
+### 프롬프트 시스템 (`electron/prompts/`)
+- **system.ts**: Phase 1/2 프롬프트 빌더, 히스토리 압축
+- **types.ts**: AI 응답 스키마 (Zod 검증)
+- **canvas.ts**: 캔버스 컨텍스트 포맷팅, 토큰 추정
 
 ### API 모듈 (`src/api/`)
 - **index.ts**: Electron/Web 분기 로직, IPC 래퍼
 
-### 프롬프트 시스템 (`src/prompts/`)
-- **system.ts**: Phase 1/2 프롬프트 빌더, 히스토리 압축
-- **types.ts**: AI 응답 스키마 (Zod 검증)
-- **canvas.ts**: 캔버스 컨텍스트 포맷팅, 토큰 추정
+### 렌더러 프롬프트 (`src/prompts/`)
+- 경량 호환 레이어 (타입 export만 유지, 실제 로직은 electron/prompts 사용)
 
 ### 상태 관리 (Zustand)
 ```typescript
@@ -112,11 +124,37 @@ ai-canvas/
 │   ├── App.tsx
 │   └── main.tsx
 ├── electron/
-│   ├── main.ts                  # IPC 핸들러
+│   ├── main.ts                  # IPC 핸들러 (ai:chat 통합 엔드포인트)
 │   ├── preload.ts               # Electron API
-│   └── gemini/                  # Gemini 프로바이더
-│       ├── auth.ts              # Google OAuth (PKCE)
-│       ├── chat.ts              # Cloud Code Assist 스트리밍
+│   ├── ai/                      # AI 오케스트레이션 레이어
+│   │   ├── workflow.ts          # Phase 1/2 실행 흐름
+│   │   ├── providerAdapter.ts   # Provider 통합 호출
+│   │   ├── parser.ts            # 응답 파싱 및 fallback
+│   │   ├── types.ts             # AI 타입 정의
+│   │   └── index.ts
+│   ├── prompts/                 # 프롬프트 시스템 (Electron 전용)
+│   │   ├── system.ts            # Phase 1/2 프롬프트 빌더
+│   │   ├── types.ts             # 응답 스키마 (Zod)
+│   │   ├── canvas.ts            # 캔버스 컨텍스트 유틸
+│   │   └── index.ts
+│   ├── gemini/                  # Gemini 프로바이더
+│   │   ├── auth.ts              # Google OAuth (PKCE)
+│   │   ├── chat.ts              # Cloud Code Assist 스트리밍
+│   │   ├── types.ts
+│   │   └── index.ts
+│   ├── codex/                   # Codex (OpenAI) 프로바이더
+│   │   ├── auth.ts
+│   │   ├── chat.ts
+│   │   ├── types.ts
+│   │   └── index.ts
+│   ├── anthropic/               # Anthropic 프로바이더
+│   │   ├── auth.ts
+│   │   ├── chat.ts
+│   │   ├── types.ts
+│   │   └── index.ts
+│   └── copilot/                 # GitHub Copilot 프로바이더
+│       ├── auth.ts
+│       ├── chat.ts
 │       ├── types.ts
 │       └── index.ts
 ├── tests/                       # Playwright 테스트
@@ -146,8 +184,23 @@ npm run build        # Electron 앱 프로덕션 빌드
 | 기능 | Electron (프로덕션) |
 |------|---------------------|
 | 파일 접근 | 네이티브 파일시스템 |
-| AI 채팅 | IPC `gemini:chat` → Cloud Code Assist API |
-| 인증 | Gemini (`electron/gemini/auth.ts`) |
+| AI 채팅 | IPC `ai:chat` → 오케스트레이터 → Provider별 API |
+| 인증 | Provider별 OAuth 2.0 (`electron/{provider}/auth.ts`) |
+
+### AI 채팅 흐름
+1. 렌더러 → `ai:chat` IPC 요청 (runId, provider, prompt, history, canvasContent, selection)
+2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → Provider 호출
+3. Phase 1 응답 파싱 → `ai:chat:event` 이벤트 송신 (`phase1_result`)
+4. needsCanvasUpdate=true 시 → Phase 2 프롬프트 생성 → Provider 호출
+5. Phase 2 응답 파싱 → `ai:chat:event` 이벤트 송신 (`phase2_result`)
+6. 완료 → `done` 이벤트 송신
+
+### 이벤트 타입
+- `{ runId, type:'phase', phase:'evaluating'|'updating' }`
+- `{ runId, type:'phase1_result', message, needsCanvasUpdate, updatePlan? }`
+- `{ runId, type:'phase2_result', message, canvasContent }`
+- `{ runId, type:'error', phase:'evaluating'|'updating', error }`
+- `{ runId, type:'done' }`
 
 ---
 
@@ -160,6 +213,24 @@ npm run build        # Electron 앱 프로덕션 빌드
 2. 브라우저에서 Google OAuth 인증
 3. 기본 모델: `gemini-3-flash-preview`
 4. 토큰: `~/Library/Application Support/AI Canvas/gemini-auth.enc`
+
+### Codex (OpenAI)
+1. 우측 상단 Codex 버튼 클릭
+2. 브라우저에서 OpenAI OAuth 인증
+3. 기본 모델: `gpt-5.2`
+4. 토큰: `~/Library/Application Support/AI Canvas/codex-auth.enc`
+
+### Anthropic
+1. 우측 상단 Anthropic 버튼 클릭
+2. 브라우저에서 Anthropic OAuth 인증
+3. 기본 모델: `claude-3-haiku-20240307`
+4. 토큰: `~/Library/Application Support/AI Canvas/anthropic-auth.enc`
+
+### GitHub Copilot
+1. 우측 상단 Copilot 버튼 클릭
+2. 브라우저에서 GitHub OAuth 인증
+3. 기본 모델: `gpt-4o`
+4. 토큰: `~/Library/Application Support/AI Canvas/copilot-auth.enc`
 
 ---
 
