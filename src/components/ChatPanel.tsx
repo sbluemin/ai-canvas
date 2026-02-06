@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import { useStore, Message } from '../store/useStore';
+import { Gemini, OpenAI, Claude, GithubCopilot } from '@lobehub/icons';
+import { useStore, Message, AiProvider } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import './ChatPanel.css';
 
@@ -65,6 +66,34 @@ function SendIcon() {
   );
 }
 
+// Provider별 아이콘과 표시 이름 매핑
+const PROVIDER_INFO: Record<AiProvider, { name: string; icon: React.ReactNode }> = {
+  gemini: {
+    name: 'Gemini',
+    icon: <Gemini.Color size={20} />,
+  },
+  openai: {
+    name: 'OpenAI',
+    icon: <OpenAI size={20} />,
+  },
+  anthropic: {
+    name: 'Claude',
+    icon: <Claude.Avatar size={20} />,
+  },
+  copilot: {
+    name: 'GitHub Copilot',
+    icon: <GithubCopilot size={20} />,
+  },
+};
+
+function getProviderInfo(provider?: AiProvider) {
+  if (provider && PROVIDER_INFO[provider]) {
+    return PROVIDER_INFO[provider];
+  }
+  // provider 정보가 없는 기존 메시지 호환용 폴백
+  return { name: 'AI Canvas', icon: <AICanvasMark /> };
+}
+
 export function ChatPanel() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -109,15 +138,16 @@ export function ChatPanel() {
             }
             const isLastAssistantMessage = msg.role === 'assistant' && index === messages.length - 1;
             const showInlineProgress = isLastAssistantMessage && isUpdatingCanvas && msg.content;
+            const providerInfo = msg.role === 'assistant' ? getProviderInfo(msg.provider) : null;
             
             return (
               <div key={msg.id} className={`message ${msg.role}`}>
-                {msg.role === 'assistant' && (
+                {msg.role === 'assistant' && providerInfo && (
                   <div className="message-header">
                     <div className="ai-avatar">
-                      <AICanvasMark />
+                      {providerInfo.icon}
                     </div>
-                    <span className="ai-name">AI Canvas</span>
+                    <span className="ai-name">{providerInfo.name}</span>
                   </div>
                 )}
                 <div className="message-content">
@@ -148,9 +178,9 @@ export function ChatPanel() {
           <div className="message assistant">
             <div className="message-header">
               <div className="ai-avatar">
-                <AICanvasMark />
+                {getProviderInfo(activeProvider).icon}
               </div>
-              <span className="ai-name">AI Canvas</span>
+              <span className="ai-name">{getProviderInfo(activeProvider).name}</span>
             </div>
             <div className="message-content">
               <div className="progress-indicator">

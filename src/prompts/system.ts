@@ -12,6 +12,7 @@ export interface PromptOptions {
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
+  provider?: string;
 }
 
 export function buildPhase1Prompt(
@@ -79,8 +80,22 @@ ${updatePlan}
 function formatHistory(history: ConversationMessage[]): string {
   if (history.length === 0) return '';
   
+  // Provider 이름 매핑 (AI가 어떤 Provider의 응답인지 인지할 수 있도록)
+  const providerDisplayName: Record<string, string> = {
+    gemini: 'Gemini',
+    openai: 'OpenAI',
+    anthropic: 'Claude',
+    copilot: 'GitHub Copilot',
+  };
+
   return history
-    .map(msg => `[${msg.role.toUpperCase()}]: ${msg.content}`)
+    .map(msg => {
+      if (msg.role === 'assistant' && msg.provider) {
+        const displayName = providerDisplayName[msg.provider] || msg.provider;
+        return `[ASSISTANT (responded by ${displayName})]: ${msg.content}`;
+      }
+      return `[${msg.role.toUpperCase()}]: ${msg.content}`;
+    })
     .join('\n\n');
 }
 
@@ -131,22 +146,8 @@ Ask yourself: *"Would updating the canvas right now genuinely advance the user's
 - Premature modification would bypass important user input or decision-making
 - The user's request is ambiguous and needs clarification
 
-[WHEN needsCanvasUpdate = false: Provide Insightful Analysis]
-Structure your response:
-1. **Identify Strengths** - What works well
-2. **Spot Gaps** - What's missing or unclear
-3. **Suggest Improvements** - Concrete, actionable next steps
-4. **Prioritize** - What to tackle first
-
-[WHEN needsCanvasUpdate = true: Create a Clear Update Plan]
-Your updatePlan should include:
-1. **Intent** - What is the user trying to achieve?
-2. **Current State Analysis** - What exists in the canvas?
-3. **Planned Changes** - Specific modifications to make
-4. **Preservation Notes** - What must remain unchanged
-
 [GUIDELINES]
-- **Match User's Language** - Respond in the same language as the user
+- **Match User's Language** - Respond in the same language as the 'user request'
 - **Be Collaborative** - Act as a partner, not a reactive tool
 - **Be Concrete** - Avoid vague suggestions; provide specific insights
 - Sometimes the best help is a question; sometimes it's committing to action`;

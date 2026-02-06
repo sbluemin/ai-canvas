@@ -179,6 +179,7 @@ export function useChatRequest() {
       const history = messages.map((msg) => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
+        ...(msg.provider ? { provider: msg.provider } : {}),
       }));
 
       let hasError = false;
@@ -203,7 +204,7 @@ export function useChatRequest() {
             if (hasError) return;
             const jsonText = extractJSON(fullResponse);
             if (!jsonText) {
-              addMessage('assistant', fullResponse);
+              addMessage('assistant', fullResponse, activeProvider);
               setIsLoading(false);
               clearAiRun();
               return;
@@ -221,17 +222,17 @@ export function useChatRequest() {
                 });
 
                 if (phase1Result.needsCanvasUpdate && phase1Result.updatePlan) {
-                  addMessage('assistant', phase1Result.message);
+                  addMessage('assistant', phase1Result.message, activeProvider);
                   await runPhase2(prompt, phase1Result.updatePlan);
                 } else {
-                  addMessage('assistant', phase1Result.message);
+                  addMessage('assistant', phase1Result.message, activeProvider);
                   setAiPhase('succeeded');
                   clearAiRun();
                   setIsLoading(false);
                 }
               } else {
                 const messageOnly = parsed?.message || fullResponse;
-                addMessage('assistant', messageOnly);
+                addMessage('assistant', messageOnly, activeProvider);
                 clearAiRun();
                 setIsLoading(false);
               }
@@ -239,9 +240,9 @@ export function useChatRequest() {
               try {
                 const parsed = JSON.parse(jsonText);
                 const messageOnly = parsed?.message || fullResponse;
-                addMessage('assistant', messageOnly);
+                addMessage('assistant', messageOnly, activeProvider);
               } catch {
-                addMessage('assistant', fullResponse);
+                addMessage('assistant', fullResponse, activeProvider);
               }
               clearAiRun();
               setIsLoading(false);

@@ -1,11 +1,14 @@
 import { create } from 'zustand';
 import { AiProvider } from '../types/chat';
 
+export type { AiProvider };
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  provider?: AiProvider;
 }
 
 export type AiPhase = 'idle' | 'evaluating' | 'updating' | 'succeeded' | 'failed';
@@ -46,7 +49,7 @@ interface AppState {
   isCopilotAuthenticated: boolean;
   copilotAuthLoading: boolean;
 
-  addMessage: (role: 'user' | 'assistant', content: string) => void;
+  addMessage: (role: 'user' | 'assistant', content: string, provider?: AiProvider) => void;
   removeLastUserMessage: () => void;
   removeLastAssistantMessage: () => void;
   updateLastMessage: (content: string) => void;
@@ -145,7 +148,7 @@ export const useStore = create<AppState>((set) => ({
   activeProvider: 'gemini',
   errorPopup: null,
 
-  addMessage: (role, content) =>
+  addMessage: (role, content, provider?) =>
     set((state) => ({
       messages: [
         ...state.messages,
@@ -154,6 +157,7 @@ export const useStore = create<AppState>((set) => ({
           role,
           content,
           timestamp: new Date(),
+          ...(provider ? { provider } : {}),
         },
       ],
     })),

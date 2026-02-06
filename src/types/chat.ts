@@ -5,11 +5,13 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  provider?: AiProvider;
 }
 
 export interface ChatHistory {
   role: 'user' | 'assistant';
   content: string;
+  provider?: AiProvider;
 }
 
 export interface ChatStreamCallbacks {
