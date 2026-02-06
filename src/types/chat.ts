@@ -1,4 +1,4 @@
-export type AiProvider = 'gemini' | 'openai' | 'anthropic' | 'copilot';
+export type AiProvider = 'gemini' | 'openai' | 'anthropic';
 
 export interface Message {
   id: string;

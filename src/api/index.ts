@@ -4,6 +4,7 @@ const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
 type AiChatEvent =
   | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
+  | { runId: string; type: 'phase_message_stream'; phase: 'evaluating' | 'updating'; message: string }
   | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
   | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }

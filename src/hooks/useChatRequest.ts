@@ -90,7 +90,7 @@ export function useChatRequest() {
     addMessage,
     removeLastUserMessage,
     removeLastAssistantMessage,
-    updateLastMessage,
+    setLastMessageContent,
     setCanvasContent,
     setIsLoading,
     startAiRun,
@@ -103,6 +103,11 @@ export function useChatRequest() {
   } = useStore();
 
   const currentRunIdRef = useRef<string | null>(null);
+  const hasStreamingAssistantRef = useRef(false);
+  const streamedPhase1MessageRef = useRef('');
+  const streamedPhase2MessageRef = useRef('');
+  const phase2FinalMessageRef = useRef('');
+  const hasPhase2StreamEventRef = useRef(false);
 
   useEffect(() => {
     if (!api.isElectron) return;
@@ -112,30 +117,60 @@ export function useChatRequest() {
         return;
       }
 
-      switch (event.type) {
-        case 'phase':
-          setAiPhase(event.phase === 'evaluating' ? 'evaluating' : 'updating');
-          if (event.phase === 'updating') {
-            saveCanvasSnapshot();
+        switch (event.type) {
+          case 'phase_message_stream': {
+            if (!hasStreamingAssistantRef.current) {
+              addMessage('assistant', '', activeProvider);
+              hasStreamingAssistantRef.current = true;
+            }
+
+            if (event.phase === 'evaluating') {
+              streamedPhase1MessageRef.current = event.message;
+              setLastMessageContent(event.message);
+            } else {
+              hasPhase2StreamEventRef.current = true;
+              streamedPhase2MessageRef.current = event.message;
+              const combined = streamedPhase1MessageRef.current
+                ? `${streamedPhase1MessageRef.current}\n\n${event.message}`
+                : event.message;
+              setLastMessageContent(combined);
+            }
+            break;
           }
-          break;
 
-        case 'phase1_result':
-          setAiRunResult({
-            message: event.message,
-            needsCanvasUpdate: event.needsCanvasUpdate,
-            updatePlan: event.updatePlan,
-          });
-          addMessage('assistant', event.message, activeProvider);
-          break;
+          case 'phase':
+            setAiPhase(event.phase === 'evaluating' ? 'evaluating' : 'updating');
+            if (event.phase === 'updating') {
+              saveCanvasSnapshot();
+            }
+            break;
 
-        case 'phase2_result':
-          updateLastMessage('\n\n' + event.message);
-          setCanvasContent(event.canvasContent);
-          setAiPhase('succeeded');
-          break;
+          case 'phase1_result':
+            setAiRunResult({
+              message: event.message,
+              needsCanvasUpdate: event.needsCanvasUpdate,
+              updatePlan: event.updatePlan,
+            });
+            streamedPhase1MessageRef.current = event.message;
+            if (hasStreamingAssistantRef.current) {
+              setLastMessageContent(event.message);
+            } else {
+              addMessage('assistant', event.message, activeProvider);
+              hasStreamingAssistantRef.current = true;
+            }
+            break;
 
-        case 'error':
+          case 'phase2_result':
+            phase2FinalMessageRef.current = event.message;
+            streamedPhase2MessageRef.current = '';
+            hasPhase2StreamEventRef.current = false;
+            setCanvasContent(event.canvasContent);
+            if (streamedPhase1MessageRef.current) {
+              setLastMessageContent(streamedPhase1MessageRef.current);
+            }
+            break;
+
+          case 'error':
           if (event.phase === 'evaluating') {
             removeLastUserMessage();
           } else {
@@ -146,22 +181,40 @@ export function useChatRequest() {
           setAiRunResult({ error: { phase: event.phase, message: event.error } });
           setAiPhase('failed');
           setIsLoading(false);
-          clearAiRun();
-          currentRunIdRef.current = null;
-          break;
+            clearAiRun();
+            currentRunIdRef.current = null;
+            hasStreamingAssistantRef.current = false;
+            streamedPhase1MessageRef.current = '';
+            streamedPhase2MessageRef.current = '';
+            phase2FinalMessageRef.current = '';
+            hasPhase2StreamEventRef.current = false;
+            break;
 
-        case 'done':
-          setIsLoading(false);
-          clearAiRun();
-          currentRunIdRef.current = null;
-          break;
-      }
+          case 'done':
+            if (phase2FinalMessageRef.current) {
+              const finalCombined = streamedPhase1MessageRef.current
+                ? `${streamedPhase1MessageRef.current}\n\n${phase2FinalMessageRef.current}`
+                : phase2FinalMessageRef.current;
+              if (!hasPhase2StreamEventRef.current || streamedPhase2MessageRef.current !== phase2FinalMessageRef.current) {
+                setLastMessageContent(finalCombined);
+              }
+            }
+            setIsLoading(false);
+            clearAiRun();
+            currentRunIdRef.current = null;
+            hasStreamingAssistantRef.current = false;
+            streamedPhase1MessageRef.current = '';
+            streamedPhase2MessageRef.current = '';
+            phase2FinalMessageRef.current = '';
+            hasPhase2StreamEventRef.current = false;
+            break;
+        }
     });
 
     return unsubscribe;
   }, [
     addMessage,
-    updateLastMessage,
+    setLastMessageContent,
     setCanvasContent,
     setAiPhase,
     setAiRunResult,
@@ -182,6 +235,11 @@ export function useChatRequest() {
       setIsLoading(true);
       const runId = startAiRun();
       currentRunIdRef.current = runId;
+      hasStreamingAssistantRef.current = false;
+      streamedPhase1MessageRef.current = '';
+      streamedPhase2MessageRef.current = '';
+      phase2FinalMessageRef.current = '';
+      hasPhase2StreamEventRef.current = false;
 
       const history = messages.map((msg) => ({
         role: msg.role as 'user' | 'assistant',
@@ -206,6 +264,11 @@ export function useChatRequest() {
         setIsLoading(false);
         clearAiRun();
         currentRunIdRef.current = null;
+        hasStreamingAssistantRef.current = false;
+        streamedPhase1MessageRef.current = '';
+        streamedPhase2MessageRef.current = '';
+        phase2FinalMessageRef.current = '';
+        hasPhase2StreamEventRef.current = false;
       }
     },
     [

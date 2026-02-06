@@ -38,11 +38,11 @@
 }
 
 .codex-auth-button.authenticated {
-  background: rgba(16, 163, 127, 0.12);
+  background: rgba(142, 142, 147, 0.15);
 }
 
 .codex-auth-button.authenticated:hover {
-  background: rgba(16, 163, 127, 0.22);
+  background: rgba(142, 142, 147, 0.25);
 }
 
 .codex-auth-indicator {
@@ -51,7 +51,7 @@
   right: 2px;
   width: 8px;
   height: 8px;
-  background: #10A37F;
+  background: #8E8E93;
   border-radius: 50%;
   border: 2px solid #131314;
   animation: codex-pulse 2s ease-in-out infinite;
@@ -59,10 +59,10 @@
 
 @keyframes codex-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(16, 163, 127, 0.4);
+    box-shadow: 0 0 0 0 rgba(142, 142, 147, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(16, 163, 127, 0);
+    box-shadow: 0 0 0 4px rgba(142, 142, 147, 0);
   }
 }
 
@@ -112,7 +112,7 @@
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   margin-bottom: 12px;
-  color: #10A37F;
+  color: #8E8E93;
   font-size: 13px;
   font-weight: 500;
 }
@@ -120,7 +120,7 @@
 .codex-status-dot {
   width: 8px;
   height: 8px;
-  background: #10A37F;
+  background: #8E8E93;
   border-radius: 50%;
   animation: codex-pulse 2s ease-in-out infinite;
 }

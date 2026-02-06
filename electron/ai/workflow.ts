@@ -4,6 +4,78 @@ import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
 import { parsePhase1Response, parsePhase2Response } from './parser';
 import { callProvider } from './providerAdapter';
 
+const PHASE2_STREAM_CHUNK_SIZE = 12;
+const PHASE2_STREAM_TICK_MS = 16;
+
+function decodeJsonStringFragment(value: string): string {
+  try {
+    return JSON.parse(`"${value}"`) as string;
+  } catch {
+    return value
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\r')
+      .replace(/\\t/g, '\t')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+  }
+}
+
+function extractMessageField(rawText: string): string | null {
+  const keyMatch = /"message"\s*:\s*"/.exec(rawText);
+  if (!keyMatch) {
+    return null;
+  }
+
+  let escaped = false;
+  let value = '';
+  for (let i = keyMatch.index + keyMatch[0].length; i < rawText.length; i += 1) {
+    const ch = rawText[i];
+
+    if (escaped) {
+      value += `\\${ch}`;
+      escaped = false;
+      continue;
+    }
+
+    if (ch === '\\') {
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      return decodeJsonStringFragment(value);
+    }
+
+    value += ch;
+  }
+
+  return decodeJsonStringFragment(value);
+}
+
+async function streamPhaseMessageAfterResult(
+  sendEvent: (evt: AiChatEvent) => void,
+  runId: string,
+  phase: 'evaluating' | 'updating',
+  message: string
+): Promise<void> {
+  if (!message) {
+    return;
+  }
+
+  for (let end = PHASE2_STREAM_CHUNK_SIZE; end < message.length + PHASE2_STREAM_CHUNK_SIZE; end += PHASE2_STREAM_CHUNK_SIZE) {
+    sendEvent({
+      runId,
+      type: 'phase_message_stream',
+      phase,
+      message: message.slice(0, end),
+    });
+
+    if (end < message.length) {
+      await new Promise((resolve) => setTimeout(resolve, PHASE2_STREAM_TICK_MS));
+    }
+  }
+}
+
 export async function executeAiChatWorkflow(
   event: IpcMainInvokeEvent,
   request: AiChatRequest
@@ -23,7 +95,21 @@ export async function executeAiChatWorkflow(
     
     const phase1Prompt = buildPhase1Prompt(prompt, canvasContent, history, { selection });
     
-    const phase1RawText = await callProvider(provider, event, phase1Prompt);
+    let phase1RawBuffer = '';
+    let lastPhase1Message = '';
+    const phase1RawText = await callProvider(provider, event, phase1Prompt, undefined, (chunk) => {
+      phase1RawBuffer += chunk;
+      const message = extractMessageField(phase1RawBuffer);
+      if (message !== null && message !== lastPhase1Message) {
+        lastPhase1Message = message;
+        sendEvent({
+          runId,
+          type: 'phase_message_stream',
+          phase: 'evaluating',
+          message,
+        });
+      }
+    });
     
     const phase1Result = parsePhase1Response(phase1RawText);
     
@@ -61,6 +147,8 @@ export async function executeAiChatWorkflow(
         message: phase2Result.message,
         canvasContent: phase2Result.canvasContent,
       });
+
+      await streamPhaseMessageAfterResult(sendEvent, runId, 'updating', phase2Result.message);
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

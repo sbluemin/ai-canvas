@@ -20,7 +20,7 @@ interface ChatChunk {
   done?: boolean;
 }
 
-type AiProvider = 'gemini' | 'openai' | 'anthropic' | 'copilot';
+type AiProvider = 'gemini' | 'openai' | 'anthropic';
 
 interface AiChatRequest {
   runId: string;
@@ -37,6 +37,7 @@ interface AiChatRequest {
 
 type AiChatEvent =
   | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
+  | { runId: string; type: 'phase_message_stream'; phase: 'evaluating' | 'updating'; message: string }
   | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
   | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
@@ -63,7 +64,6 @@ interface ElectronAPI {
   gemini: AuthOnlyProviderAPI;
   codex: AuthOnlyProviderAPI;
   anthropic: AuthOnlyProviderAPI;
-  copilot: AuthOnlyProviderAPI;
 }
 
 declare global {

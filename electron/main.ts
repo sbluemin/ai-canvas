@@ -5,7 +5,6 @@ import fs from 'node:fs/promises';
 import * as gemini from './gemini';
 import * as codex from './codex';
 import * as anthropic from './anthropic';
-import * as copilot from './copilot';
 import { executeAiChatWorkflow, type AiChatRequest } from './ai';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -198,26 +197,6 @@ ipcMain.handle('anthropic:auth:status', async () => {
 
 ipcMain.handle('anthropic:auth:logout', async () => {
   await anthropic.logout();
-  return { success: true };
-});
-
-// ─── Copilot IPC Handlers ───
-ipcMain.handle('copilot:auth:start', async () => {
-  try {
-    await copilot.startAuth();
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
-});
-
-ipcMain.handle('copilot:auth:status', async () => {
-  return await copilot.getAuthStatus();
-});
-
-ipcMain.handle('copilot:auth:logout', async () => {
-  await copilot.logout();
   return { success: true };
 });
 

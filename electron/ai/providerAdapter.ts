@@ -3,13 +3,13 @@ import type { AiProvider } from './types';
 import * as gemini from '../gemini';
 import * as codex from '../codex';
 import * as anthropic from '../anthropic';
-import * as copilot from '../copilot';
 
 export async function callProvider(
   provider: AiProvider,
   _event: IpcMainInvokeEvent,
   prompt: string,
-  systemInstruction?: string
+  systemInstruction?: string,
+  onChunk?: (chunk: string) => void
 ): Promise<string> {
   const chunks: string[] = [];
   let capturedError: string | undefined;
@@ -22,6 +22,7 @@ export async function callProvider(
         }
         if (data.text) {
           chunks.push(data.text);
+          onChunk?.(data.text);
         }
       },
       isDestroyed: () => false,
@@ -53,15 +54,6 @@ export async function callProvider(
       const result = await anthropic.chat(mockEvent, auth, { prompt, systemInstruction });
       if (!result.success) {
         throw new Error(result.error || capturedError || 'Anthropic chat failed');
-      }
-      break;
-    }
-    case 'copilot': {
-      const auth = await copilot.getValidAccessToken();
-      if (!auth) throw new Error('Copilot not authenticated');
-      const result = await copilot.chat(mockEvent, auth, { prompt, systemInstruction });
-      if (!result.success) {
-        throw new Error(result.error || capturedError || 'Copilot chat failed');
       }
       break;
     }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import { Gemini, OpenAI, Claude, GithubCopilot } from '@lobehub/icons';
+import { Gemini, OpenAI, Claude } from '@lobehub/icons';
 import { useStore, Message, AiProvider } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import './ChatPanel.css';
@@ -88,10 +88,6 @@ const PROVIDER_INFO: Record<AiProvider, { name: string; icon: React.ReactNode }>
     name: 'Claude',
     icon: <Claude.Avatar size={20} />,
   },
-  copilot: {
-    name: 'GitHub Copilot',
-    icon: <GithubCopilot size={20} />,
-  },
 };
 
 function getProviderInfo(provider?: AiProvider) {
@@ -109,7 +105,7 @@ export function ChatPanel() {
   const providerMenuRef = useRef<HTMLDivElement>(null);
   
   const { messages, isLoading, aiRun, isAuthenticated, activeProvider, setActiveProvider,
-    isCodexAuthenticated, isAnthropicAuthenticated, isCopilotAuthenticated } = useStore();
+    isCodexAuthenticated, isAnthropicAuthenticated } = useStore();
   const { sendMessage } = useChatRequest();
 
   // Provider별 인증 상태 매핑
@@ -117,7 +113,6 @@ export function ChatPanel() {
     gemini: isAuthenticated,
     openai: isCodexAuthenticated,
     anthropic: isAnthropicAuthenticated,
-    copilot: isCopilotAuthenticated,
   };
 
   // 현재 활성 Provider가 미인증 상태면 인증된 Provider로 자동 전환
@@ -128,7 +123,7 @@ export function ChatPanel() {
         setActiveProvider(authenticatedProvider);
       }
     }
-  }, [isAuthenticated, isCodexAuthenticated, isAnthropicAuthenticated, isCopilotAuthenticated]);
+  }, [isAuthenticated, isCodexAuthenticated, isAnthropicAuthenticated]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -166,6 +161,7 @@ export function ChatPanel() {
 
   const isUpdatingCanvas = aiRun?.phase === 'updating';
   const hasFailed = aiRun?.phase === 'failed';
+  const hasAssistantTailMessage = messages.length > 0 && messages[messages.length - 1].role === 'assistant';
 
   return (
     <div className="chat-panel">
@@ -224,7 +220,7 @@ export function ChatPanel() {
             );
           })
         )}
-        {isLoading && !isUpdatingCanvas && !hasFailed && (
+        {isLoading && !isUpdatingCanvas && !hasFailed && !hasAssistantTailMessage && (
           <div className="message assistant">
             <div className="message-header">
               <div className="ai-avatar">

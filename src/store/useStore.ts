@@ -46,8 +46,6 @@ interface AppState {
   codexAuthLoading: boolean;
   isAnthropicAuthenticated: boolean;
   anthropicAuthLoading: boolean;
-  isCopilotAuthenticated: boolean;
-  copilotAuthLoading: boolean;
 
   addMessage: (role: 'user' | 'assistant', content: string, provider?: AiProvider) => void;
   removeLastUserMessage: () => void;
@@ -75,8 +73,6 @@ interface AppState {
   setCodexAuthLoading: (loading: boolean) => void;
   setAnthropicAuthStatus: (isAuthenticated: boolean) => void;
   setAnthropicAuthLoading: (loading: boolean) => void;
-  setCopilotAuthStatus: (isAuthenticated: boolean) => void;
-  setCopilotAuthLoading: (loading: boolean) => void;
   
   showError: (error: ErrorInfo) => void;
   clearError: () => void;
@@ -138,8 +134,6 @@ export const useStore = create<AppState>((set) => ({
   codexAuthLoading: true,
   isAnthropicAuthenticated: false,
   anthropicAuthLoading: true,
-  isCopilotAuthenticated: false,
-  copilotAuthLoading: true,
   canvasContent: DEFAULT_CANVAS_CONTENT,
   isLoading: false,
   currentFilePath: null,
@@ -257,8 +251,6 @@ export const useStore = create<AppState>((set) => ({
   setCodexAuthLoading: (codexAuthLoading) => set({ codexAuthLoading }),
   setAnthropicAuthStatus: (isAnthropicAuthenticated) => set({ isAnthropicAuthenticated }),
   setAnthropicAuthLoading: (anthropicAuthLoading) => set({ anthropicAuthLoading }),
-  setCopilotAuthStatus: (isCopilotAuthenticated) => set({ isCopilotAuthenticated }),
-  setCopilotAuthLoading: (copilotAuthLoading) => set({ copilotAuthLoading }),
   
   showError: (error) => set({ errorPopup: error }),
   clearError: () => set({ errorPopup: null }),

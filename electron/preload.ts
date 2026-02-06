@@ -22,7 +22,7 @@ export interface ChatChunk {
   done?: boolean;
 }
 
-export type AiProvider = 'gemini' | 'openai' | 'anthropic' | 'copilot';
+export type AiProvider = 'gemini' | 'openai' | 'anthropic';
 
 export interface AiChatRequest {
   runId: string;
@@ -39,6 +39,7 @@ export interface AiChatRequest {
 
 export type AiChatEvent =
   | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
+  | { runId: string; type: 'phase_message_stream'; phase: 'evaluating' | 'updating'; message: string }
   | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
   | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
@@ -76,11 +77,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     authStart: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:start'),
     authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('anthropic:auth:status'),
     authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:logout'),
-  },
-
-  copilot: {
-    authStart: (): Promise<AuthResult> => ipcRenderer.invoke('copilot:auth:start'),
-    authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('copilot:auth:status'),
-    authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('copilot:auth:logout'),
   },
 });

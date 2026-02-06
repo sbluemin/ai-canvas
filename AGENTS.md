@@ -42,7 +42,6 @@
 - **Gemini** (`electron/gemini/auth.ts`): PKCE OAuth 2.0, Cloud Code Assist API
 - **Codex** (`electron/codex/auth.ts`): OpenAI OAuth 2.0
 - **Anthropic** (`electron/anthropic/auth.ts`): Anthropic OAuth 2.0
-- **Copilot** (`electron/copilot/auth.ts`): GitHub Copilot OAuth 2.0
 - safeStorage 암호화 토큰 저장, 자동 갱신
 
 ### AI 오케스트레이션 (`electron/ai/`)
@@ -152,11 +151,6 @@ ai-canvas/
 │   │   ├── chat.ts
 │   │   ├── types.ts
 │   │   └── index.ts
-│   └── copilot/                 # GitHub Copilot 프로바이더
-│       ├── auth.ts
-│       ├── chat.ts
-│       ├── types.ts
-│       └── index.ts
 ├── tests/                       # Playwright 테스트
 │   └── electron-chat.test.ts    # Electron 채팅 테스트
 └── vite.config.ts               # Vite + Electron 설정
@@ -190,13 +184,16 @@ npm run build        # Electron 앱 프로덕션 빌드
 ### AI 채팅 흐름
 1. 렌더러 → `ai:chat` IPC 요청 (runId, provider, prompt, history, canvasContent, selection)
 2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → Provider 호출
-3. Phase 1 응답 파싱 → `ai:chat:event` 이벤트 송신 (`phase1_result`)
-4. needsCanvasUpdate=true 시 → Phase 2 프롬프트 생성 → Provider 호출
-5. Phase 2 응답 파싱 → `ai:chat:event` 이벤트 송신 (`phase2_result`)
-6. 완료 → `done` 이벤트 송신
+3. Phase 1 Provider 스트리밍 중 `message` 필드 부분 추출 → `ai:chat:event` 이벤트 송신 (`phase_message_stream`)
+4. Phase 1 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase1_result`)
+5. needsCanvasUpdate=true 시 → Phase 2 프롬프트 생성 → Provider 호출
+6. Phase 2 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase2_result`, 캔버스 우선 반영)
+7. Phase 2 `message` 후속 스트리밍 이벤트 송신 (`phase_message_stream`)
+8. 완료 → `done` 이벤트 송신
 
 ### 이벤트 타입
 - `{ runId, type:'phase', phase:'evaluating'|'updating' }`
+- `{ runId, type:'phase_message_stream', phase:'evaluating'|'updating', message }`
 - `{ runId, type:'phase1_result', message, needsCanvasUpdate, updatePlan? }`
 - `{ runId, type:'phase2_result', message, canvasContent }`
 - `{ runId, type:'error', phase:'evaluating'|'updating', error }`
@@ -225,12 +222,6 @@ npm run build        # Electron 앱 프로덕션 빌드
 2. 브라우저에서 Anthropic OAuth 인증
 3. 기본 모델: `claude-3-haiku-20240307`
 4. 토큰: `~/Library/Application Support/AI Canvas/anthropic-auth.enc`
-
-### GitHub Copilot
-1. 우측 상단 Copilot 버튼 클릭
-2. 브라우저에서 GitHub OAuth 인증
-3. 기본 모델: `gpt-4o`
-4. 토큰: `~/Library/Application Support/AI Canvas/copilot-auth.enc`
 
 ---
 

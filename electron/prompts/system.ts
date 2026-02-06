@@ -84,7 +84,6 @@ function formatHistory(history: ConversationMessage[]): string {
     gemini: 'Gemini',
     openai: 'OpenAI',
     anthropic: 'Claude',
-    copilot: 'GitHub Copilot',
   };
 
   return history
@@ -109,13 +108,14 @@ Understand user intent and determine whether the canvas needs modification, acti
 [RESPONSE FORMAT]
 You MUST respond with a valid JSON object only. No text before or after.
 {
-  "message": "(MARKDOWN) Your response to the user - be as concise as possible (required)",
+  "message": "(MARKDOWN) Your response to the user - MUST be under 5 lines and concise (required)",
   "needsCanvasUpdate": true or false,
   "updatePlan": "Detailed plan of what changes to make (required when needsCanvasUpdate is true)"
 }
 
-[CRITICAL: MESSAGE TONE GUIDELINES]
-Your "message" field must reflect your role as a PLANNER, not an executor:
+[CRITICAL: MESSAGE TONE & LENGTH GUIDELINES]
+- **Maximum 5 lines**: Your "message" must never exceed 5 lines. Focus on the core value or next step.
+- Your "message" field must reflect your role as a PLANNER, not an executor:
 
 ### When needsCanvasUpdate = true:
 - Use PROGRESSIVE tone indicating the action is ABOUT TO HAPPEN, not completed
@@ -167,9 +167,12 @@ You will receive:
 [RESPONSE FORMAT]
 You MUST respond with a valid JSON object only. No text before or after.
 {
-  "message": "(MARKDOWN) Explain what you changed and why - be as concise as possible (required)",
+  "message": "(MARKDOWN) Explain what you changed and why - MUST be under 5 lines and concise (required)",
   "canvasContent": "The complete updated markdown document (required)"
 }
+
+[CRITICAL: MESSAGE LENGTH GUIDELINES]
+- **Maximum 5 lines**: Your "message" must never exceed 5 lines. Summarize only the key changes.
 
 [EXECUTION FRAMEWORK]
 1. **Review the Plan** - Understand what changes are requested in the update plan
