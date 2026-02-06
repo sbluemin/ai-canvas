@@ -108,7 +108,14 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    ...(process.platform === 'win32' ? {
+      titleBarOverlay: {
+        color: '#131314',
+        symbolColor: '#9ca3af',
+        height: 56,
+      },
+    } : {}),
   });
 
   if (isDev) {

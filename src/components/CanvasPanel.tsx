@@ -25,7 +25,10 @@ function EditIcon() {
 }
 
 export function CanvasPanel() {
-  const { canvasContent, currentFilePath, setCurrentFilePath, aiRun, activeProvider, setActiveProvider } = useStore();
+  const { 
+    canvasContent, currentFilePath, setCurrentFilePath, aiRun, activeProvider, setActiveProvider,
+    isAuthenticated, isCodexAuthenticated, isAnthropicAuthenticated, isCopilotAuthenticated,
+  } = useStore();
   const [documentTitle, setDocumentTitle] = useState('AI Canvas - 재사용 가능한 코어 아키텍처');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isProviderMenuOpen, setIsProviderMenuOpen] = useState(false);
@@ -35,6 +38,24 @@ export function CanvasPanel() {
   const providerMenuRef = useRef<HTMLDivElement>(null);
 
   const isUpdating = aiRun?.phase === 'updating';
+
+  // Provider별 인증 상태 매핑
+  const authStatusMap: Record<AiProvider, boolean> = {
+    gemini: isAuthenticated,
+    openai: isCodexAuthenticated,
+    anthropic: isAnthropicAuthenticated,
+    copilot: isCopilotAuthenticated,
+  };
+
+  // 인증된 Provider만 필터링
+  const authenticatedProviders = providers.filter(p => authStatusMap[p.id]);
+
+  // 현재 활성 Provider가 미인증 상태면 인증된 Provider로 자동 전환
+  useEffect(() => {
+    if (!authStatusMap[activeProvider] && authenticatedProviders.length > 0) {
+      setActiveProvider(authenticatedProviders[0].id);
+    }
+  }, [isAuthenticated, isCodexAuthenticated, isAnthropicAuthenticated, isCopilotAuthenticated]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -125,7 +146,7 @@ export function CanvasPanel() {
                 
                 {isProviderMenuOpen && (
                   <div className="provider-dropdown">
-                    {providers.map((provider) => (
+                    {authenticatedProviders.map((provider) => (
                       <button
                         key={provider.id}
                         className={`provider-option ${activeProvider === provider.id ? 'selected' : ''}`}

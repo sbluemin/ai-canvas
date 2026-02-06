@@ -8,6 +8,11 @@
   -webkit-app-region: drag;
 }
 
+/* Windows: titleBarOverlay 영역 확보 */
+[data-platform="win32"] .command-bar {
+  padding-right: 140px;
+}
+
 .command-bar-content {
   display: flex;
   align-items: center;
