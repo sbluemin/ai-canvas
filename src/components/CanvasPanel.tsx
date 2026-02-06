@@ -10,7 +10,7 @@ import './CanvasPanel.css';
 
 const providers: { id: AiProvider; name: string; Icon: any }[] = [
   { id: 'gemini', name: 'Gemini', Icon: Gemini.Color || Gemini },
-  { id: 'openai', name: 'OpenAI', Icon: OpenAI },
+  { id: 'openai', name: 'Codex', Icon: OpenAI },
   { id: 'anthropic', name: 'Anthropic', Icon: Claude.Color || Claude },
   { id: 'copilot', name: 'Copilot', Icon: GithubCopilot },
 ];

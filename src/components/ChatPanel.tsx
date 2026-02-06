@@ -73,7 +73,7 @@ const PROVIDER_INFO: Record<AiProvider, { name: string; icon: React.ReactNode }>
     icon: <Gemini.Color size={20} />,
   },
   openai: {
-    name: 'OpenAI',
+    name: 'Codex',
     icon: <OpenAI size={20} />,
   },
   anthropic: {
@@ -128,7 +128,7 @@ export function ChatPanel() {
             <h3>무엇을 도와드릴까요?</h3>
             <p className="hint">프로젝트 아이디어에 대해 물어보세요</p>
             {!isAuthenticated && (
-              <p className="auth-hint">우측 상단의 {activeProvider === 'openai' ? 'OpenAI' : activeProvider === 'anthropic' ? 'Anthropic' : 'Gemini'} 버튼으로 로그인하세요</p>
+              <p className="auth-hint">우측 상단의 {activeProvider === 'openai' ? 'Codex' : activeProvider === 'anthropic' ? 'Anthropic' : 'Gemini'} 버튼으로 로그인하세요</p>
             )}
           </div>
         ) : (

@@ -19,7 +19,7 @@ async function* streamGenerateContent(
   const requestBody: Record<string, unknown> = {
     contents: messages,
     generationConfig: {
-      maxOutputTokens: 8192,
+      maxOutputTokens: 4096,
     },
   };
   
