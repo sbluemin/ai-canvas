@@ -63,4 +63,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('anthropic:chat:chunk', listener);
     },
   },
+
+  copilot: {
+    authStart: (): Promise<AuthResult> => ipcRenderer.invoke('copilot:auth:start'),
+    authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('copilot:auth:status'),
+    authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('copilot:auth:logout'),
+    chat: (prompt: string): Promise<ChatResponse> => ipcRenderer.invoke('copilot:chat', prompt),
+    onChatChunk: (callback: (chunk: ChatChunk) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, chunk: ChatChunk) => callback(chunk);
+      ipcRenderer.on('copilot:chat:chunk', listener);
+      return () => ipcRenderer.removeListener('copilot:chat:chunk', listener);
+    },
+  },
 });

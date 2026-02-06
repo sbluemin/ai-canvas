@@ -42,7 +42,8 @@ interface ElectronAPI {
   readFile: (filePath: string) => Promise<string>;
   gemini: ProviderAPI;
   codex: ProviderAPI;
-  anthropic: AuthOnlyProviderAPI;
+  anthropic: ProviderAPI;
+  copilot: ProviderAPI;
 }
 
 declare global {

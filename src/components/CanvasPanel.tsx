@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Gemini, OpenAI, Claude } from '@lobehub/icons';
+import { Gemini, OpenAI, Claude, GithubCopilot } from '@lobehub/icons';
 import { useStore } from '../store/useStore';
 import { AiProvider } from '../types/chat';
 import { MilkdownEditor } from './MilkdownEditor';
@@ -12,6 +12,7 @@ const providers: { id: AiProvider; name: string; Icon: any }[] = [
   { id: 'gemini', name: 'Gemini', Icon: Gemini.Color || Gemini },
   { id: 'openai', name: 'OpenAI', Icon: OpenAI },
   { id: 'anthropic', name: 'Anthropic', Icon: Claude.Color || Claude },
+  { id: 'copilot', name: 'Copilot', Icon: GithubCopilot },
 ];
 
 function EditIcon() {

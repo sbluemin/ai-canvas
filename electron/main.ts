@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import * as gemini from './gemini';
 import * as codex from './codex';
 import * as anthropic from './anthropic';
+import * as copilot from './copilot';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -214,6 +215,34 @@ ipcMain.handle('anthropic:chat', async (event, prompt: string) => {
     return { success: false, error: 'Not authenticated' };
   }
   return anthropic.chat(event, auth, { prompt });
+});
+
+// ─── Copilot IPC Handlers ───
+ipcMain.handle('copilot:auth:start', async () => {
+  try {
+    await copilot.startAuth();
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
+ipcMain.handle('copilot:auth:status', async () => {
+  return await copilot.getAuthStatus();
+});
+
+ipcMain.handle('copilot:auth:logout', async () => {
+  await copilot.logout();
+  return { success: true };
+});
+
+ipcMain.handle('copilot:chat', async (event, prompt: string) => {
+  const auth = await copilot.getValidAccessToken();
+  if (!auth) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  return copilot.chat(event, auth, { prompt });
 });
 
 app.whenReady().then(() => {

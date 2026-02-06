@@ -1,9 +1,9 @@
-import type { ChatStreamCallbacks, ChatHistory } from '../types';
+import type { ChatStreamCallbacks, ChatHistory, AiProvider } from '../types';
 import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
-export type { ChatStreamCallbacks, ChatHistory };
+export type { ChatStreamCallbacks, ChatHistory, AiProvider };
 
 export interface ChatOptions {
   canvasContent?: string;
@@ -66,7 +66,7 @@ export const api = {
     callbacks: ChatStreamCallbacks,
     history: ChatHistory[] = [],
     options?: ChatOptions,
-    provider: 'gemini' | 'openai' | 'anthropic' = 'gemini'
+    provider: AiProvider = 'gemini'
   ): Promise<void> {
     const fullPrompt = options?.canvasContent !== undefined
       ? buildPhase1Prompt(prompt, options.canvasContent, history, {
@@ -75,7 +75,14 @@ export const api = {
       : prompt;
 
     if (isElectron) {
-      const apiName = provider === 'openai' ? 'codex' : provider;
+      // Provider 이름을 API 이름으로 매핑
+      const apiNameMap: Record<AiProvider, string> = {
+        gemini: 'gemini',
+        openai: 'codex',
+        anthropic: 'anthropic',
+        copilot: 'copilot',
+      };
+      const apiName = apiNameMap[provider] || provider;
       const api = (window.electronAPI as any)[apiName];
 
       if (!api) {
@@ -123,13 +130,20 @@ export const api = {
   async chatPhase2(
     options: Phase2ChatOptions,
     callbacks: ChatStreamCallbacks,
-    provider: 'gemini' | 'openai' | 'anthropic' = 'gemini'
+    provider: AiProvider = 'gemini'
   ): Promise<void> {
     const { userRequest, canvasContent, updatePlan } = options;
     const fullPrompt = buildPhase2Prompt(userRequest, canvasContent, updatePlan);
 
     if (isElectron) {
-      const apiName = provider === 'openai' ? 'codex' : provider;
+      // Provider 이름을 API 이름으로 매핑
+      const apiNameMap: Record<AiProvider, string> = {
+        gemini: 'gemini',
+        openai: 'codex',
+        anthropic: 'anthropic',
+        copilot: 'copilot',
+      };
+      const apiName = apiNameMap[provider] || provider;
       const api = (window.electronAPI as any)[apiName];
 
       if (!api) {
