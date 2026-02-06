@@ -66,6 +66,14 @@ function SendIcon() {
   );
 }
 
+function ChevronDownIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  );
+}
+
 // Provider별 아이콘과 표시 이름 매핑
 const PROVIDER_INFO: Record<AiProvider, { name: string; icon: React.ReactNode }> = {
   gemini: {
@@ -96,14 +104,56 @@ function getProviderInfo(provider?: AiProvider) {
 
 export function ChatPanel() {
   const [input, setInput] = useState('');
+  const [isProviderMenuOpen, setIsProviderMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const providerMenuRef = useRef<HTMLDivElement>(null);
   
-  const { messages, isLoading, aiRun, isAuthenticated, activeProvider } = useStore();
+  const { messages, isLoading, aiRun, isAuthenticated, activeProvider, setActiveProvider,
+    isCodexAuthenticated, isAnthropicAuthenticated, isCopilotAuthenticated } = useStore();
   const { sendMessage } = useChatRequest();
+
+  // Provider별 인증 상태 매핑
+  const authStatusMap: Record<AiProvider, boolean> = {
+    gemini: isAuthenticated,
+    openai: isCodexAuthenticated,
+    anthropic: isAnthropicAuthenticated,
+    copilot: isCopilotAuthenticated,
+  };
+
+  // 현재 활성 Provider가 미인증 상태면 인증된 Provider로 자동 전환
+  useEffect(() => {
+    if (!authStatusMap[activeProvider]) {
+      const authenticatedProvider = (Object.keys(authStatusMap) as AiProvider[]).find(p => authStatusMap[p]);
+      if (authenticatedProvider) {
+        setActiveProvider(authenticatedProvider);
+      }
+    }
+  }, [isAuthenticated, isCodexAuthenticated, isAnthropicAuthenticated, isCopilotAuthenticated]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (providerMenuRef.current && !providerMenuRef.current.contains(event.target as Node)) {
+        setIsProviderMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key === '.') {
+        e.preventDefault();
+        setIsProviderMenuOpen(prev => !prev);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,6 +246,38 @@ export function ChatPanel() {
       <div className="input-area">
         <div className="input-wrapper">
           <form className="input-form" onSubmit={handleSubmit}>
+            <div className="provider-selector" ref={providerMenuRef}>
+              <button 
+                type="button" 
+                className="provider-btn"
+                onClick={() => setIsProviderMenuOpen(!isProviderMenuOpen)}
+                title="AI 모델 선택 (Ctrl+.)"
+              >
+                {PROVIDER_INFO[activeProvider].icon}
+                <ChevronDownIcon />
+              </button>
+              
+              {isProviderMenuOpen && (
+                <div className="provider-menu">
+                  {(Object.keys(PROVIDER_INFO) as AiProvider[]).map((provider) => (
+                    <button
+                      key={provider}
+                      type="button"
+                      className={`provider-menu-item ${activeProvider === provider ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveProvider(provider);
+                        setIsProviderMenuOpen(false);
+                      }}
+                    >
+                      <span className="provider-icon">{PROVIDER_INFO[provider].icon}</span>
+                      <span className="provider-name">{PROVIDER_INFO[provider].name}</span>
+                      {activeProvider === provider && <div className="active-dot" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button type="button" className="input-action-btn" title="파일 첨부">
               <PlusIcon />
             </button>
