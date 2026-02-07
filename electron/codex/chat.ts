@@ -14,12 +14,13 @@ const CODEX_HEADERS = {
 async function* streamGenerateContent(
   auth: ValidTokenResult,
   prompt: string,
-  systemInstruction?: string
+  systemInstruction?: string,
+  model?: string
 ): AsyncGenerator<string> {
   const url = `${CODEX_BASE_URL}/codex/responses`;
 
   const requestBody: Record<string, unknown> = {
-    model: DEFAULT_MODEL,
+    model: model || DEFAULT_MODEL,
     instructions: systemInstruction || 'You are a helpful AI assistant.',
     reasoning: { effort: DEFAULT_REASONING },
     stream: true,
@@ -106,7 +107,7 @@ export async function chat(
   request: ChatRequest
 ): Promise<ChatResult> {
   try {
-    const stream = streamGenerateContent(auth, request.prompt, request.systemInstruction);
+    const stream = streamGenerateContent(auth, request.prompt, request.systemInstruction, request.model);
     
     for await (const text of stream) {
       if (!event.sender.isDestroyed()) {

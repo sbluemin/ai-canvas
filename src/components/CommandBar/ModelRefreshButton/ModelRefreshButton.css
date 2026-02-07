@@ -1,0 +1,45 @@
+.model-refresh-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.model-refresh-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  transform: scale(1.05);
+}
+
+.model-refresh-button:active {
+  transform: scale(0.95);
+}
+
+.model-refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.model-refresh-button.loading {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.refresh-icon {
+  transition: transform 0.3s ease;
+}
+
+.refresh-icon.spinning {
+  animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

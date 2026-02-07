@@ -9,6 +9,7 @@ export async function callProvider(
   _event: IpcMainInvokeEvent,
   prompt: string,
   systemInstruction?: string,
+  modelId?: string,
   onChunk?: (chunk: string) => void
 ): Promise<string> {
   const chunks: string[] = [];
@@ -33,7 +34,7 @@ export async function callProvider(
     case 'gemini': {
       const auth = await gemini.getValidAccessToken();
       if (!auth) throw new Error('Gemini not authenticated');
-      const result = await gemini.chat(mockEvent, auth, { prompt, systemInstruction });
+      const result = await gemini.chat(mockEvent, auth, { prompt, systemInstruction, model: modelId });
       if (!result.success) {
         throw new Error(result.error || capturedError || 'Gemini chat failed');
       }
@@ -42,7 +43,7 @@ export async function callProvider(
     case 'openai': {
       const auth = await codex.getValidAccessToken();
       if (!auth) throw new Error('OpenAI not authenticated');
-      const result = await codex.chat(mockEvent, auth, { prompt, systemInstruction });
+      const result = await codex.chat(mockEvent, auth, { prompt, systemInstruction, model: modelId });
       if (!result.success) {
         throw new Error(result.error || capturedError || 'OpenAI chat failed');
       }
@@ -51,7 +52,7 @@ export async function callProvider(
     case 'anthropic': {
       const auth = await anthropic.getValidAccessToken();
       if (!auth) throw new Error('Anthropic not authenticated');
-      const result = await anthropic.chat(mockEvent, auth, { prompt, systemInstruction });
+      const result = await anthropic.chat(mockEvent, auth, { prompt, systemInstruction, model: modelId });
       if (!result.success) {
         throw new Error(result.error || capturedError || 'Anthropic chat failed');
       }

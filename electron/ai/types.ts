@@ -6,6 +6,7 @@ export interface AiChatRequest {
   prompt: string;
   history: ConversationMessage[];
   canvasContent: string;
+  modelId?: string;
   selection?: {
     text: string;
     before: string;

@@ -30,6 +30,7 @@ export interface AiChatRequest {
   prompt: string;
   history: { role: 'user' | 'assistant'; content: string; provider?: AiProvider }[];
   canvasContent: string;
+  modelId?: string;
   selection?: {
     text: string;
     before: string;
@@ -54,6 +55,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ai: {
     chat: (request: AiChatRequest): Promise<{ success: boolean; error?: string }> => 
       ipcRenderer.invoke('ai:chat', request),
+    fetchModels: (): Promise<{ success: boolean; models?: Record<string, unknown[]>; error?: string }> =>
+      ipcRenderer.invoke('ai:fetch-models'),
     onChatEvent: (callback: (event: AiChatEvent) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, evt: AiChatEvent) => callback(evt);
       ipcRenderer.on('ai:chat:event', listener);

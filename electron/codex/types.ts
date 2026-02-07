@@ -18,6 +18,7 @@ export interface AuthStatus {
 export interface ChatRequest {
   prompt: string;
   systemInstruction?: string;
+  model?: string;
 }
 
 export interface ChatResult {

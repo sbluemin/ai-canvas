@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Claude } from '@lobehub/icons';
 import { useStore } from '../../../store/useStore';
+import { ModelSelector } from '../ModelSelector';
 import './AnthropicAuthButton.css';
 
 function LoadingSpinner() {
@@ -126,6 +127,7 @@ export function AnthropicAuthButton() {
           <button className="anthropic-logout-button" onClick={handleLogout} disabled={actionLoading}>
             로그아웃
           </button>
+          <ModelSelector provider="anthropic" />
         </div>
       )}
     </div>

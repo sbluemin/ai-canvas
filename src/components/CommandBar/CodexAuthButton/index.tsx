@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { OpenAI } from '@lobehub/icons';
 import { useStore } from '../../../store/useStore';
+import { ModelSelector } from '../ModelSelector';
 import './CodexAuthButton.css';
 
 function LoadingSpinner() {
@@ -126,6 +127,7 @@ export function CodexAuthButton() {
           <button className="codex-logout-button" onClick={handleLogout} disabled={actionLoading}>
             로그아웃
           </button>
+          <ModelSelector provider="openai" />
         </div>
       )}
     </div>

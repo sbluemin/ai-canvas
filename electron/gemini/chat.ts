@@ -12,7 +12,8 @@ const CODE_ASSIST_HEADERS = {
 async function* streamGenerateContent(
   auth: ValidTokenResult,
   messages: GeminiMessage[],
-  systemInstruction?: string
+  systemInstruction?: string,
+  model?: string
 ): AsyncGenerator<string> {
   const url = `${CODE_ASSIST_ENDPOINT}/v1internal:streamGenerateContent?alt=sse`;
   
@@ -31,7 +32,7 @@ async function* streamGenerateContent(
   
   const wrappedBody = {
     project: auth.projectId,
-    model: DEFAULT_MODEL,
+    model: model || DEFAULT_MODEL,
     request: requestBody,
   };
   
@@ -119,7 +120,7 @@ export async function chat(
       { role: 'user', parts: [{ text: request.prompt }] },
     ];
 
-    const stream = streamGenerateContent(auth, messages, request.systemInstruction);
+    const stream = streamGenerateContent(auth, messages, request.systemInstruction, request.model);
     
     for await (const text of stream) {
       if (!event.sender.isDestroyed()) {

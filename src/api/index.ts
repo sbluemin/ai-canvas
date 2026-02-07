@@ -70,7 +70,7 @@ export const api = {
     history: { role: 'user' | 'assistant'; content: string; provider?: AiProvider }[],
     canvasContent: string,
     provider: AiProvider,
-    options?: ChatRequestOptions
+    options?: ChatRequestOptions & { modelId?: string }
   ): Promise<{ success: boolean; error?: string }> {
     if (!isElectron) {
       return { success: false, error: 'Chat is only available in Electron environment' };
@@ -82,6 +82,7 @@ export const api = {
       prompt,
       history,
       canvasContent,
+      modelId: options?.modelId,
       selection: options?.selection,
     });
   },

@@ -1,5 +1,6 @@
 import './CommandBar.css';
 import { ProjectSelector } from './ProjectSelector';
+import { ModelRefreshButton } from './ModelRefreshButton';
 import { CodexAuthButton } from './CodexAuthButton';
 import { AnthropicAuthButton } from './AnthropicAuthButton';
 import { GeminiAuthButton } from './GeminiAuthButton';
@@ -47,6 +48,7 @@ export function CommandBar() {
         <ProjectSelector />
       </div>
       <div className="command-bar-right">
+        <ModelRefreshButton />
         <AnthropicAuthButton />
         <CodexAuthButton />
         <GeminiAuthButton />

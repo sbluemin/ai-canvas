@@ -12,7 +12,22 @@ const DESKTOP_BREAKPOINT = 1024;
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < DESKTOP_BREAKPOINT);
-  const { isDrawerOpen, toggleDrawer, closeDrawer } = useStore();
+  const { isDrawerOpen, toggleDrawer, closeDrawer, setAvailableModels, setModelsLoading } = useStore();
+
+  useEffect(() => {
+    const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
+    if (!isElectron) return;
+
+    setModelsLoading(true);
+    window.electronAPI.ai.fetchModels()
+      .then((result) => {
+        if (result.success && result.models) {
+          setAvailableModels(result.models);
+        }
+      })
+      .catch((error) => console.error('Auto-fetch models failed:', error))
+      .finally(() => setModelsLoading(false));
+  }, [setAvailableModels, setModelsLoading]);
 
   useLayoutEffect(() => {
     const root = document.getElementById('root');

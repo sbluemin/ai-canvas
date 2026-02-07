@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Gemini } from '@lobehub/icons';
 import { useStore } from '../../../store/useStore';
+import { ModelSelector } from '../ModelSelector';
 import './GeminiAuthButton.css';
 
 function LoadingSpinner() {
@@ -126,6 +127,7 @@ export function GeminiAuthButton() {
           <button className="logout-button" onClick={handleLogout} disabled={actionLoading}>
             로그아웃
           </button>
+          <ModelSelector provider="gemini" />
         </div>
       )}
     </div>

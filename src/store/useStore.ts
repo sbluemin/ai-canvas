@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { AiProvider } from '../types/chat';
+import { AiProvider, ModelInfo, AvailableModels, SelectedModels } from '../types/chat';
 
-export type { AiProvider };
+export type { AiProvider, ModelInfo, AvailableModels, SelectedModels };
 
 export interface Message {
   id: string;
@@ -47,6 +47,11 @@ interface AppState {
   isAnthropicAuthenticated: boolean;
   anthropicAuthLoading: boolean;
 
+  // 모델 선택
+  availableModels: AvailableModels;
+  selectedModels: SelectedModels;
+  modelsLoading: boolean;
+
   addMessage: (role: 'user' | 'assistant', content: string, provider?: AiProvider) => void;
   removeLastUserMessage: () => void;
   removeLastAssistantMessage: () => void;
@@ -73,6 +78,10 @@ interface AppState {
   setCodexAuthLoading: (loading: boolean) => void;
   setAnthropicAuthStatus: (isAuthenticated: boolean) => void;
   setAnthropicAuthLoading: (loading: boolean) => void;
+  
+  setAvailableModels: (models: AvailableModels) => void;
+  setSelectedModel: (provider: AiProvider, modelId: string | null) => void;
+  setModelsLoading: (loading: boolean) => void;
   
   showError: (error: ErrorInfo) => void;
   clearError: () => void;
@@ -134,6 +143,9 @@ export const useStore = create<AppState>((set) => ({
   codexAuthLoading: true,
   isAnthropicAuthenticated: false,
   anthropicAuthLoading: true,
+  availableModels: { gemini: [], openai: [], anthropic: [] },
+  selectedModels: { gemini: null, openai: null, anthropic: null },
+  modelsLoading: false,
   canvasContent: DEFAULT_CANVAS_CONTENT,
   isLoading: false,
   currentFilePath: null,
@@ -251,6 +263,13 @@ export const useStore = create<AppState>((set) => ({
   setCodexAuthLoading: (codexAuthLoading) => set({ codexAuthLoading }),
   setAnthropicAuthStatus: (isAnthropicAuthenticated) => set({ isAnthropicAuthenticated }),
   setAnthropicAuthLoading: (anthropicAuthLoading) => set({ anthropicAuthLoading }),
+  
+  setAvailableModels: (models) => set({ availableModels: models }),
+  setSelectedModel: (provider, modelId) =>
+    set((state) => ({
+      selectedModels: { ...state.selectedModels, [provider]: modelId },
+    })),
+  setModelsLoading: (modelsLoading) => set({ modelsLoading }),
   
   showError: (error) => set({ errorPopup: error }),
   clearError: () => set({ errorPopup: null }),

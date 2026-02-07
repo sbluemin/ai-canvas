@@ -6,6 +6,7 @@ import * as gemini from './gemini';
 import * as codex from './codex';
 import * as anthropic from './anthropic';
 import { executeAiChatWorkflow, type AiChatRequest } from './ai';
+import { fetchModelsFromApi } from './api/models';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -204,6 +205,16 @@ ipcMain.handle('ai:chat', async (event, request: AiChatRequest) => {
   try {
     await executeAiChatWorkflow(event, request);
     return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
+ipcMain.handle('ai:fetch-models', async () => {
+  try {
+    const models = await fetchModelsFromApi();
+    return { success: true, models };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { success: false, error: errorMessage };

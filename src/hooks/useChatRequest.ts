@@ -99,6 +99,7 @@ export function useChatRequest() {
     saveCanvasSnapshot,
     clearAiRun,
     activeProvider,
+    selectedModels,
     showError,
   } = useStore();
 
@@ -247,13 +248,14 @@ export function useChatRequest() {
         ...(msg.provider ? { provider: msg.provider } : {}),
       }));
 
+      const modelId = selectedModels[activeProvider] ?? undefined;
       const result = await api.chat(
         runId,
         prompt,
         history,
         canvasContent,
         activeProvider,
-        options
+        { ...options, modelId }
       );
 
       if (!result.success && result.error) {
@@ -282,6 +284,7 @@ export function useChatRequest() {
       setAiPhase,
       clearAiRun,
       activeProvider,
+      selectedModels,
       showError,
     ]
   );

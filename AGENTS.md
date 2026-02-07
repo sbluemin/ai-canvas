@@ -182,7 +182,7 @@ npm run build        # Electron 앱 프로덕션 빌드
 | 인증 | Provider별 OAuth 2.0 (`electron/{provider}/auth.ts`) |
 
 ### AI 채팅 흐름
-1. 렌더러 → `ai:chat` IPC 요청 (runId, provider, prompt, history, canvasContent, selection)
+1. 렌더러 → `ai:chat` IPC 요청 (runId, provider, prompt, history, canvasContent, selection, modelId?)
 2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → Provider 호출
 3. Phase 1 Provider 스트리밍 중 `message` 필드 부분 추출 → `ai:chat:event` 이벤트 송신 (`phase_message_stream`)
 4. Phase 1 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase1_result`)

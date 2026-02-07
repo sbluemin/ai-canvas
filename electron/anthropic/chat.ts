@@ -7,12 +7,13 @@ const ANTHROPIC_API_ENDPOINT = 'https://api.anthropic.com/v1/messages';
 async function* streamMessages(
   auth: ValidTokenResult,
   prompt: string,
-  systemInstruction?: string
+  systemInstruction?: string,
+  model?: string
 ): AsyncGenerator<string> {
   const messages = [{ role: 'user', content: prompt }];
   
   const body: Record<string, any> = {
-    model: DEFAULT_MODEL,
+    model: model || DEFAULT_MODEL,
     max_tokens: 4096,
     messages: messages,
     stream: true,
@@ -82,7 +83,7 @@ export async function chat(
   request: ChatRequest
 ): Promise<ChatResult> {
   try {
-    const stream = streamMessages(auth, request.prompt, request.systemInstruction);
+    const stream = streamMessages(auth, request.prompt, request.systemInstruction, request.model);
 
     for await (const text of stream) {
       if (!event.sender.isDestroyed()) {
