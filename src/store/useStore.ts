@@ -144,7 +144,11 @@ export const useStore = create<AppState>((set) => ({
   isAnthropicAuthenticated: false,
   anthropicAuthLoading: true,
   availableModels: { gemini: [], openai: [], anthropic: [] },
-  selectedModels: { gemini: null, openai: null, anthropic: null },
+  selectedModels: {
+    gemini: 'gemini-3-flash-preview',
+    openai: 'gpt-5.2',
+    anthropic: 'claude-haiku-4-5',
+  },
   modelsLoading: false,
   canvasContent: DEFAULT_CANVAS_CONTENT,
   isLoading: false,

@@ -1,7 +1,7 @@
 import type { ValidTokenResult, ChatRequest, ChatResult } from './types';
 import type { IpcMainInvokeEvent } from 'electron';
 
-const DEFAULT_MODEL = 'claude-3-haiku-20240307';
+const DEFAULT_MODEL = 'claude-haiku-4-5';
 const ANTHROPIC_API_ENDPOINT = 'https://api.anthropic.com/v1/messages';
 
 async function* streamMessages(
