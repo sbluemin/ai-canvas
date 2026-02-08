@@ -191,8 +191,12 @@ ai-canvas/
 │   │   └── index.ts
 │   ├── api/                     # Electron 내부 API
 │   │   └── models.ts            # 모델 목록 관리
+├── .github/
+│   └── workflows/
+│       └── publish.yml          # GitHub Release 빌드/배포 워크플로우
 ├── tests/                       # Playwright 테스트
 │   └── electron-chat.test.ts    # Electron 채팅 테스트
+├── version.json                 # nbgv 버저닝 설정
 └── vite.config.ts               # Vite + Electron 설정
 ```
 
@@ -270,3 +274,34 @@ npm run build        # Electron 앱 프로덕션 빌드
 
 ### preload.js는 CJS로 빌드
 Electron sandbox preload는 CommonJS 형식 필요. `npm run dev`와 `npm run build`에서 esbuild로 자동 처리.
+
+---
+
+## 버저닝 (nbgv)
+
+[Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning)을 사용하여 Git 커밋 기반 자동 버전 관리.
+
+- **설정 파일**: `version.json`
+- **버전 형식**: `{major}.{minor}.{height}` (예: `0.1.42` — main 브랜치에서 42번째 커밋)
+- **package.json의 version**: `0.0.0-placeholder` (CI에서 nbgv가 자동 stamp)
+- **publicReleaseRefSpec**: `main` 브랜치에서만 공식 릴리스 버전 생성
+
+### 주의사항
+- `package.json`의 `version` 필드를 수동으로 수정하지 마세요. nbgv가 CI에서 자동으로 덮어씁니다.
+- 메이저/마이너 버전을 올리려면 `version.json`의 `version` 필드를 수정하세요.
+
+---
+
+## CI/CD (GitHub Actions)
+
+### publish.yml
+`main` 브랜치에 push 시 자동 실행. 2개 OS(macOS, Windows)에서 빌드 후 GitHub Release에 배포.
+
+**트리거**: `main` push (`.md`, `.gitignore`, `.gitattributes` 파일 제외)
+**수동 실행**: `workflow_dispatch` 지원
+
+**빌드 흐름**:
+1. 2개 OS 매트릭스 병렬 빌드 (`macos-latest`, `windows-latest`)
+2. 각 OS에서 `npm ci` → nbgv stamp → `npm run build`
+3. 빌드 산출물 업로드 (dmg, zip, exe)
+4. `release` 잡에서 모든 아티팩트 수집 → GitHub Release 생성 및 태깅

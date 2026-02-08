@@ -1,7 +1,7 @@
 {
   "name": "ai-canvas",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.0.0-placeholder",
   "type": "module",
   "main": "dist-electron/main.js",
   "overrides": {
@@ -78,12 +78,6 @@
       "target": [
         "nsis",
         "zip"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
       ]
     }
   }
