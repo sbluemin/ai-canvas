@@ -6,56 +6,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 test.describe('Canvas Update', () => {
-  test('should have apply to canvas button on assistant messages', async () => {
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../dist-electron/main.js')],
-      env: {
-        ...process.env,
-        ELECTRON_IS_PACKAGED: 'true',
-      },
-    });
-
-    let mainWindow = await electronApp.firstWindow();
-
-    for (const win of electronApp.windows()) {
-      const url = win.url();
-      if (!url.includes('devtools://')) {
-        mainWindow = win;
-        break;
-      }
-    }
-
-    if (mainWindow.url().includes('devtools://')) {
-      mainWindow = await electronApp.waitForEvent('window', {
-        predicate: (page) => !page.url().includes('devtools://'),
-        timeout: 10000,
-      });
-    }
-
-    await mainWindow.waitForLoadState('networkidle');
-    await mainWindow.waitForTimeout(2000);
-
-    const inputField = mainWindow.locator('input[placeholder="메시지를 입력하세요..."]');
-    await expect(inputField).toBeVisible({ timeout: 10000 });
-
-    await inputField.fill('안녕하세요');
-    await inputField.press('Enter');
-
-    const applyButton = mainWindow.locator('.apply-button');
-    await expect(applyButton).toBeVisible({ timeout: 30000 });
-    await expect(applyButton).toContainText('Canvas');
-
-    await mainWindow.screenshot({ path: 'tests/screenshots/canvas-update-button.png' });
-
-    await electronApp.close();
-  });
-
   test('should be able to request canvas update via chat', async () => {
     const electronApp = await electron.launch({
       args: [path.join(__dirname, '../dist-electron/main.js')],
       env: {
         ...process.env,
         ELECTRON_IS_PACKAGED: 'true',
+        MOCK_AI: 'true',
       },
     });
 

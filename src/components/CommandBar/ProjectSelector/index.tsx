@@ -1,6 +1,88 @@
-import { useStore } from '../../../store/useStore';
+import { useStore, type Message, type Conversation, type AutosaveStatus } from '../../../store/useStore';
 import { api } from '../../../api';
 import './ProjectSelector.css';
+
+function parseStoredMessages(rawMessages: unknown[] | undefined): Message[] {
+  if (!Array.isArray(rawMessages)) return [];
+
+  const parsed: Message[] = [];
+
+  rawMessages.forEach((msg) => {
+      if (!msg || typeof msg !== 'object') return null;
+      const item = msg as Record<string, unknown>;
+      const role = item.role === 'assistant' ? 'assistant' : item.role === 'user' ? 'user' : null;
+      if (!role || typeof item.content !== 'string') return null;
+
+      const rawTimestamp = item.timestamp;
+      const timestamp = rawTimestamp instanceof Date
+        ? rawTimestamp
+        : typeof rawTimestamp === 'string' || typeof rawTimestamp === 'number'
+          ? new Date(rawTimestamp)
+          : new Date();
+
+      parsed.push({
+        id: typeof item.id === 'string' ? item.id : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        role,
+        content: item.content,
+        timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
+        provider: item.provider === 'gemini' || item.provider === 'openai' || item.provider === 'anthropic' ? item.provider : undefined,
+      });
+  });
+
+  return parsed;
+}
+
+function createConversationId() {
+  return `conv-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function createConversationTitle(index: number) {
+  return `Chat ${index + 1}`;
+}
+
+function parseWorkspace(rawWorkspace: unknown) {
+  if (!rawWorkspace || typeof rawWorkspace !== 'object') return null;
+  const data = rawWorkspace as Record<string, unknown>;
+
+  const rawConversations = Array.isArray(data.conversations) ? data.conversations : null;
+  const conversations: Conversation[] = rawConversations
+    ? rawConversations.map((item, index) => {
+        if (!item || typeof item !== 'object') {
+          return {
+            id: createConversationId(),
+            title: createConversationTitle(index),
+            messages: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+        }
+        const conv = item as Record<string, unknown>;
+        const id = typeof conv.id === 'string' ? conv.id : createConversationId();
+        const title = typeof conv.title === 'string' ? conv.title : createConversationTitle(index);
+        const messages = parseStoredMessages(Array.isArray(conv.messages) ? conv.messages : []);
+        const createdAt = typeof conv.createdAt === 'number' ? conv.createdAt : Date.now();
+        const updatedAt = typeof conv.updatedAt === 'number' ? conv.updatedAt : Date.now();
+        return { id, title, messages, createdAt, updatedAt };
+      })
+    : [];
+
+  const activeConversationId = typeof data.activeConversationId === 'string'
+    ? data.activeConversationId
+    : null;
+
+  const canvasOrder = Array.isArray(data.canvasOrder)
+    ? data.canvasOrder.filter((item) => typeof item === 'string')
+    : null;
+
+  return { conversations, activeConversationId, canvasOrder };
+}
+
+function orderCanvasFiles(files: string[], canvasOrder: string[] | null) {
+  if (!canvasOrder || canvasOrder.length === 0) return files;
+  const ordered = canvasOrder.filter((file) => files.includes(file));
+  const remaining = files.filter((file) => !ordered.includes(file));
+  return [...ordered, ...remaining];
+}
 
 export function ProjectSelector() {
   const { 
@@ -10,6 +92,10 @@ export function ProjectSelector() {
     setActiveCanvasFile, 
     setCanvasContent,
     clearMessages,
+    setMessages,
+    setConversations,
+    setActiveConversationId,
+    setAutosaveStatus,
   } = useStore();
 
   const handleOpenProject = async () => {
@@ -33,12 +119,53 @@ export function ProjectSelector() {
       }
     }
 
+    const workspaceResult = await api.readWorkspace(path);
+    const workspace = workspaceResult.success ? parseWorkspace(workspaceResult.workspace) : null;
+
+    const orderedFiles = orderCanvasFiles(files, workspace?.canvasOrder ?? null);
+
     setProjectPath(path);
-    setCanvasFiles(files);
+    setCanvasFiles(orderedFiles);
     clearMessages();
 
-    if (files.length > 0) {
-      const firstFile = files[0];
+    const sessionResult = await api.readChatSession(path);
+    const sessionMessages = sessionResult.success && sessionResult.messages
+      ? parseStoredMessages(sessionResult.messages)
+      : [];
+
+    if (workspace && workspace.conversations.length > 0) {
+      const activeId = workspace.activeConversationId && workspace.conversations.some((conv) => conv.id === workspace.activeConversationId)
+        ? workspace.activeConversationId
+        : workspace.conversations[0].id;
+      setConversations(workspace.conversations);
+      setActiveConversationId(activeId);
+      const activeConversation = workspace.conversations.find((conv) => conv.id === activeId);
+      setMessages(activeConversation ? activeConversation.messages : []);
+    } else {
+      const defaultConversation: Conversation = {
+        id: createConversationId(),
+        title: createConversationTitle(0),
+        messages: sessionMessages,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      setConversations([defaultConversation]);
+      setActiveConversationId(defaultConversation.id);
+      setMessages(sessionMessages);
+    }
+
+    const autosaveResult = await api.readAutosaveStatus(path);
+    if (autosaveResult.success && autosaveResult.status && typeof autosaveResult.status === 'object') {
+      const rawStatus = autosaveResult.status as Partial<AutosaveStatus>;
+      setAutosaveStatus({
+        state: rawStatus.state === 'saving' || rawStatus.state === 'saved' || rawStatus.state === 'error' ? rawStatus.state : 'idle',
+        updatedAt: typeof rawStatus.updatedAt === 'number' ? rawStatus.updatedAt : Date.now(),
+        message: typeof rawStatus.message === 'string' ? rawStatus.message : undefined,
+      });
+    }
+
+    if (orderedFiles.length > 0) {
+      const firstFile = orderedFiles[0];
       const readResult = await api.readCanvasFile(path, firstFile);
       if (readResult.success && readResult.content !== undefined) {
         setActiveCanvasFile(firstFile);
@@ -47,7 +174,15 @@ export function ProjectSelector() {
     }
   };
 
-  const projectName = projectPath ? projectPath.split('/').pop() : null;
+  // Windows(\) / macOS-Linux(/) 경로 구분자 모두 처리
+  const projectName = projectPath ? projectPath.split(/[\\/]/).pop() : null;
+
+  const handleOpenInExplorer = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (projectPath) {
+      api.openInExplorer(projectPath);
+    }
+  };
 
   return (
     <div className="project-selector" onClick={handleOpenProject}>
@@ -55,6 +190,18 @@ export function ProjectSelector() {
         <span className="project-name">{projectName ?? 'AI Canvas'}</span>
         <span className="project-selector-arrow">▾</span>
       </div>
+      {projectPath && (
+        <button
+          type="button"
+          className="open-explorer-btn"
+          onClick={handleOpenInExplorer}
+          title="Open Folder"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

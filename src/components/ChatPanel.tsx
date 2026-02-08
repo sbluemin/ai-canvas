@@ -5,34 +5,51 @@ import remarkBreaks from 'remark-breaks';
 import { Gemini, OpenAI, Claude } from '@lobehub/icons';
 import { useStore, Message, AiProvider } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
+import { api } from '../api';
 import './ChatPanel.css';
 
 function AICanvasMark() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" aria-label="AI Canvas">
       <defs>
-        <linearGradient id="aic-accent" x1="5" y1="19" x2="20" y2="6" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#22D3EE" />
+        <linearGradient id="aic-grad" x1="5" y1="19" x2="20" y2="6" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#D8B4FE" />
           <stop offset="0.5" stopColor="#818CF8" />
-          <stop offset="1" stopColor="#C084FC" />
+          <stop offset="1" stopColor="#93C5FD" />
         </linearGradient>
-        <linearGradient id="aic-accent2" x1="6" y1="20" x2="20" y2="5" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#5EEAD4" />
-          <stop offset="0.45" stopColor="#60A5FA" />
-          <stop offset="1" stopColor="#A78BFA" />
-        </linearGradient>
+        <filter id="aic-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="0.55" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+        <filter id="aic-sparkle" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="0.28" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
       </defs>
 
+      {/* 캔버스 프레임 */}
       <g transform="translate(12 12) rotate(-8) translate(-12 -12)">
         <rect x="5.9" y="7.1" width="12.2" height="9.8" rx="2.6" fill="white" fillOpacity="0.10" stroke="white" strokeOpacity="0.22" strokeWidth="0.9" />
         <rect x="7.4" y="8.6" width="9.2" height="6.8" rx="2.0" fill="none" stroke="white" strokeOpacity="0.14" strokeWidth="0.7" />
       </g>
 
-      <path d="M6.4 16.2C8.5 13.6 10.6 13.0 13.4 11.3C15.0 10.4 16.2 9.5 17.5 8.2" stroke="url(#aic-accent)" strokeWidth="2.9" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M6.7 16.5C8.8 13.9 10.9 13.3 13.7 11.6C15.3 10.7 16.5 9.8 17.8 8.5" stroke="url(#aic-accent2)" strokeWidth="1.0" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+      {/* 메인 스트로크 + 하이라이트 */}
+      <g filter="url(#aic-glow)">
+        <path d="M6.4 16.2C8.5 13.6 10.6 13.0 13.4 11.3C15.0 10.4 16.2 9.5 17.5 8.2" stroke="url(#aic-grad)" strokeWidth="2.9" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6.7 16.5C8.8 13.9 10.9 13.3 13.7 11.6C15.3 10.7 16.5 9.8 17.8 8.5" stroke="white" strokeOpacity="0.3" strokeWidth="0.4" strokeLinecap="round" fill="none" style={{ mixBlendMode: 'overlay' as const }} />
+      </g>
 
-      <path d="M18.4 4.7L19.2 6.6L21.1 7.4L19.2 8.2L18.4 10.1L17.6 8.2L15.7 7.4L17.6 6.6Z" fill="white" fillOpacity="0.95" />
-      <circle cx="17.7" cy="8.8" r="0.9" fill="url(#aic-accent)" />
+      {/* 스파클 포인트 */}
+      <g transform="translate(18.4 7.4)" filter="url(#aic-sparkle)">
+        <path d="M0 -2.25 C0.19 -0.75, 0.75 -0.19, 2.25 0 C0.75 0.19, 0.19 0.75, 0 2.25 C-0.19 0.75, -0.75 0.19, -2.25 0 C-0.75 -0.19, -0.19 -0.75, 0 -2.25Z" fill="#FFFFFF" />
+        <circle r="0.56" fill="#D8B4FE" opacity="0.4" />
+        <circle cx="-1.9" cy="1.4" r="0.28" fill="#93C5FD" opacity="0.9" />
+        <circle cx="1.4" cy="1.9" r="0.38" fill="#D8B4FE" opacity="0.7" />
+        <circle cx="1.9" cy="-0.9" r="0.19" fill="#FFFFFF" opacity="0.6" />
+      </g>
     </svg>
   );
 }
@@ -101,11 +118,14 @@ function getProviderInfo(provider?: AiProvider) {
 export function ChatPanel() {
   const [input, setInput] = useState('');
   const [isProviderMenuOpen, setIsProviderMenuOpen] = useState(false);
+  const [isConversationMenuOpen, setIsConversationMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const providerMenuRef = useRef<HTMLDivElement>(null);
+  const conversationMenuRef = useRef<HTMLDivElement>(null);
   
   const { messages, isLoading, aiRun, isAuthenticated, activeProvider, setActiveProvider,
-    isCodexAuthenticated, isAnthropicAuthenticated } = useStore();
+    isCodexAuthenticated, isAnthropicAuthenticated, projectPath, conversations, activeConversationId,
+    setConversations, setActiveConversationId, setMessages } = useStore();
   const { sendMessage } = useChatRequest();
 
   // Provider별 인증 상태 매핑
@@ -130,9 +150,30 @@ export function ChatPanel() {
   }, [messages]);
 
   useEffect(() => {
+    if (!projectPath) return;
+
+    const timer = window.setTimeout(() => {
+      const serialized = messages.map((msg) => ({
+        ...msg,
+        timestamp: msg.timestamp.toISOString(),
+      }));
+
+      api.writeChatSession(projectPath, serialized).catch((error: unknown) => {
+        console.error('Chat session save failed:', error);
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [messages, projectPath]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (providerMenuRef.current && !providerMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (providerMenuRef.current && !providerMenuRef.current.contains(target)) {
         setIsProviderMenuOpen(false);
+      }
+      if (conversationMenuRef.current && !conversationMenuRef.current.contains(target)) {
+        setIsConversationMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -150,6 +191,33 @@ export function ChatPanel() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const activeConversation = activeConversationId
+    ? conversations.find((conv) => conv.id === activeConversationId) ?? null
+    : null;
+
+  const handleNewConversation = () => {
+    const nextIndex = conversations.length;
+    const newConversation = {
+      id: `conv-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      title: `Chat ${nextIndex + 1}`,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    setConversations([...conversations, newConversation]);
+    setActiveConversationId(newConversation.id);
+    setMessages([]);
+    setIsConversationMenuOpen(false);
+  };
+
+  const handleSelectConversation = (conversationId: string) => {
+    const conversation = conversations.find((conv) => conv.id === conversationId);
+    if (!conversation) return;
+    setActiveConversationId(conversationId);
+    setMessages(conversation.messages);
+    setIsConversationMenuOpen(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -165,16 +233,46 @@ export function ChatPanel() {
 
   return (
     <div className="chat-panel">
+      <div className="chat-topbar">
+        <div className="conversation-selector" ref={conversationMenuRef}>
+          <button
+            type="button"
+            className={`conversation-btn ${isConversationMenuOpen ? 'active' : ''}`}
+            onClick={() => setIsConversationMenuOpen(!isConversationMenuOpen)}
+          >
+            <span>{activeConversation?.title ?? 'Select Chat'}</span>
+            <ChevronDownIcon />
+          </button>
+          {isConversationMenuOpen && (
+            <div className="conversation-menu">
+              <button type="button" className="conversation-action" onClick={handleNewConversation}>
+                New Chat
+              </button>
+              {conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  className={`conversation-item ${conversation.id === activeConversationId ? 'active' : ''}`}
+                  onClick={() => handleSelectConversation(conversation.id)}
+                >
+                  <span className="conversation-title">{conversation.title}</span>
+                  <span className="conversation-count">{conversation.messages.length}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
       <div className="messages-container">
         {messages.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">
               <AICanvasMark />
             </div>
-            <h3>무엇을 도와드릴까요?</h3>
-            <p className="hint">프로젝트 아이디어에 대해 물어보세요</p>
+            <h3>How can I help you?</h3>
+            <p className="hint">Ask me about your project ideas</p>
             {!isAuthenticated && (
-              <p className="auth-hint">우측 상단의 {activeProvider === 'openai' ? 'Codex' : activeProvider === 'anthropic' ? 'Anthropic' : 'Gemini'} 버튼으로 로그인하세요</p>
+              <p className="auth-hint">Sign in with the {activeProvider === 'openai' ? 'Codex' : activeProvider === 'anthropic' ? 'Anthropic' : 'Gemini'} button in the top right</p>
             )}
           </div>
         ) : (
@@ -204,7 +302,7 @@ export function ChatPanel() {
                         {showInlineProgress && (
                           <div className="progress-indicator inline-progress">
                             <span className="typing-indicator">●●●</span>
-                            <span className="progress-text">캔버스 업데이트 중...</span>
+                            <span className="progress-text">Updating canvas...</span>
                           </div>
                         )}
                       </>
@@ -231,7 +329,7 @@ export function ChatPanel() {
             <div className="message-content">
               <div className="progress-indicator">
                 <span className="typing-indicator">●●●</span>
-                <span className="progress-text">응답 생성 중...</span>
+                <span className="progress-text">Generating response...</span>
               </div>
             </div>
           </div>
@@ -247,7 +345,7 @@ export function ChatPanel() {
                 type="button" 
                 className="provider-btn"
                 onClick={() => setIsProviderMenuOpen(!isProviderMenuOpen)}
-                title="AI 모델 선택 (Ctrl+.)"
+                title="Select AI model (Ctrl+.)"
               >
                 {PROVIDER_INFO[activeProvider].icon}
                 <ChevronDownIcon />
@@ -274,23 +372,23 @@ export function ChatPanel() {
               )}
             </div>
 
-            <button type="button" className="input-action-btn" title="파일 첨부">
+            <button type="button" className="input-action-btn" title="Attach file">
               <PlusIcon />
             </button>
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="메시지를 입력하세요..."
-              disabled={isLoading || !isAuthenticated}
+              placeholder="Type a message..."
+              disabled={isLoading}
             />
-            <button type="button" className="input-action-btn mic-btn" title="음성 입력">
+            <button type="button" className="input-action-btn mic-btn" title="Voice input">
               <MicrophoneIcon />
             </button>
             <button 
               type="submit" 
               className="send-btn"
-              disabled={isLoading || !input.trim() || !isAuthenticated}
+              disabled={isLoading || !input.trim()}
             >
               <SendIcon />
             </button>

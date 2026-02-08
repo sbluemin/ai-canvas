@@ -16,7 +16,7 @@
 
 | 영역 | 기술 |
 |------|------|
-| Frontend | React 19, TypeScript, Vite, Milkdown (마크다운 WYSIWYG) |
+| Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 (핵심 플랫폼) |
 | AI | Cloud Code Assist API (Gemini) |
 | State | Zustand |
@@ -30,14 +30,23 @@
 - **App.tsx**: 루트 - 반응형 레이아웃 (데스크톱: Allotment 좌우 분할, 모바일: 단일 캔버스)
 - **CommandBar**: 상단 커맨드 바
   - **ProjectSelector**: 프로젝트 폴더 선택 (`.ai-canvas` 디렉터리 관리)
+  - **ModelSelector**: AI 모델 선택 (Gemini, Codex, Anthropic)
+  - **ModelRefreshButton**: 사용 가능한 모델 목록 갱신
   - **GeminiAuthButton**: Gemini OAuth 로그인 버튼
+  - **CodexAuthButton**: Codex OAuth 로그인 버튼
+  - **AnthropicAuthButton**: Anthropic OAuth 로그인 버튼
 - **ChatPanel**: 좌측 AI 채팅 패널 (SSE 스트리밍)
 - **CanvasPanel**: 우측 마크다운 에디터 패널
   - **MilkdownEditor**: 마크다운 WYSIWYG
   - **EditorToolbar**: 서식 도구
   - **SelectionAiPopup**: 텍스트 선택 시 AI 질문 팝업
-  - 캔버스 파일 드롭다운: `.ai-canvas/*.md` 파일 간 전환
+  - 캔버스 파일 탭: `.ai-canvas/*.md` 파일 간 전환 (활성 탭 클릭 시 이름 변경)
+  - 저장 상태 표시기: 자동 저장 상태 (대기/저장 중/저장됨/오류)
 - **ErrorPopup**: AI 요청 오류 팝업
+- **SettingsModal**: 앱 설정 (테마, 언어 등)
+- **ExportModal**: 내보내기 모달 (HTML/PDF/DOCX)
+- **ToastContainer**: 시스템 알림 토스트 표시
+
 
 ### AI 인증
 - **Gemini** (`electron/gemini/auth.ts`): PKCE OAuth 2.0, Cloud Code Assist API
@@ -67,6 +76,8 @@
 // src/store/useStore.ts
 interface AppState {
   messages: Message[];           // 채팅 히스토리
+  conversations: Conversation[]; // 대화 목록
+  activeConversationId: string | null;
   canvasContent: string;         // 에디터 콘텐츠
   isLoading: boolean;            // AI 응답 대기
   currentFilePath: string | null;
@@ -74,6 +85,7 @@ interface AppState {
   aiRun: AiRunState | null;      // AI 실행 상태
   activeProvider: AiProvider;
   errorPopup: ErrorInfo | null;  // 오류 팝업
+  autosaveStatus: AutosaveStatus; // 자동 저장 상태
   isAuthenticated: boolean;      // 현재 Provider 인증 상태
   authLoading: boolean;          // 인증 로딩
   isCodexAuthenticated: boolean;
@@ -85,6 +97,15 @@ interface AppState {
   projectPath: string | null;    // 선택된 프로젝트 경로
   canvasFiles: string[];         // .ai-canvas 내 .md 파일 목록
   activeCanvasFile: string | null; // 현재 열린 캔버스 파일명
+
+  // 모델 선택 및 설정
+  availableModels: AvailableModels;
+  selectedModels: SelectedModels;
+  modelsLoading: boolean;
+  settings: AppSettings;
+  isSettingsOpen: boolean;
+  isExportModalOpen: boolean;
+  toasts: ToastInfo[];
 }
 ```
 
@@ -100,12 +121,23 @@ ai-canvas/
 │   │   │   ├── index.tsx
 │   │   │   ├── CommandBar.css
 │   │   │   ├── ProjectSelector/
-│   │   │   └── GeminiAuthButton/  # Gemini OAuth 로그인 버튼
+│   │   │   ├── ModelSelector/
+│   │   │   ├── ModelRefreshButton/
+│   │   │   ├── GeminiAuthButton/
+│   │   │   ├── CodexAuthButton/
+│   │   │   └── AnthropicAuthButton/
 │   │   ├── CanvasPanel.tsx      # 마크다운 에디터 패널
+│   │   ├── CanvasPanel.css
 │   │   ├── ChatPanel.tsx        # AI 채팅 패널
 │   │   ├── ChatPanel.css
 │   │   ├── ErrorPopup.tsx       # 오류 팝업
 │   │   ├── ErrorPopup.css
+│   │   ├── ExportModal.tsx      # 내보내기 모달
+│   │   ├── ExportModal.css
+│   │   ├── SettingsModal.tsx    # 앱 설정 모달
+│   │   ├── SettingsModal.css
+│   │   ├── ToastContainer.tsx   # 토스트 알림 컨테이너
+│   │   ├── ToastContainer.css
 │   │   ├── MilkdownEditor.tsx   # Milkdown 래퍼
 │   │   ├── EditorToolbar.tsx    # 에디터 도구모음
 │   │   ├── SelectionAiPopup.tsx # 텍스트 선택 AI 팝업
@@ -157,6 +189,8 @@ ai-canvas/
 │   │   ├── chat.ts
 │   │   ├── types.ts
 │   │   └── index.ts
+│   ├── api/                     # Electron 내부 API
+│   │   └── models.ts            # 모델 목록 관리
 ├── tests/                       # Playwright 테스트
 │   └── electron-chat.test.ts    # Electron 채팅 테스트
 └── vite.config.ts               # Vite + Electron 설정
@@ -226,8 +260,9 @@ npm run build        # Electron 앱 프로덕션 빌드
 ### Anthropic
 1. 우측 상단 Anthropic 버튼 클릭
 2. 브라우저에서 Anthropic OAuth 인증
-3. 기본 모델: `claude-3-haiku-20240307`
+3. 기본 모델: `claude-haiku-4-5`
 4. 토큰: `~/Library/Application Support/AI Canvas/anthropic-auth.enc`
+
 
 ---
 

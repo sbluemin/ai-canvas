@@ -6,6 +6,173 @@
   color: var(--text-primary);
 }
 
+.chat-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* 좌측 정렬로 변경 */
+  gap: 12px;
+  padding: 16px 20px 8px; /* 패딩 조정 */
+  border-bottom: 1px solid transparent; /* 필요 시 경계 */
+}
+
+.conversation-selector {
+  position: relative;
+}
+
+.conversation-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-left: -8px; /* 텍스트 정렬을 위해 살짝 당김 */
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.conversation-btn:hover {
+  background: var(--bg-hover);
+}
+
+.conversation-btn span {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-btn svg {
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.conversation-selector:focus-within .conversation-btn svg,
+.conversation-btn:active svg {
+  transform: translateY(1px);
+}
+
+.conversation-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: -8px;
+  background: color-mix(in srgb, var(--bg-surface), transparent 15%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.1);
+  min-width: 260px;
+  max-height: 400px; /* 최대 높이 제한 */
+  overflow-y: auto; /* 스크롤 허용 */
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  animation: menu-fade-in 0.2s ease-out;
+}
+
+.conversation-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.conversation-menu::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+.conversation-btn.active svg {
+  transform: rotate(180deg);
+}
+
+.conversation-btn.active {
+  background: var(--bg-hover);
+}
+
+@keyframes menu-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.conversation-action {
+  border: none;
+  background: var(--accent-blue-dim);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  transition: background 0.2s ease;
+}
+
+.conversation-action:hover {
+  background: var(--accent-blue);
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.conversation-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.conversation-item.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.conversation-item.active::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: var(--accent-blue);
+  border-radius: var(--radius-full);
+}
+
+.conversation-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  min-width: 20px;
+  text-align: center;
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;

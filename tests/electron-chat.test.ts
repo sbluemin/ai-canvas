@@ -12,6 +12,7 @@ test.describe('Electron Chat Test', () => {
       env: {
         ...process.env,
         ELECTRON_IS_PACKAGED: 'true',
+        MOCK_AI: 'true',
       },
     });
 

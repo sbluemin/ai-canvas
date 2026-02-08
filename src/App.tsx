@@ -5,14 +5,34 @@ import { CommandBar } from './components/CommandBar';
 import { ChatPanel } from './components/ChatPanel';
 import { CanvasPanel } from './components/CanvasPanel';
 import { ErrorPopup } from './components/ErrorPopup';
+import { ToastContainer } from './components/ToastContainer';
+import { SettingsModal } from './components/SettingsModal';
+import { ExportModal } from './components/ExportModal';
 import { useStore } from './store/useStore';
+import { api } from './api';
 import './App.css';
 
 const DESKTOP_BREAKPOINT = 1024;
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < DESKTOP_BREAKPOINT);
-  const { isDrawerOpen, toggleDrawer, closeDrawer, setAvailableModels, setModelsLoading } = useStore();
+  const {
+    isDrawerOpen,
+    toggleDrawer,
+    closeDrawer,
+    setAvailableModels,
+    setModelsLoading,
+    settings,
+    toggleSettings,
+    addToast,
+    projectPath,
+    activeCanvasFile,
+    canvasContent,
+    conversations,
+    activeConversationId,
+    canvasFiles,
+    autosaveStatus,
+  } = useStore();
 
   useEffect(() => {
     const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
@@ -35,6 +55,65 @@ function App() {
       root.classList.add('ready');
     }
   }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = settings.theme;
+  }, [settings.theme]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+
+      if (e.key === ',') {
+        e.preventDefault();
+        toggleSettings();
+        return;
+      }
+
+      if (e.key.toLowerCase() === 's') {
+        if (!projectPath || !activeCanvasFile) return;
+        e.preventDefault();
+        api.writeCanvasFile(projectPath, activeCanvasFile, canvasContent)
+          .then((result) => {
+            if (result.success) {
+              addToast('success', `${activeCanvasFile} saved`);
+            } else {
+              addToast('error', `Save failed: ${result.error ?? 'Unknown error'}`);
+            }
+          })
+          .catch((error: unknown) => {
+            addToast('error', `Save failed: ${String(error)}`);
+          });
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeCanvasFile, addToast, canvasContent, projectPath, toggleSettings]);
+
+  useEffect(() => {
+    if (!projectPath) return;
+    const timer = window.setTimeout(() => {
+      const workspace = {
+        conversations: conversations.map((conv) => ({
+          ...conv,
+          messages: conv.messages.map((msg) => ({
+            ...msg,
+            timestamp: msg.timestamp.toISOString(),
+          })),
+        })),
+        activeConversationId,
+        canvasOrder: canvasFiles,
+        autosaveStatus,
+      };
+      api.writeWorkspace(projectPath, workspace).catch((error: unknown) => {
+        console.error('Workspace save failed:', error);
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [projectPath, conversations, activeConversationId, canvasFiles, autosaveStatus]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -69,6 +148,9 @@ function App() {
         <div className="mobile-canvas">
           <CanvasPanel />
         </div>
+        <SettingsModal />
+        <ExportModal />
+        <ToastContainer />
         <ErrorPopup />
       </div>
     );
@@ -89,6 +171,9 @@ function App() {
           </Allotment>
         </div>
       </div>
+      <SettingsModal />
+      <ExportModal />
+      <ToastContainer />
       <ErrorPopup />
     </div>
   );

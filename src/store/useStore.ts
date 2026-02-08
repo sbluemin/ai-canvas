@@ -11,6 +11,20 @@ export interface Message {
   provider?: AiProvider;
 }
 
+export interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AutosaveStatus {
+  state: 'idle' | 'saving' | 'saved' | 'error';
+  updatedAt?: number;
+  message?: string;
+}
+
 export type AiPhase = 'idle' | 'evaluating' | 'updating' | 'succeeded' | 'failed';
 
 export interface AiRunState {
@@ -29,8 +43,20 @@ export interface ErrorInfo {
   details?: string;
 }
 
+export interface ToastInfo {
+  id: string;
+  type: 'success' | 'error' | 'info';
+  message: string;
+}
+
+export interface AppSettings {
+  theme: 'dark' | 'light' | 'system';
+}
+
 interface AppState {
   messages: Message[];
+  conversations: Conversation[];
+  activeConversationId: string | null;
   canvasContent: string;
   isLoading: boolean;
   currentFilePath: string | null;
@@ -38,6 +64,11 @@ interface AppState {
   aiRun: AiRunState | null;
   activeProvider: AiProvider;
   errorPopup: ErrorInfo | null;
+  toasts: ToastInfo[];
+  isSettingsOpen: boolean;
+  isExportModalOpen: boolean;
+  settings: AppSettings;
+  autosaveStatus: AutosaveStatus;
   
   // 프로젝트/캔버스 파일 관리
   projectPath: string | null;
@@ -62,11 +93,13 @@ interface AppState {
   removeLastAssistantMessage: () => void;
   updateLastMessage: (content: string) => void;
   setLastMessageContent: (content: string) => void;
+  setConversations: (conversations: Conversation[]) => void;
+  setActiveConversationId: (conversationId: string | null) => void;
   setCanvasContent: (content: string) => void;
   setIsLoading: (loading: boolean) => void;
   setCurrentFilePath: (path: string | null) => void;
-  applyToCanvas: (content: string) => void;
   clearMessages: () => void;
+  setMessages: (messages: Message[]) => void;
   toggleDrawer: () => void;
   closeDrawer: () => void;
 
@@ -95,6 +128,14 @@ interface AppState {
   
   showError: (error: ErrorInfo) => void;
   clearError: () => void;
+  addToast: (type: ToastInfo['type'], message: string) => void;
+  removeToast: (id: string) => void;
+  toggleSettings: () => void;
+  closeSettings: () => void;
+  toggleExportModal: () => void;
+  closeExportModal: () => void;
+  setTheme: (theme: AppSettings['theme']) => void;
+  setAutosaveStatus: (status: AutosaveStatus) => void;
 }
 
 function generateRunId(): string {
@@ -147,6 +188,8 @@ AICanvas/
 
 export const useStore = create<AppState>((set) => ({
   messages: [],
+  conversations: [],
+  activeConversationId: null,
   isAuthenticated: false,
   authLoading: true,
   isCodexAuthenticated: false,
@@ -167,23 +210,38 @@ export const useStore = create<AppState>((set) => ({
   aiRun: null,
   activeProvider: 'gemini',
   errorPopup: null,
+  toasts: [],
+  isSettingsOpen: false,
+  isExportModalOpen: false,
+  settings: {
+    theme: 'dark',
+  },
+  autosaveStatus: {
+    state: 'idle',
+  },
   projectPath: null,
   canvasFiles: [],
   activeCanvasFile: null,
 
   addMessage: (role, content, provider?) =>
-    set((state) => ({
-      messages: [
-        ...state.messages,
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-          role,
-          content,
-          timestamp: new Date(),
-          ...(provider ? { provider } : {}),
-        },
-      ],
-    })),
+    set((state) => {
+      const nextMessage: Message = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        role,
+        content,
+        timestamp: new Date(),
+        ...(provider ? { provider } : {}),
+      };
+      const nextMessages = [...state.messages, nextMessage];
+      const nextConversations = state.activeConversationId
+        ? state.conversations.map((conv) =>
+            conv.id === state.activeConversationId
+              ? { ...conv, messages: nextMessages, updatedAt: Date.now() }
+              : conv
+          )
+        : state.conversations;
+      return { messages: nextMessages, conversations: nextConversations };
+    }),
 
   removeLastUserMessage: () =>
     set((state) => {
@@ -191,7 +249,14 @@ export const useStore = create<AppState>((set) => ({
       if (messages.length > 0 && messages[messages.length - 1].role === 'user') {
         messages.pop();
       }
-      return { messages };
+      const nextConversations = state.activeConversationId
+        ? state.conversations.map((conv) =>
+            conv.id === state.activeConversationId
+              ? { ...conv, messages, updatedAt: Date.now() }
+              : conv
+          )
+        : state.conversations;
+      return { messages, conversations: nextConversations };
     }),
 
   removeLastAssistantMessage: () =>
@@ -200,7 +265,14 @@ export const useStore = create<AppState>((set) => ({
       if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
         messages.pop();
       }
-      return { messages };
+      const nextConversations = state.activeConversationId
+        ? state.conversations.map((conv) =>
+            conv.id === state.activeConversationId
+              ? { ...conv, messages, updatedAt: Date.now() }
+              : conv
+          )
+        : state.conversations;
+      return { messages, conversations: nextConversations };
     }),
 
   updateLastMessage: (content) =>
@@ -212,7 +284,14 @@ export const useStore = create<AppState>((set) => ({
           content: messages[messages.length - 1].content + content,
         };
       }
-      return { messages };
+      const nextConversations = state.activeConversationId
+        ? state.conversations.map((conv) =>
+            conv.id === state.activeConversationId
+              ? { ...conv, messages, updatedAt: Date.now() }
+              : conv
+          )
+        : state.conversations;
+      return { messages, conversations: nextConversations };
     }),
 
   setLastMessageContent: (content) =>
@@ -224,8 +303,19 @@ export const useStore = create<AppState>((set) => ({
           content,
         };
       }
-      return { messages };
+      const nextConversations = state.activeConversationId
+        ? state.conversations.map((conv) =>
+            conv.id === state.activeConversationId
+              ? { ...conv, messages, updatedAt: Date.now() }
+              : conv
+          )
+        : state.conversations;
+      return { messages, conversations: nextConversations };
     }),
+
+  setConversations: (conversations) => set({ conversations }),
+
+  setActiveConversationId: (activeConversationId) => set({ activeConversationId }),
 
   setCanvasContent: (content) => set({ canvasContent: content }),
 
@@ -233,12 +323,19 @@ export const useStore = create<AppState>((set) => ({
 
   setCurrentFilePath: (path) => set({ currentFilePath: path }),
 
-  applyToCanvas: (content) =>
-    set((state) => ({
-      canvasContent: state.canvasContent + '\n\n' + content,
-    })),
-
   clearMessages: () => set({ messages: [] }),
+
+  setMessages: (messages) =>
+    set((state) => {
+      const nextConversations = state.activeConversationId
+        ? state.conversations.map((conv) =>
+            conv.id === state.activeConversationId
+              ? { ...conv, messages, updatedAt: Date.now() }
+              : conv
+          )
+        : state.conversations;
+      return { messages, conversations: nextConversations };
+    }),
 
   toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
   closeDrawer: () => set({ isDrawerOpen: false }),
@@ -294,4 +391,26 @@ export const useStore = create<AppState>((set) => ({
   
   showError: (error) => set({ errorPopup: error }),
   clearError: () => set({ errorPopup: null }),
+
+  addToast: (type, message) =>
+    set((state) => ({
+      toasts: [
+        ...state.toasts,
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          type,
+          message,
+        },
+      ],
+    })),
+  removeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((toast) => toast.id !== id),
+    })),
+  toggleSettings: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
+  closeSettings: () => set({ isSettingsOpen: false }),
+  toggleExportModal: () => set((state) => ({ isExportModalOpen: !state.isExportModalOpen })),
+  closeExportModal: () => set({ isExportModalOpen: false }),
+  setTheme: (theme) => set((state) => ({ settings: { ...state.settings, theme } })),
+  setAutosaveStatus: (autosaveStatus) => set({ autosaveStatus }),
 }));

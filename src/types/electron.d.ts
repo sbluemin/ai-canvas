@@ -78,9 +78,26 @@ interface ProjectAPI {
   openDirectory: () => Promise<string | null>;
   initCanvasDir: (projectPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
   listCanvasFiles: (projectPath: string) => Promise<{ success: boolean; files?: string[]; error?: string }>;
+  readWorkspace: (projectPath: string) => Promise<{ success: boolean; workspace?: unknown; error?: string }>;
+  writeWorkspace: (projectPath: string, workspace: unknown) => Promise<{ success: boolean; error?: string }>;
+  readAutosaveStatus: (projectPath: string) => Promise<{ success: boolean; status?: unknown; error?: string }>;
+  writeAutosaveStatus: (projectPath: string, status: unknown) => Promise<{ success: boolean; error?: string }>;
   readCanvasFile: (projectPath: string, fileName: string) => Promise<{ success: boolean; content?: string; error?: string }>;
   writeCanvasFile: (projectPath: string, fileName: string, content: string) => Promise<{ success: boolean; error?: string }>;
+  renameCanvasFile: (projectPath: string, oldFileName: string, newFileName: string) => Promise<{ success: boolean; error?: string }>;
+  deleteCanvasFile: (projectPath: string, fileName: string) => Promise<{ success: boolean; error?: string }>;
+  readChatSession: (projectPath: string) => Promise<{ success: boolean; messages?: unknown[]; error?: string }>;
+  writeChatSession: (projectPath: string, messages: unknown[]) => Promise<{ success: boolean; error?: string }>;
+  saveImageAsset: (projectPath: string, base64: string, mimeType: string) => Promise<{ success: boolean; relativePath?: string; absolutePath?: string; error?: string }>;
+  exportDocument: (projectPath: string, format: 'html' | 'pdf' | 'docx', markdownContent: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+  exportShareBundle: (projectPath: string, bundle: unknown) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+  importShareBundle: () => Promise<{ success: boolean; bundle?: unknown; error?: string }>;
   createDefaultCanvas: (projectPath: string) => Promise<{ success: boolean; fileName?: string; error?: string }>;
+  openInExplorer: (projectPath: string) => Promise<{ success: boolean; error?: string }>;
+}
+
+interface WindowAPI {
+  create: () => Promise<{ success: boolean; error?: string }>;
 }
 
 interface ElectronAPI {
@@ -94,6 +111,7 @@ interface ElectronAPI {
   codex: AuthOnlyProviderAPI;
   anthropic: AuthOnlyProviderAPI;
   project: ProjectAPI;
+  window: WindowAPI;
 }
 
 declare global {

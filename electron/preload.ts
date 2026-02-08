@@ -50,7 +50,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
   
   showSaveDialog: () => ipcRenderer.invoke('dialog:showSaveDialog'),
+  showOpenDialog: () => ipcRenderer.invoke('dialog:showOpenDialog'),
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
+  readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
   
   ai: {
     chat: (request: AiChatRequest): Promise<{ success: boolean; error?: string }> => 
@@ -89,11 +91,41 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:init-canvas-dir', projectPath),
     listCanvasFiles: (projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> =>
       ipcRenderer.invoke('project:list-canvas-files', projectPath),
+    readWorkspace: (projectPath: string): Promise<{ success: boolean; workspace?: unknown; error?: string }> =>
+      ipcRenderer.invoke('project:read-workspace', projectPath),
+    writeWorkspace: (projectPath: string, workspace: unknown): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:write-workspace', projectPath, workspace),
+    readAutosaveStatus: (projectPath: string): Promise<{ success: boolean; status?: unknown; error?: string }> =>
+      ipcRenderer.invoke('project:read-autosave-status', projectPath),
+    writeAutosaveStatus: (projectPath: string, status: unknown): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:write-autosave-status', projectPath, status),
     readCanvasFile: (projectPath: string, fileName: string): Promise<{ success: boolean; content?: string; error?: string }> =>
       ipcRenderer.invoke('project:read-canvas-file', projectPath, fileName),
     writeCanvasFile: (projectPath: string, fileName: string, content: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('project:write-canvas-file', projectPath, fileName, content),
+    renameCanvasFile: (projectPath: string, oldFileName: string, newFileName: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:rename-canvas-file', projectPath, oldFileName, newFileName),
+    deleteCanvasFile: (projectPath: string, fileName: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:delete-canvas-file', projectPath, fileName),
+    readChatSession: (projectPath: string): Promise<{ success: boolean; messages?: unknown[]; error?: string }> =>
+      ipcRenderer.invoke('project:read-chat-session', projectPath),
+    writeChatSession: (projectPath: string, messages: unknown[]): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:write-chat-session', projectPath, messages),
+    saveImageAsset: (projectPath: string, base64: string, mimeType: string): Promise<{ success: boolean; relativePath?: string; absolutePath?: string; error?: string }> =>
+      ipcRenderer.invoke('project:save-image-asset', projectPath, base64, mimeType),
+    exportDocument: (projectPath: string, format: 'html' | 'pdf' | 'docx', markdownContent: string): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+      ipcRenderer.invoke('project:export-document', projectPath, format, markdownContent),
+    exportShareBundle: (projectPath: string, bundle: unknown): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+      ipcRenderer.invoke('project:export-share-bundle', projectPath, bundle),
+    importShareBundle: (): Promise<{ success: boolean; bundle?: unknown; error?: string }> =>
+      ipcRenderer.invoke('project:import-share-bundle'),
     createDefaultCanvas: (projectPath: string): Promise<{ success: boolean; fileName?: string; error?: string }> =>
       ipcRenderer.invoke('project:create-default-canvas', projectPath),
+    openInExplorer: (projectPath: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:open-in-explorer', projectPath),
+  },
+  window: {
+    create: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('window:create'),
   },
 });

@@ -6,23 +6,6 @@ import { EditorProvider } from '../context/EditorContext';
 import { api } from '../api';
 import './CanvasPanel.css';
 
-function EditIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
 export function CanvasPanel() {
   const { 
     canvasContent, 
@@ -32,23 +15,17 @@ export function CanvasPanel() {
     canvasFiles,
     activeCanvasFile,
     setActiveCanvasFile,
+    setCanvasFiles,
+    addToast,
+    setAutosaveStatus,
+    autosaveStatus,
   } = useStore();
-  const [documentTitle, setDocumentTitle] = useState('AI Canvas');
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const [showFileDropdown, setShowFileDropdown] = useState(false);
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [draggingFile, setDraggingFile] = useState<string | null>(null);
+  const autosaveTimerRef = useRef<number | null>(null);
 
   const isUpdating = aiRun?.phase === 'updating';
-
-  useEffect(() => {
-    if (activeCanvasFile) {
-      const nameWithoutExt = activeCanvasFile.replace(/\.md$/, '');
-      setDocumentTitle(nameWithoutExt);
-    }
-  }, [activeCanvasFile]);
 
   useEffect(() => {
     if (isUpdating) {
@@ -65,42 +42,31 @@ export function CanvasPanel() {
   }, [isUpdating, showOverlay]);
 
   useEffect(() => {
-    if (isEditingTitle && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.select();
+    if (!projectPath || !activeCanvasFile) return;
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
     }
-  }, [isEditingTitle]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowFileDropdown(false);
+    const savingStatus = { state: 'saving' as const, updatedAt: Date.now() };
+    setAutosaveStatus(savingStatus);
+    autosaveTimerRef.current = window.setTimeout(async () => {
+      const result = await api.writeCanvasFile(projectPath, activeCanvasFile, canvasContent);
+      if (result.success) {
+        const status = { state: 'saved' as const, updatedAt: Date.now() };
+        setAutosaveStatus(status);
+        api.writeAutosaveStatus(projectPath, status).catch(() => undefined);
+      } else {
+        setAutosaveStatus({ state: 'error' as const, updatedAt: Date.now(), message: result.error ?? 'Save failed' });
+      }
+    }, 1200);
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleSave = async () => {
-    if (!projectPath || !activeCanvasFile) {
-      alert('프로젝트가 선택되지 않았습니다.');
-      return;
-    }
-    try {
-      const result = await api.writeCanvasFile(projectPath, activeCanvasFile, canvasContent);
-      if (!result.success) {
-        alert(`저장 실패: ${result.error}`);
-        return;
-      }
-      alert(`저장 완료: ${activeCanvasFile}`);
-    } catch (error) {
-      alert(`저장 실패: ${error}`);
-    }
-  };
+  }, [canvasContent, projectPath, activeCanvasFile, setAutosaveStatus]);
 
   const handleSelectCanvasFile = async (fileName: string) => {
     if (!projectPath) return;
-    setShowFileDropdown(false);
     const result = await api.readCanvasFile(projectPath, fileName);
     if (result.success && result.content !== undefined) {
       setActiveCanvasFile(fileName);
@@ -108,16 +74,49 @@ export function CanvasPanel() {
     }
   };
 
-  const handleTitleSubmit = () => {
-    setIsEditingTitle(false);
+  const handleRenameFile = async () => {
+    if (!projectPath || !activeCanvasFile) return;
+
+    const currentName = activeCanvasFile.replace(/\.md$/, '');
+    const nextName = prompt('Enter new file name', currentName)?.trim();
+    if (!nextName || nextName === currentName) return;
+
+    const normalized = nextName.endsWith('.md') ? nextName : `${nextName}.md`;
+    const result = await api.renameCanvasFile(projectPath, activeCanvasFile, normalized);
+    if (!result.success) {
+      addToast('error', `Rename failed: ${result.error}`);
+      return;
+    }
+
+    const updatedFiles = canvasFiles.map((file) => (file === activeCanvasFile ? normalized : file));
+    setCanvasFiles(updatedFiles);
+    setActiveCanvasFile(normalized);
+    addToast('success', `Renamed to: ${normalized}`);
   };
 
-  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleTitleSubmit();
-    } else if (e.key === 'Escape') {
-      setIsEditingTitle(false);
+  const handleTabClick = (file: string) => {
+    if (file === activeCanvasFile) {
+      // 이미 활성화된 탭 클릭 시 이름 변경 모드
+      handleRenameFile();
+    } else {
+      handleSelectCanvasFile(file);
     }
+  };
+
+  const handleDragStart = (fileName: string) => {
+    setDraggingFile(fileName);
+  };
+
+  const handleDrop = (targetFile: string) => {
+    if (!draggingFile || draggingFile === targetFile) return;
+    const currentIndex = canvasFiles.indexOf(draggingFile);
+    const targetIndex = canvasFiles.indexOf(targetFile);
+    if (currentIndex === -1 || targetIndex === -1) return;
+    const nextFiles = [...canvasFiles];
+    nextFiles.splice(currentIndex, 1);
+    nextFiles.splice(targetIndex, 0, draggingFile);
+    setCanvasFiles(nextFiles);
+    setDraggingFile(null);
   };
 
   return (
@@ -126,56 +125,36 @@ export function CanvasPanel() {
         <div className="canvas-wrapper">
           <div className="canvas-header">
             <div className="header-left">
-              <div className="document-title-area" ref={dropdownRef}>
-                {isEditingTitle ? (
-                  <input
-                    ref={titleInputRef}
-                    type="text"
-                    className="title-input"
-                    value={documentTitle}
-                    onChange={(e) => setDocumentTitle(e.target.value)}
-                    onBlur={handleTitleSubmit}
-                    onKeyDown={handleTitleKeyDown}
-                  />
-                ) : (
-                  <div 
-                    className="title-display" 
-                    onClick={() => canvasFiles.length > 1 ? setShowFileDropdown(!showFileDropdown) : setIsEditingTitle(true)}
-                  >
-                    <span className="document-title">{documentTitle}</span>
-                    {canvasFiles.length > 1 ? (
-                      <button className="edit-title-btn">
-                        <ChevronDownIcon />
-                      </button>
-                    ) : (
-                      <button className="edit-title-btn" onClick={(e) => { e.stopPropagation(); setIsEditingTitle(true); }}>
-                        <EditIcon />
-                      </button>
-                    )}
-                  </div>
-                )}
-                {showFileDropdown && canvasFiles.length > 1 && (
-                  <div className="canvas-file-dropdown">
-                    {canvasFiles.map((file) => (
-                      <div
-                        key={file}
-                        className={`canvas-file-item ${file === activeCanvasFile ? 'active' : ''}`}
-                        onClick={() => handleSelectCanvasFile(file)}
-                      >
-                        {file.replace(/\.md$/, '')}
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div className="document-title-area">
+                <div className="canvas-tabs">
+                  {canvasFiles.map((file) => (
+                    <button
+                      key={file}
+                      type="button"
+                      className={`canvas-tab ${file === activeCanvasFile ? 'active' : ''}`}
+                      draggable
+                      onDragStart={() => handleDragStart(file)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleDrop(file)}
+                      onDragEnd={() => setDraggingFile(null)}
+                      onClick={() => handleTabClick(file)}
+                    >
+                      {file.replace(/\.md$/, '')}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="header-right">
               <EditorToolbar />
-              <div className="header-divider" />
-              <div className="canvas-actions">
-                <button onClick={handleSave} className="save-btn" title="저장">
-                  저장
-                </button>
+              <div className={`save-status-indicator ${autosaveStatus.state}`}>
+                {autosaveStatus.state === 'saving'
+                  ? 'Saving...'
+                  : autosaveStatus.state === 'saved'
+                    ? 'Saved'
+                    : autosaveStatus.state === 'error'
+                      ? 'Save failed'
+                      : 'Idle'}
               </div>
             </div>
           </div>

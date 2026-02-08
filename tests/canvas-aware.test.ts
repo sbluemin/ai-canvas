@@ -12,6 +12,7 @@ test.describe('Canvas Context Awareness', () => {
       env: {
         ...process.env,
         ELECTRON_IS_PACKAGED: 'true',
+        MOCK_AI: 'true',
       },
     });
 
@@ -56,35 +57,6 @@ test.describe('Canvas Context Awareness', () => {
     await expect(userMessage).toContainText('캔버스에 뭐가 있어?');
 
     await mainWindow.screenshot({ path: 'tests/screenshots/canvas-aware-test.png' });
-
-    await electronApp.close();
-  });
-
-  test('should show canvas badge in chat input area', async () => {
-    const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../dist-electron/main.js')],
-      env: {
-        ...process.env,
-        ELECTRON_IS_PACKAGED: 'true',
-      },
-    });
-
-    let mainWindow = await electronApp.firstWindow();
-
-    for (const win of electronApp.windows()) {
-      const url = win.url();
-      if (!url.includes('devtools://')) {
-        mainWindow = win;
-        break;
-      }
-    }
-
-    await mainWindow.waitForLoadState('networkidle');
-    await mainWindow.waitForTimeout(2000);
-
-    const canvasBadge = mainWindow.locator('.canvas-badge');
-    await expect(canvasBadge).toBeVisible({ timeout: 10000 });
-    await expect(canvasBadge).toContainText('Canvas');
 
     await electronApp.close();
   });

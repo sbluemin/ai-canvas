@@ -44,7 +44,7 @@ export const api = {
       return window.electronAPI.readFile(filePath);
     }
     const response = await fetch(`/api/files?path=${encodeURIComponent(filePath)}`);
-    if (!response.ok) throw new Error('파일 읽기 실패');
+    if (!response.ok) throw new Error('File read failed');
     return response.text();
   },
 
@@ -57,7 +57,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: filePath, content }),
     });
-    if (!response.ok) throw new Error('파일 저장 실패');
+    if (!response.ok) throw new Error('File write failed');
     return true;
   },
 
@@ -103,27 +103,97 @@ export const api = {
   },
 
   async initCanvasDir(projectPath: string): Promise<{ success: boolean; path?: string; error?: string }> {
-    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.initCanvasDir(projectPath);
   },
 
   async listCanvasFiles(projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> {
-    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.listCanvasFiles(projectPath);
   },
 
+  async readWorkspace(projectPath: string): Promise<{ success: boolean; workspace?: unknown; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.readWorkspace(projectPath);
+  },
+
+  async writeWorkspace(projectPath: string, workspace: unknown): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.writeWorkspace(projectPath, workspace);
+  },
+
+  async readAutosaveStatus(projectPath: string): Promise<{ success: boolean; status?: unknown; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.readAutosaveStatus(projectPath);
+  },
+
+  async writeAutosaveStatus(projectPath: string, status: unknown): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.writeAutosaveStatus(projectPath, status);
+  },
+
   async readCanvasFile(projectPath: string, fileName: string): Promise<{ success: boolean; content?: string; error?: string }> {
-    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.readCanvasFile(projectPath, fileName);
   },
 
   async writeCanvasFile(projectPath: string, fileName: string, content: string): Promise<{ success: boolean; error?: string }> {
-    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.writeCanvasFile(projectPath, fileName, content);
   },
 
+  async renameCanvasFile(projectPath: string, oldFileName: string, newFileName: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.renameCanvasFile(projectPath, oldFileName, newFileName);
+  },
+
+  async deleteCanvasFile(projectPath: string, fileName: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.deleteCanvasFile(projectPath, fileName);
+  },
+
+  async readChatSession(projectPath: string): Promise<{ success: boolean; messages?: unknown[]; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.readChatSession(projectPath);
+  },
+
+  async writeChatSession(projectPath: string, messages: unknown[]): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.writeChatSession(projectPath, messages);
+  },
+
+  async saveImageAsset(projectPath: string, base64: string, mimeType: string): Promise<{ success: boolean; relativePath?: string; absolutePath?: string; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.saveImageAsset(projectPath, base64, mimeType);
+  },
+
+  async exportDocument(projectPath: string, format: 'html' | 'pdf' | 'docx', markdownContent: string): Promise<{ success: boolean; filePath?: string; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.exportDocument(projectPath, format, markdownContent);
+  },
+
+  async exportShareBundle(projectPath: string, bundle: unknown): Promise<{ success: boolean; filePath?: string; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.exportShareBundle(projectPath, bundle);
+  },
+
+  async importShareBundle(): Promise<{ success: boolean; bundle?: unknown; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.importShareBundle();
+  },
+
   async createDefaultCanvas(projectPath: string): Promise<{ success: boolean; fileName?: string; error?: string }> {
-    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.createDefaultCanvas(projectPath);
+  },
+
+  async openInExplorer(projectPath: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.openInExplorer(projectPath);
+  },
+
+  async createWindow(): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.window.create();
   },
 };

@@ -87,6 +87,49 @@ export async function executeAiChatWorkflow(
       event.sender.send('ai:chat:event', evt);
     }
   };
+
+  if (process.env.MOCK_AI === 'true') {
+    sendEvent({ runId, type: 'phase', phase: 'evaluating' });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const mockMessage = "Sure, I'll update the canvas for you.";
+    for (let i = 0; i < mockMessage.length; i += 5) {
+      sendEvent({
+        runId,
+        type: 'phase_message_stream',
+        phase: 'evaluating',
+        message: mockMessage.slice(0, i + 5),
+      });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    const needsUpdate = prompt.includes('update') || prompt.includes('add') || prompt.includes('change');
+    sendEvent({
+      runId,
+      type: 'phase1_result',
+      message: mockMessage,
+      needsCanvasUpdate: needsUpdate,
+      updatePlan: needsUpdate ? "Update canvas content" : undefined,
+    });
+
+    if (needsUpdate) {
+      sendEvent({ runId, type: 'phase', phase: 'updating' });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      const newContent = canvasContent + "\n\n## E2E Test Section\n\nTest content for E2E.";
+      sendEvent({
+        runId,
+        type: 'phase2_result',
+        message: "Canvas has been updated.",
+        canvasContent: newContent,
+      });
+      
+      await streamPhaseMessageAfterResult(sendEvent, runId, 'updating', "Canvas has been updated.");
+    }
+
+    sendEvent({ runId, type: 'done' });
+    return;
+  }
   
   let currentPhase: 'evaluating' | 'updating' = 'evaluating';
   

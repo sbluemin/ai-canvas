@@ -49,6 +49,36 @@
   position: relative;
 }
 
+.canvas-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: 420px;
+}
+
+.canvas-tab {
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.canvas-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.canvas-tab.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .canvas-file-dropdown {
   position: absolute;
   top: 100%;
@@ -150,12 +180,47 @@
   overflow-x: auto;
 }
 
-.header-divider {
-  width: 1px;
-  height: 24px;
-  background: var(--border-color);
-  margin: 0 8px;
+.save-status-indicator {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   flex-shrink: 0;
+}
+
+.save-status-indicator.saved {
+  color: var(--accent-blue);
+}
+
+.save-status-indicator.saving {
+  color: var(--accent-cyan);
+}
+
+.save-status-indicator.error {
+  color: #f87171;
+}
+
+.export-actions button {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.export-actions button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.export-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .canvas-content {
@@ -175,49 +240,6 @@
   font-size: 12px;
   color: var(--text-muted);
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
-}
-
-.canvas-actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.canvas-actions button {
-  padding: 6px 12px;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.canvas-actions button:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-  border-color: var(--border-light);
-}
-
-.canvas-actions button.save-btn {
-  background: var(--accent-blue-dim);
-  border-color: var(--accent-blue-dim);
-  color: var(--text-primary);
-}
-
-.canvas-actions button.save-btn:hover {
-  background: var(--accent-blue);
-  border-color: var(--accent-blue);
-}
-
-.canvas-actions button.active {
-  background: var(--accent-selection);
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
 }
 
 .selection-popup-wrapper {

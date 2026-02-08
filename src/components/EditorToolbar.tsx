@@ -9,6 +9,8 @@ import {
 } from '@milkdown/preset-commonmark';
 import { undoCommand, redoCommand } from '@milkdown/plugin-history';
 import { callCommand } from '@milkdown/utils';
+import { editorViewCtx } from '@milkdown/core';
+import { TextSelection } from '@milkdown/prose/state';
 import { useEditorContext } from '../context/EditorContext';
 import './EditorToolbar.css';
 
@@ -93,7 +95,11 @@ function ChevronDownIcon() {
 
 export function EditorToolbar() {
   const [isHeadingOpen, setIsHeadingOpen] = useState(false);
-  const [selectedHeading, setSelectedHeading] = useState('제목 1');
+  const [selectedHeading, setSelectedHeading] = useState('Heading 1');
+  const [isFindOpen, setIsFindOpen] = useState(false);
+  const [findValue, setFindValue] = useState('');
+  const [replaceValue, setReplaceValue] = useState('');
+  const [matchCase, setMatchCase] = useState(false);
   const { editorRef } = useEditorContext();
 
   const executeCommand = useCallback((command: Parameters<typeof callCommand>[0], payload?: unknown) => {
@@ -131,8 +137,90 @@ export function EditorToolbar() {
   };
 
   const handleFormula = () => {
-    console.log('Formula - 추후 구현 예정');
+    const editor = editorRef.current;
+    if (!editor) return;
+    const view = editor.ctx.get(editorViewCtx);
+    const { from, to } = view.state.selection;
+    view.dispatch(view.state.tr.insertText('$$formula$$', from, to));
+    view.focus();
   };
+
+  const collectMatches = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor || !findValue.trim()) return [];
+    const view = editor.ctx.get(editorViewCtx);
+    const needle = matchCase ? findValue : findValue.toLowerCase();
+    const matches: Array<{ from: number; to: number }> = [];
+    view.state.doc.descendants((node, pos) => {
+      if (!node.isText || !node.text) return;
+      const text = matchCase ? node.text : node.text.toLowerCase();
+      let index = text.indexOf(needle);
+      while (index !== -1) {
+        matches.push({ from: pos + index, to: pos + index + needle.length });
+        index = text.indexOf(needle, index + needle.length);
+      }
+    });
+    return matches;
+  }, [editorRef, findValue, matchCase]);
+
+  const selectMatch = useCallback((match: { from: number; to: number }) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const view = editor.ctx.get(editorViewCtx);
+    const selection = TextSelection.create(view.state.doc, match.from, match.to);
+    view.dispatch(view.state.tr.setSelection(selection));
+    view.focus();
+  }, [editorRef]);
+
+  const handleFindNext = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor || !findValue.trim()) return;
+    const view = editor.ctx.get(editorViewCtx);
+    const matches = collectMatches();
+    if (matches.length === 0) return;
+    const currentPos = view.state.selection.to;
+    const next = matches.find((match) => match.from > currentPos) ?? matches[0];
+    selectMatch(next);
+  }, [collectMatches, editorRef, findValue, selectMatch]);
+
+  const handleFindPrev = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor || !findValue.trim()) return;
+    const view = editor.ctx.get(editorViewCtx);
+    const matches = collectMatches();
+    if (matches.length === 0) return;
+    const currentPos = view.state.selection.from;
+    const reversed = [...matches].reverse();
+    const prev = reversed.find((match) => match.to < currentPos) ?? reversed[0];
+    selectMatch(prev);
+  }, [collectMatches, editorRef, findValue, selectMatch]);
+
+  const handleReplace = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const view = editor.ctx.get(editorViewCtx);
+    const { from, to } = view.state.selection;
+    if (from === to) {
+      handleFindNext();
+      return;
+    }
+    view.dispatch(view.state.tr.insertText(replaceValue, from, to));
+    view.focus();
+  }, [editorRef, handleFindNext, replaceValue]);
+
+  const handleReplaceAll = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor || !findValue.trim()) return;
+    const view = editor.ctx.get(editorViewCtx);
+    const matches = collectMatches();
+    if (matches.length === 0) return;
+    let tr = view.state.tr;
+    [...matches].reverse().forEach((match) => {
+      tr = tr.insertText(replaceValue, match.from, match.to);
+    });
+    view.dispatch(tr);
+    view.focus();
+  }, [collectMatches, editorRef, findValue, replaceValue]);
 
   const handleHeadingSelect = (heading: string, level: number | null) => {
     setSelectedHeading(heading);
@@ -147,11 +235,14 @@ export function EditorToolbar() {
   return (
     <div className="editor-toolbar">
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleUndo} title="실행 취소">
+        <button className="toolbar-btn" onClick={handleUndo} title="Undo">
           <UndoIcon />
         </button>
-        <button className="toolbar-btn" onClick={handleRedo} title="다시 실행">
+        <button className="toolbar-btn" onClick={handleRedo} title="Redo">
           <RedoIcon />
+        </button>
+        <button className="toolbar-btn" onClick={() => setIsFindOpen(!isFindOpen)} title="Find & Replace">
+          Find
         </button>
       </div>
 
@@ -168,10 +259,10 @@ export function EditorToolbar() {
           </button>
           {isHeadingOpen && (
             <div className="heading-menu">
-              <button onClick={() => handleHeadingSelect('제목 1', 1)}>제목 1</button>
-              <button onClick={() => handleHeadingSelect('제목 2', 2)}>제목 2</button>
-              <button onClick={() => handleHeadingSelect('제목 3', 3)}>제목 3</button>
-              <button onClick={() => handleHeadingSelect('본문', null)}>본문</button>
+              <button onClick={() => handleHeadingSelect('Heading 1', 1)}>Heading 1</button>
+              <button onClick={() => handleHeadingSelect('Heading 2', 2)}>Heading 2</button>
+              <button onClick={() => handleHeadingSelect('Heading 3', 3)}>Heading 3</button>
+              <button onClick={() => handleHeadingSelect('Body', null)}>Body</button>
             </div>
           )}
         </div>
@@ -180,28 +271,60 @@ export function EditorToolbar() {
       <div className="toolbar-divider" />
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleBold} title="굵게">
+        <button className="toolbar-btn" onClick={handleBold} title="Bold">
           <BoldIcon />
         </button>
-        <button className="toolbar-btn" onClick={handleItalic} title="기울임">
+        <button className="toolbar-btn" onClick={handleItalic} title="Italic">
           <ItalicIcon />
         </button>
       </div>
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleBulletList} title="글머리 기호 목록">
+        <button className="toolbar-btn" onClick={handleBulletList} title="Bullet List">
           <BulletListIcon />
         </button>
-        <button className="toolbar-btn" onClick={handleNumberList} title="번호 매기기 목록">
+        <button className="toolbar-btn" onClick={handleNumberList} title="Numbered List">
           <NumberListIcon />
         </button>
       </div>
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleFormula} title="수식">
+        <button className="toolbar-btn" onClick={handleFormula} title="Formula">
           <FormulaIcon />
         </button>
       </div>
+      {isFindOpen && (
+        <div className="find-panel">
+          <div className="find-row">
+            <input
+              type="text"
+              value={findValue}
+              onChange={(event) => setFindValue(event.target.value)}
+              placeholder="Find"
+            />
+            <button type="button" onClick={handleFindPrev}>Prev</button>
+            <button type="button" onClick={handleFindNext}>Next</button>
+          </div>
+          <div className="find-row">
+            <input
+              type="text"
+              value={replaceValue}
+              onChange={(event) => setReplaceValue(event.target.value)}
+              placeholder="Replace"
+            />
+            <button type="button" onClick={handleReplace}>Replace</button>
+            <button type="button" onClick={handleReplaceAll}>Replace All</button>
+          </div>
+          <label className="find-option">
+            <input
+              type="checkbox"
+              checked={matchCase}
+              onChange={(event) => setMatchCase(event.target.checked)}
+            />
+            Match Case
+          </label>
+        </div>
+      )}
     </div>
   );
 }

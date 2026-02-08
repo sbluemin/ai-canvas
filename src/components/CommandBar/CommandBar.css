@@ -13,6 +13,13 @@
   padding-right: 140px;
 }
 
+.command-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
 .command-bar-content {
   display: flex;
   align-items: center;
@@ -35,4 +42,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.settings-btn {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f3f4f6;
+  font-size: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.settings-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
 }
