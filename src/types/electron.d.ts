@@ -74,6 +74,15 @@ interface AuthOnlyProviderAPI {
   authLogout: () => Promise<AuthResult>;
 }
 
+interface ProjectAPI {
+  openDirectory: () => Promise<string | null>;
+  initCanvasDir: (projectPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+  listCanvasFiles: (projectPath: string) => Promise<{ success: boolean; files?: string[]; error?: string }>;
+  readCanvasFile: (projectPath: string, fileName: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+  writeCanvasFile: (projectPath: string, fileName: string, content: string) => Promise<{ success: boolean; error?: string }>;
+  createDefaultCanvas: (projectPath: string) => Promise<{ success: boolean; fileName?: string; error?: string }>;
+}
+
 interface ElectronAPI {
   platform: NodeJS.Platform;
   showSaveDialog: () => Promise<string | null>;
@@ -84,6 +93,7 @@ interface ElectronAPI {
   gemini: AuthOnlyProviderAPI;
   codex: AuthOnlyProviderAPI;
   anthropic: AuthOnlyProviderAPI;
+  project: ProjectAPI;
 }
 
 declare global {

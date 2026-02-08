@@ -221,6 +221,88 @@ ipcMain.handle('ai:fetch-models', async () => {
   }
 });
 
+const AI_CANVAS_DIR = '.ai-canvas';
+const DEFAULT_CANVAS_NAME = 'canvas.md';
+const DEFAULT_CANVAS_CONTENT = `# 새 캔버스
+
+여기에 내용을 작성하세요.
+`;
+
+ipcMain.handle('project:open-directory', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    title: '프로젝트 폴더 선택',
+  });
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+  return result.filePaths[0];
+});
+
+ipcMain.handle('project:init-canvas-dir', async (_event, projectPath: string) => {
+  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  try {
+    await fs.mkdir(canvasDir, { recursive: true });
+    return { success: true, path: canvasDir };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
+ipcMain.handle('project:list-canvas-files', async (_event, projectPath: string) => {
+  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  try {
+    const entries = await fs.readdir(canvasDir, { withFileTypes: true });
+    const mdFiles = entries
+      .filter((e) => e.isFile() && e.name.endsWith('.md'))
+      .map((e) => e.name);
+    return { success: true, files: mdFiles };
+  } catch (error) {
+    // 디렉터리가 없으면 빈 리스트 반환
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { success: true, files: [] };
+    }
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
+ipcMain.handle('project:read-canvas-file', async (_event, projectPath: string, fileName: string) => {
+  const filePath = path.join(projectPath, AI_CANVAS_DIR, fileName);
+  try {
+    const content = await fs.readFile(filePath, 'utf-8');
+    return { success: true, content };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
+ipcMain.handle('project:write-canvas-file', async (_event, projectPath: string, fileName: string, content: string) => {
+  const filePath = path.join(projectPath, AI_CANVAS_DIR, fileName);
+  try {
+    await fs.writeFile(filePath, content, 'utf-8');
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
+ipcMain.handle('project:create-default-canvas', async (_event, projectPath: string) => {
+  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  const filePath = path.join(canvasDir, DEFAULT_CANVAS_NAME);
+  try {
+    await fs.mkdir(canvasDir, { recursive: true });
+    await fs.writeFile(filePath, DEFAULT_CANVAS_CONTENT, 'utf-8');
+    return { success: true, fileName: DEFAULT_CANVAS_NAME };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+});
+
 app.whenReady().then(() => {
   createApplicationMenu();
 

@@ -96,4 +96,34 @@ export const api = {
     }
     return window.electronAPI.ai.onChatEvent(callback);
   },
+
+  async openProjectDirectory(): Promise<string | null> {
+    if (!isElectron) return null;
+    return window.electronAPI.project.openDirectory();
+  },
+
+  async initCanvasDir(projectPath: string): Promise<{ success: boolean; path?: string; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    return window.electronAPI.project.initCanvasDir(projectPath);
+  },
+
+  async listCanvasFiles(projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    return window.electronAPI.project.listCanvasFiles(projectPath);
+  },
+
+  async readCanvasFile(projectPath: string, fileName: string): Promise<{ success: boolean; content?: string; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    return window.electronAPI.project.readCanvasFile(projectPath, fileName);
+  },
+
+  async writeCanvasFile(projectPath: string, fileName: string, content: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    return window.electronAPI.project.writeCanvasFile(projectPath, fileName, content);
+  },
+
+  async createDefaultCanvas(projectPath: string): Promise<{ success: boolean; fileName?: string; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron 전용' };
+    return window.electronAPI.project.createDefaultCanvas(projectPath);
+  },
 };

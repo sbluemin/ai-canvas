@@ -29,13 +29,14 @@
 ### 레이아웃
 - **App.tsx**: 루트 - 반응형 레이아웃 (데스크톱: Allotment 좌우 분할, 모바일: 단일 캔버스)
 - **CommandBar**: 상단 커맨드 바
-  - **ProjectSelector**: 프로젝트 선택 드롭다운
+  - **ProjectSelector**: 프로젝트 폴더 선택 (`.ai-canvas` 디렉터리 관리)
   - **GeminiAuthButton**: Gemini OAuth 로그인 버튼
 - **ChatPanel**: 좌측 AI 채팅 패널 (SSE 스트리밍)
 - **CanvasPanel**: 우측 마크다운 에디터 패널
   - **MilkdownEditor**: 마크다운 WYSIWYG
   - **EditorToolbar**: 서식 도구
   - **SelectionAiPopup**: 텍스트 선택 시 AI 질문 팝업
+  - 캔버스 파일 드롭다운: `.ai-canvas/*.md` 파일 간 전환
 - **ErrorPopup**: AI 요청 오류 팝업
 
 ### AI 인증
@@ -79,6 +80,11 @@ interface AppState {
   codexAuthLoading: boolean;
   isAnthropicAuthenticated: boolean;
   anthropicAuthLoading: boolean;
+  
+  // 프로젝트/캔버스 파일 관리
+  projectPath: string | null;    // 선택된 프로젝트 경로
+  canvasFiles: string[];         // .ai-canvas 내 .md 파일 목록
+  activeCanvasFile: string | null; // 현재 열린 캔버스 파일명
 }
 ```
 

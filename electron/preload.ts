@@ -81,4 +81,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('anthropic:auth:status'),
     authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:logout'),
   },
+
+  project: {
+    openDirectory: (): Promise<string | null> =>
+      ipcRenderer.invoke('project:open-directory'),
+    initCanvasDir: (projectPath: string): Promise<{ success: boolean; path?: string; error?: string }> =>
+      ipcRenderer.invoke('project:init-canvas-dir', projectPath),
+    listCanvasFiles: (projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> =>
+      ipcRenderer.invoke('project:list-canvas-files', projectPath),
+    readCanvasFile: (projectPath: string, fileName: string): Promise<{ success: boolean; content?: string; error?: string }> =>
+      ipcRenderer.invoke('project:read-canvas-file', projectPath, fileName),
+    writeCanvasFile: (projectPath: string, fileName: string, content: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:write-canvas-file', projectPath, fileName, content),
+    createDefaultCanvas: (projectPath: string): Promise<{ success: boolean; fileName?: string; error?: string }> =>
+      ipcRenderer.invoke('project:create-default-canvas', projectPath),
+  },
 });

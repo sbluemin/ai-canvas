@@ -46,6 +46,40 @@
 .document-title-area {
   display: flex;
   align-items: center;
+  position: relative;
+}
+
+.canvas-file-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--bg-secondary, #1e1e1f);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  min-width: 180px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.canvas-file-item {
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.canvas-file-item:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary);
+}
+
+.canvas-file-item.active {
+  color: var(--accent-blue);
+  background: var(--accent-selection, rgba(96, 165, 250, 0.1));
 }
 
 .title-display {

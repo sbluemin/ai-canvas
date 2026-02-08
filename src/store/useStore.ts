@@ -39,6 +39,11 @@ interface AppState {
   activeProvider: AiProvider;
   errorPopup: ErrorInfo | null;
   
+  // 프로젝트/캔버스 파일 관리
+  projectPath: string | null;
+  canvasFiles: string[];
+  activeCanvasFile: string | null;
+  
   // 인증 상태
   isAuthenticated: boolean;
   authLoading: boolean;
@@ -82,6 +87,11 @@ interface AppState {
   setAvailableModels: (models: AvailableModels) => void;
   setSelectedModel: (provider: AiProvider, modelId: string | null) => void;
   setModelsLoading: (loading: boolean) => void;
+  
+  // 프로젝트/캔버스 파일 관리 액션
+  setProjectPath: (path: string | null) => void;
+  setCanvasFiles: (files: string[]) => void;
+  setActiveCanvasFile: (fileName: string | null) => void;
   
   showError: (error: ErrorInfo) => void;
   clearError: () => void;
@@ -157,6 +167,9 @@ export const useStore = create<AppState>((set) => ({
   aiRun: null,
   activeProvider: 'gemini',
   errorPopup: null,
+  projectPath: null,
+  canvasFiles: [],
+  activeCanvasFile: null,
 
   addMessage: (role, content, provider?) =>
     set((state) => ({
@@ -274,6 +287,10 @@ export const useStore = create<AppState>((set) => ({
       selectedModels: { ...state.selectedModels, [provider]: modelId },
     })),
   setModelsLoading: (modelsLoading) => set({ modelsLoading }),
+  
+  setProjectPath: (projectPath) => set({ projectPath }),
+  setCanvasFiles: (canvasFiles) => set({ canvasFiles }),
+  setActiveCanvasFile: (activeCanvasFile) => set({ activeCanvasFile }),
   
   showError: (error) => set({ errorPopup: error }),
   clearError: () => set({ errorPopup: null }),
