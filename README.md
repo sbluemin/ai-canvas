@@ -26,7 +26,7 @@ AI Canvas bridges this gap. The conversation itself becomes the document. AI doe
 
 - **Gemini**: Google AI Plan
 - **Codex**: ChatGPT Go/Plus/Pro
-- **Claude**: Cluade Pro/Max
+- **Claude**: Claude Pro/Max
 
 ### Canvas Editor
 
