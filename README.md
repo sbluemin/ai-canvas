@@ -24,9 +24,9 @@ AI Canvas bridges this gap. The conversation itself becomes the document. AI doe
 
 ### AI Providers
 
-- **Gemini**: Google Cloud Code Assist API, OAuth 2.0 PKCE authentication
-- **Codex**: OpenAI API, OAuth 2.0 authentication
-- **Claude**: Anthropic API, OAuth 2.0 authentication
+- **Gemini**: Google AI Plan
+- **Codex**: ChatGPT Go/Plus/Pro
+- **Claude**: Cluade Pro/Max
 
 ### Canvas Editor
 
