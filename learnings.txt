@@ -1,0 +1,1 @@
+Learned: Refactoring Electron IPC handlers into separate modules improves main process maintainability. Using 'registerIpcHandlers' pattern allows clean separation of concerns. Environment issues with types can be mitigated by manual verification and structural checks.
