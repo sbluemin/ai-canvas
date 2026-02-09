@@ -1,7 +1,7 @@
 {
   "name": "ai-canvas",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.0.0-placeholder",
   "type": "module",
   "main": "dist-electron/main.js",
   "overrides": {
@@ -11,7 +11,7 @@
     "dev": "concurrently -k -n preload,vite \"esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron --watch\" \"vite\"",
     "dev:web": "concurrently -k -n server,vite \"tsx watch electron/server.ts\" \"vite --mode web\"",
     "test": "esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron && playwright test",
-    "build": "tsc && vite build && esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder"
+    "build": "tsc && vite build && esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never"
   },
   "dependencies": {
     "@lobehub/icons": "^4.1.0",
@@ -78,12 +78,6 @@
       "target": [
         "nsis",
         "zip"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
       ]
     }
   }
