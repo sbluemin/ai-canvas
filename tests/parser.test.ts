@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { describe, test, expect } from 'vitest';
 import { parseAIResponse, extractJSON } from '../src/utils/parser';
 
-test.describe('JSON Extraction (extractJSON)', () => {
+describe('JSON Extraction (extractJSON)', () => {
   test('should extract simple JSON from text', () => {
     const text = 'Some text {"message": "hello"} more text';
     expect(extractJSON(text)).toBe('{"message": "hello"}');
@@ -41,7 +41,7 @@ test.describe('JSON Extraction (extractJSON)', () => {
   });
 });
 
-test.describe('parseAIResponse', () => {
+describe('parseAIResponse', () => {
   test('should successfully parse valid AI response', () => {
     const rawText = '{"message": "Hello world", "canvasContent": "# Title"}';
     const result = parseAIResponse(rawText);
@@ -83,7 +83,7 @@ test.describe('parseAIResponse', () => {
     const result = parseAIResponse(rawText);
     expect(result.success).toBe(true);
     expect(result.fallback).toBe(true);
-    expect(result.error).toContain('Required');
+    expect(result.error).toContain('expected string');
     expect(result.data?.message).toBe(rawText);
   });
 
@@ -92,7 +92,7 @@ test.describe('parseAIResponse', () => {
     const result = parseAIResponse(rawText);
     expect(result.success).toBe(true);
     expect(result.fallback).toBe(true);
-    expect(result.error).toContain('Expected string, received number');
+    expect(result.error).toContain('expected string, received number');
     expect(result.data?.message).toBe(rawText);
   });
 });

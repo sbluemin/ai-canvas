@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
+/// <reference types="vitest" />
 
 const isWebMode = process.env.npm_lifecycle_event?.includes('web') || process.argv.includes('--mode') && process.argv.includes('web');
 
@@ -44,4 +45,8 @@ export default defineConfig({
     },
   },
   optimizeDeps: {},
+  test: {
+    globals: true,
+    environment: 'node',
+  },
 });
