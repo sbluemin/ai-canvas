@@ -136,6 +136,13 @@ interface AppState {
   closeExportModal: () => void;
   setTheme: (theme: AppSettings['theme']) => void;
   setAutosaveStatus: (status: AutosaveStatus) => void;
+  restoreState: (data: {
+    conversations?: Conversation[];
+    activeConversationId?: string | null;
+    canvasFiles?: string[];
+    canvasContent?: string;
+    autosaveStatus?: AutosaveStatus;
+  }) => void;
 }
 
 function generateRunId(): string {
@@ -413,4 +420,35 @@ export const useStore = create<AppState>((set) => ({
   closeExportModal: () => set({ isExportModalOpen: false }),
   setTheme: (theme) => set((state) => ({ settings: { ...state.settings, theme } })),
   setAutosaveStatus: (autosaveStatus) => set({ autosaveStatus }),
+  restoreState: (data) =>
+    set((state) => {
+      const newState: Partial<AppState> = {};
+      if (data.conversations !== undefined) newState.conversations = data.conversations;
+      if (data.activeConversationId !== undefined)
+        newState.activeConversationId = data.activeConversationId;
+      if (data.canvasFiles !== undefined) newState.canvasFiles = data.canvasFiles;
+      if (data.canvasContent !== undefined) newState.canvasContent = data.canvasContent;
+      if (data.autosaveStatus !== undefined) newState.autosaveStatus = data.autosaveStatus;
+
+      // activeConversationId가 변경되거나 conversations가 변경된 경우 messages 동기화
+      const activeId =
+        data.activeConversationId !== undefined
+          ? data.activeConversationId
+          : state.activeConversationId;
+      const conversations =
+        data.conversations !== undefined ? data.conversations : state.conversations;
+
+      if (activeId) {
+        const activeConv = conversations.find((c) => c.id === activeId);
+        if (activeConv) {
+          newState.messages = activeConv.messages;
+        } else {
+          newState.messages = [];
+        }
+      } else {
+        newState.messages = [];
+      }
+
+      return newState;
+    }),
 }));
