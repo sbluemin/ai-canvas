@@ -244,7 +244,7 @@ function waitForCallback(expectedState: string): Promise<string> {
       }
     });
 
-    server.listen(1455);
+    server.listen(1455, '127.0.0.1');
 
     setTimeout(() => {
       server.close();
