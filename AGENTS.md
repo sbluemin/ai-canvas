@@ -117,6 +117,7 @@ interface AppState {
 ai-canvas/
 ├── src/
 │   ├── components/              # React 컴포넌트
+│   │   ├── Logo.tsx             # 공유 로고 컴포넌트
 │   │   ├── CommandBar/          # 상단 커맨드바
 │   │   │   ├── index.tsx
 │   │   │   ├── CommandBar.css
