@@ -193,6 +193,8 @@ ai-canvas/
 │   ├── api/                     # Electron 내부 API
 │   │   └── models.ts            # 모델 목록 관리
 ├── .github/
+│   ├── ISSUE_TEMPLATE/
+│   │   └── feature_request.yml  # 기능 제안 이슈 템플릿
 │   └── workflows/
 │       └── publish.yml          # GitHub Release 빌드/배포 워크플로우
 ├── version.json                 # nbgv 버저닝 설정

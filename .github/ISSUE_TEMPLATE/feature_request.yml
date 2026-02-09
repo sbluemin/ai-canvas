@@ -1,0 +1,102 @@
+name: 기능 제안
+description: 새로운 기능과 구현 방향을 제안합니다.
+title: "기능 제안: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        아래 항목을 채우면 `#28` 이슈와 동일한 구조로 기능 제안을 작성할 수 있습니다.
+
+        제목은 아래 형식으로 직접 완성해 주세요.
+        `기능 제안: {기능명} ({영문명})`
+
+  - type: input
+    id: feature_name_ko
+    attributes:
+      label: 기능명 (한글)
+      placeholder: 예) 문서 목표 기반 작성 모드
+    validations:
+      required: true
+
+  - type: input
+    id: feature_name_en
+    attributes:
+      label: 기능명 (영문)
+      placeholder: 예) Goal-Oriented Writing Mode
+    validations:
+      required: true
+
+  - type: textarea
+    id: overview
+    attributes:
+      label: 개요
+      description: 현재 문제와 기능 필요성을 2~4문장으로 작성해 주세요.
+      placeholder: |
+        현재 캔버스/채팅 흐름에서 ...
+        이로 인해 ... 문제가 있습니다.
+        따라서 ... 기능이 필요합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_features
+    attributes:
+      label: 제안 기능
+      description: 핵심 기능을 불릿 3~5개로 작성해 주세요.
+      placeholder: |
+        - ...
+        - ...
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: state_extension
+    attributes:
+      label: 구현 방향 - 상태 구조 확장
+      description: TypeScript 인터페이스 예시 1개와 저장 위치(useStore/settings)를 작성해 주세요.
+      render: typescript
+      placeholder: |
+        interface ExampleState {
+          id: string;
+          name: string;
+        }
+
+        // useStore에 추가
+        exampleState: ExampleState | null;
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation_tasks
+    attributes:
+      label: 구현 방향 - 주요 작업
+      description: 체크박스 형식으로 4~7개 작업 항목을 작성해 주세요.
+      placeholder: |
+        - [ ] 작업 1
+        - [ ] 작업 2
+        - [ ] 작업 3
+        - [ ] 작업 4
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_impact
+    attributes:
+      label: 기대 효과
+      description: 기대 효과를 불릿 2~4개로 작성해 주세요.
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: validation_checklist
+    attributes:
+      label: 확인 사항
+      options:
+        - label: "제목을 `기능 제안: {기능명} ({영문명})` 형식으로 작성했습니다."
+          required: true
