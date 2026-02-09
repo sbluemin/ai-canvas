@@ -1,5 +1,4 @@
-
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { extractJSON } from "./parser";
 
 describe("extractJSON", () => {
@@ -35,6 +34,12 @@ describe("extractJSON", () => {
     const input = "Some text before { \"key\": \"value\" } and after.";
     const result = extractJSON(input);
     expect(result).toBe("{ \"key\": \"value\" }");
+  });
+
+  test("should extract JSON from a JSON-only input", () => {
+    const input = "{\"key\": \"value\"}";
+    const result = extractJSON(input);
+    expect(result).toBe(input);
   });
 
   test("should return null for empty string", () => {
@@ -79,6 +84,12 @@ Second block:
     expect(result).toBe("{\"first\": 1}");
   });
 
+  test("should extract the first JSON object if multiple exist", () => {
+    const input = "{\"a\": 1} {\"b\": 2}";
+    const result = extractJSON(input);
+    expect(result).toBe("{\"a\": 1}");
+  });
+
   test("should handle incomplete JSON structure gracefully (return what it can parse or null)", () => {
     // parser implementation details: it looks for balanced braces
     const input = "Incomplete: { \"a\": 1";
@@ -86,36 +97,41 @@ Second block:
   });
 
   test("should handle extra whitespace around JSON in code block", () => {
-      const input = `
+    const input = `
 \`\`\`json
    { "a": 1 }
 \`\`\`
 `;
-      const result = extractJSON(input);
-      expect(result).toBe("{ \"a\": 1 }");
+    const result = extractJSON(input);
+    expect(result).toBe("{ \"a\": 1 }");
   });
 
   test("should extract JSON even if code block has non-json language but contains JSON", () => {
-      // The regex matches \`\`\`(?:json)? which allows \"json\" or nothing.
-      // If language is \"javascript\", regex won\"t match as code block.
-      // So it falls back to full text search.
-      const input = `
+    // The regex matches \`\`\`(?:json)? which allows \"json\" or nothing.
+    // If language is \"javascript\", regex won\"t match as code block.
+    // So it falls back to full text search.
+    const input = `
 \`\`\`javascript
 const obj = { "a": 1 };
 \`\`\`
 `;
-      // It should extract { "a": 1 } from the full text
-      const result = extractJSON(input);
-      expect(result).toBe("{ \"a\": 1 }");
+    // It should extract { "a": 1 } from the full text
+    const result = extractJSON(input);
+    expect(result).toBe("{ \"a\": 1 }");
   });
 
-    test("should extract JSON from code block with different casing for language", () => {
-      const input = `
+  test("should extract JSON from code block with different casing for language", () => {
+    const input = `
 \`\`\`JSON
 { "a": 1 }
 \`\`\`
 `;
-      const result = extractJSON(input);
-      expect(result).toBe("{ \"a\": 1 }");
+    const result = extractJSON(input);
+    expect(result).toBe("{ \"a\": 1 }");
+  });
+
+  test("should fallback to extracting from text if code block content is not valid JSON but whole text contains one", () => {
+    const input = "Outside {\"a\":1} ``` text ```";
+    expect(extractJSON(input)).toBe("{\"a\":1}");
   });
 });
