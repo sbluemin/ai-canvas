@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useStore } from '../store/useStore';
+import { useStore, type ShareBundle } from '../store/useStore';
 import { api } from '../api';
 import './ExportModal.css';
 
@@ -13,7 +13,8 @@ export function ExportModal() {
     conversations,
     activeConversationId,
     canvasFiles,
-    autosaveStatus
+    autosaveStatus,
+    restoreState,
   } = useStore();
   
   const [processing, setProcessing] = useState(false);
@@ -47,7 +48,7 @@ export function ExportModal() {
         activeConversationId,
         canvasFiles,
         canvasContent, // 현재 캔버스 내용도 포함 (선택적)
-        autosaveStatus
+        autosaveStatus,
       };
       
       const result = await api.exportShareBundle(projectPath, bundle);
@@ -69,14 +70,8 @@ export function ExportModal() {
     try {
       const result = await api.importShareBundle();
       if (result.success && result.bundle) {
-        // 번들 데이터 적용 로직은 스토어 액션으로 처리하거나 여기서 직접 처리
-        // 여기서는 간단히 알림만 표시하고 실제 적용은 추가 구현 필요할 수 있음
-        // 하지만 요구사항은 "Share import/export controls wired and basic flow works"
-        // 실제 상태 복원은 복잡할 수 있으므로, 일단 성공 메시지만 띄우거나
-        // 간단한 데이터 확인만 수행.
-        // TODO: 실제 상태 업데이트 로직 추가 (필요시)
-        console.log('Imported bundle:', result.bundle);
-        addToast('success', 'Share bundle imported. (Check console)');
+        restoreState(result.bundle as ShareBundle);
+        addToast('success', 'Share bundle imported.');
         closeExportModal();
       } else if (result.error !== 'User cancelled the import.') {
         addToast('error', `Bundle import failed: ${result.error}`);

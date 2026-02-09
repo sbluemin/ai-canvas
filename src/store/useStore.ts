@@ -53,6 +53,16 @@ export interface AppSettings {
   theme: 'dark' | 'light' | 'system';
 }
 
+export interface ShareBundle {
+  version: string;
+  createdAt: string;
+  conversations: any[];
+  activeConversationId: string | null;
+  canvasFiles: string[];
+  canvasContent: string;
+  autosaveStatus: AutosaveStatus;
+}
+
 interface AppState {
   messages: Message[];
   conversations: Conversation[];
@@ -136,6 +146,7 @@ interface AppState {
   closeExportModal: () => void;
   setTheme: (theme: AppSettings['theme']) => void;
   setAutosaveStatus: (status: AutosaveStatus) => void;
+restoreState: (bundle: ShareBundle) => void;
 }
 
 function generateRunId(): string {
@@ -413,4 +424,38 @@ export const useStore = create<AppState>((set) => ({
   closeExportModal: () => set({ isExportModalOpen: false }),
   setTheme: (theme) => set((state) => ({ settings: { ...state.settings, theme } })),
   setAutosaveStatus: (autosaveStatus) => set({ autosaveStatus }),
+  restoreState: (bundle) =>
+    set(() => {
+      const conversations = Array.isArray(bundle.conversations)
+        ? bundle.conversations.map((c: any) => ({
+            ...c,
+            messages: Array.isArray(c.messages)
+              ? c.messages.map((m: any) => ({
+                  ...m,
+                  timestamp: new Date(m.timestamp),
+                }))
+              : [],
+          }))
+        : [];
+
+      const activeConversationId = bundle.activeConversationId;
+      let activeMessages: Message[] = [];
+      if (activeConversationId) {
+        const activeConv = conversations.find((c: any) => c.id === activeConversationId);
+        if (activeConv) {
+          activeMessages = activeConv.messages;
+        }
+      }
+
+      return {
+        conversations,
+        activeConversationId,
+        messages: activeMessages,
+        canvasFiles: bundle.canvasFiles || [],
+        canvasContent: bundle.canvasContent || '',
+        autosaveStatus: bundle.autosaveStatus || { state: 'idle' },
+        aiRun: null,
+        errorPopup: null,
+      };
+    }),
 }));
