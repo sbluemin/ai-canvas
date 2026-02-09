@@ -3,6 +3,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { Gemini, OpenAI, Claude } from '@lobehub/icons';
+import { useShallow } from 'zustand/react/shallow';
 import { useStore, Message, AiProvider } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import { api } from '../api';
@@ -123,9 +124,26 @@ export function ChatPanel() {
   const providerMenuRef = useRef<HTMLDivElement>(null);
   const conversationMenuRef = useRef<HTMLDivElement>(null);
   
-  const { messages, isLoading, aiRun, isAuthenticated, activeProvider, setActiveProvider,
+  const {
+    messages, isLoading, aiRun, isAuthenticated, activeProvider, setActiveProvider,
     isCodexAuthenticated, isAnthropicAuthenticated, projectPath, conversations, activeConversationId,
-    setConversations, setActiveConversationId, setMessages } = useStore();
+    setConversations, setActiveConversationId, setMessages
+  } = useStore(useShallow((state) => ({
+    messages: state.messages,
+    isLoading: state.isLoading,
+    aiRun: state.aiRun,
+    isAuthenticated: state.isAuthenticated,
+    activeProvider: state.activeProvider,
+    setActiveProvider: state.setActiveProvider,
+    isCodexAuthenticated: state.isCodexAuthenticated,
+    isAnthropicAuthenticated: state.isAnthropicAuthenticated,
+    projectPath: state.projectPath,
+    conversations: state.conversations,
+    activeConversationId: state.activeConversationId,
+    setConversations: state.setConversations,
+    setActiveConversationId: state.setActiveConversationId,
+    setMessages: state.setMessages,
+  })));
   const { sendMessage } = useChatRequest();
 
   // Provider별 인증 상태 매핑
