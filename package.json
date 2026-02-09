@@ -8,6 +8,7 @@
     "unicorn-magic": "0.3.0"
   },
   "scripts": {
+    "test": "bun test",
     "dev": "concurrently -k -n preload,vite \"esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron --watch\" \"vite\"",
     "dev:web": "concurrently -k -n server,vite \"tsx watch electron/server.ts\" \"vite --mode web\"",
     "build": "tsc && vite build && esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never",
