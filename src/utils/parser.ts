@@ -1,5 +1,5 @@
 import type { AIResponse } from '../prompts/types';
-import { AIResponseSchema, validateAIResponse } from '../prompts/types';
+import { AIResponseSchema } from '../prompts/types';
 
 export interface ParseResult {
   success: boolean;
@@ -107,16 +107,13 @@ export function parseAIResponse(rawText: string): ParseResult {
 
   try {
     const parsed = JSON.parse(jsonText) as unknown;
-    const validated = validateAIResponse(parsed);
-    if (validated) {
-      return { success: true, data: validated };
+    const zodResult = AIResponseSchema.safeParse(parsed);
+
+    if (zodResult.success) {
+      return { success: true, data: zodResult.data };
     }
 
-    const zodResult = AIResponseSchema.safeParse(parsed);
-    const errorMessage = zodResult.success
-      ? 'AI response validation failed'
-      : zodResult.error.message;
-    return buildFallback(rawText, errorMessage);
+    return buildFallback(rawText, zodResult.error.message);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return buildFallback(rawText, errorMessage);
