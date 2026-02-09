@@ -118,7 +118,7 @@ const obj = { "a": 1 };
   test("should extract JSON from code block with different casing for language", () => {
     const input = `
 \`\`\`JSON
-{ "a": 1 }
+ { "a": 1 }
 \`\`\`
 `;
     const result = extractJSON(input);
