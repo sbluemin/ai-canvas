@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useStore, Message, AiProvider } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import { api } from '../api';
+import { generateId } from '../utils';
 import { Logo } from './Logo';
 import './ChatPanel.css';
 
@@ -171,7 +172,7 @@ export function ChatPanel() {
   const handleNewConversation = () => {
     const nextIndex = conversations.length;
     const newConversation = {
-      id: `conv-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      id: generateId('conv'),
       title: `Chat ${nextIndex + 1}`,
       messages: [],
       createdAt: Date.now(),

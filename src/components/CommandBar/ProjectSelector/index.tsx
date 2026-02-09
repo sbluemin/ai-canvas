@@ -1,5 +1,6 @@
 import { useStore, type Message, type Conversation, type AutosaveStatus } from '../../../store/useStore';
 import { api } from '../../../api';
+import { generateId } from '../../../utils';
 import './ProjectSelector.css';
 
 function parseStoredMessages(rawMessages: unknown[] | undefined): Message[] {
@@ -21,7 +22,7 @@ function parseStoredMessages(rawMessages: unknown[] | undefined): Message[] {
           : new Date();
 
       parsed.push({
-        id: typeof item.id === 'string' ? item.id : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        id: typeof item.id === 'string' ? item.id : generateId(),
         role,
         content: item.content,
         timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
@@ -33,7 +34,7 @@ function parseStoredMessages(rawMessages: unknown[] | undefined): Message[] {
 }
 
 function createConversationId() {
-  return `conv-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  return generateId('conv');
 }
 
 function createConversationTitle(index: number) {
