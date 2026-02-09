@@ -7,7 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useStore, Message, AiProvider } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import { api } from '../api';
-import { generateId } from '../utils';
+import { AUTOSAVE_DELAY, generateId } from '../utils';
 import { Logo } from './Logo';
 import './ChatPanel.css';
 
@@ -135,7 +135,7 @@ export function ChatPanel() {
       api.writeChatSession(projectPath, serialized).catch((error: unknown) => {
         console.error('Chat session save failed:', error);
       });
-    }, 300);
+    }, AUTOSAVE_DELAY);
 
     return () => window.clearTimeout(timer);
   }, [messages, projectPath]);

@@ -10,6 +10,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ExportModal } from './components/ExportModal';
 import { useStore } from './store/useStore';
 import { api } from './api';
+import { AUTOSAVE_DELAY } from './utils';
 import './App.css';
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -110,7 +111,7 @@ function App() {
       api.writeWorkspace(projectPath, workspace).catch((error: unknown) => {
         console.error('Workspace save failed:', error);
       });
-    }, 300);
+    }, AUTOSAVE_DELAY);
 
     return () => window.clearTimeout(timer);
   }, [projectPath, conversations, activeConversationId, canvasFiles, autosaveStatus]);
