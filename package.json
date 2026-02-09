@@ -10,15 +10,18 @@
   "scripts": {
     "dev": "concurrently -k -n preload,vite \"esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron --watch\" \"vite\"",
     "dev:web": "concurrently -k -n server,vite \"tsx watch electron/server.ts\" \"vite --mode web\"",
-    "build": "tsc && vite build && esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never"
+    "build": "tsc && vite build && esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@lobehub/icons": "^4.1.0",
     "@milkdown/core": "^7.18.0",
-    "@milkdown/plugin-math": "^7.5.9",
     "@milkdown/plugin-diagram": "^7.7.0",
-    "@milkdown/plugin-prism": "^7.18.0",
     "@milkdown/plugin-history": "^7.18.0",
+    "@milkdown/plugin-math": "^7.5.9",
+    "@milkdown/plugin-prism": "^7.18.0",
     "@milkdown/plugin-tooltip": "^7.18.0",
     "@milkdown/preset-commonmark": "^7.18.0",
     "@milkdown/preset-gfm": "^7.18.0",
@@ -42,6 +45,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "@vitest/ui": "^4.0.18",
     "concurrently": "^9.2.1",
     "electron": "^34.5.8",
     "electron-builder": "^25.1.8",
@@ -50,7 +54,8 @@
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vite-plugin-electron": "^0.28.8",
-    "vite-plugin-electron-renderer": "^0.14.6"
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "vitest": "^4.0.18"
   },
   "build": {
     "appId": "com.ai-canvas.app",
