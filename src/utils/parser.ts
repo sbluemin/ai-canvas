@@ -113,7 +113,19 @@ export function parseAIResponse(rawText: string): ParseResult {
       return { success: true, data: zodResult.data };
     }
 
-    return buildFallback(rawText, zodResult.error.message);
+    // Zod 에러를 읽기 쉬운 형식으로 변환
+    let errorMessages = 'Validation failed';
+    
+    if (zodResult.error && zodResult.error.issues) {
+      errorMessages = zodResult.error.issues.map((err) => {
+        const path = err.path.join('.');
+        return `${path}: ${err.message}`;
+      }).join('; ');
+    } else if (zodResult.error) {
+      errorMessages = String(zodResult.error);
+    }
+
+    return buildFallback(rawText, errorMessages);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return buildFallback(rawText, errorMessage);
