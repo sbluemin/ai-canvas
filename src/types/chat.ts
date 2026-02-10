@@ -43,3 +43,17 @@ export interface ChatStreamCallbacks {
   onDone: () => void;
 }
 
+/** 문서 작성 목표 */
+export interface WritingGoal {
+  purpose: string;      // 문서 목적
+  audience: string;     // 대상 독자
+  tone: string;         // 어조
+  targetLength: 'short' | 'medium' | 'long';  // 목표 길이
+}
+
+/** 문서 목표 프리셋 */
+export interface WritingGoalPreset {
+  id: string;           // 프리셋 고유 ID
+  name: string;         // 프리셋 이름 (예: "회의록", "제안서")
+  goal: WritingGoal;    // 프리셋에 포함된 목표 설정
+}

@@ -1,0 +1,235 @@
+/* 오버레이 (SettingsModal 패턴 동일) */
+.writing-goal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+/* 모달 컨테이너 */
+.writing-goal-modal {
+  width: min(520px, 92vw);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+/* 헤더 */
+.writing-goal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.writing-goal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.writing-goal-header button {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.writing-goal-header button:hover {
+  background: var(--bg-hover);
+}
+
+/* 프리셋 영역 */
+.writing-goal-presets {
+  margin-bottom: 20px;
+}
+
+.writing-goal-presets > label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preset-chip:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-color);
+}
+
+.preset-chip.active {
+  background: var(--accent-color);
+  color: #fff;
+  border-color: var(--accent-color);
+}
+
+.preset-delete {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.preset-delete:hover {
+  opacity: 1;
+}
+
+.preset-chip.active .preset-delete {
+  color: #fff;
+}
+
+/* 폼 입력 영역 */
+.writing-goal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.writing-goal-form label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.writing-goal-form input,
+.writing-goal-form textarea,
+.writing-goal-form select {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.writing-goal-form input:focus,
+.writing-goal-form textarea:focus,
+.writing-goal-form select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.writing-goal-form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* 하단 액션 버튼 그룹 */
+.writing-goal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.action-buttons-right {
+  display: flex;
+  gap: 8px;
+}
+
+.writing-goal-actions button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--border-color);
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: #fff;
+  border-color: var(--accent-color);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-hover);
+}
+
+.btn-reset {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-reset:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* 반응형 */
+@media (max-width: 600px) {
+  .writing-goal-modal {
+    padding: 14px;
+  }
+
+  .writing-goal-header h3 {
+    font-size: 16px;
+  }
+
+  .writing-goal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action-buttons-right {
+    width: 100%;
+  }
+
+  .writing-goal-actions button {
+    flex: 1;
+  }
+}

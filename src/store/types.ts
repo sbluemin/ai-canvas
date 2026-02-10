@@ -1,6 +1,6 @@
-import { AiProvider, ModelInfo, AvailableModels, SelectedModels } from '../types/chat';
+import { AiProvider, ModelInfo, AvailableModels, SelectedModels, WritingGoal, WritingGoalPreset } from '../types/chat';
 
-export type { AiProvider, ModelInfo, AvailableModels, SelectedModels };
+export type { AiProvider, ModelInfo, AvailableModels, SelectedModels, WritingGoal, WritingGoalPreset };
 
 export interface Message {
   id: string;
@@ -153,4 +153,17 @@ export interface ModelSlice {
   setModelsLoading: (loading: boolean) => void;
 }
 
-export type AppState = ChatSlice & UiSlice & ProjectSlice & AuthSlice & ModelSlice;
+export interface WritingGoalSlice {
+  activeWritingGoal: WritingGoal | null;
+  writingGoalPresets: WritingGoalPreset[];
+  isWritingGoalOpen: boolean;
+
+  setActiveWritingGoal: (goal: WritingGoal | null) => void;
+  setWritingGoalPresets: (presets: WritingGoalPreset[]) => void;
+  addWritingGoalPreset: (preset: WritingGoalPreset) => void;
+  removeWritingGoalPreset: (presetId: string) => void;
+  toggleWritingGoal: () => void;
+  closeWritingGoal: () => void;
+}
+
+export type AppState = ChatSlice & UiSlice & ProjectSlice & AuthSlice & ModelSlice & WritingGoalSlice;

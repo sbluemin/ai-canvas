@@ -57,3 +57,9 @@
 .settings-btn:hover {
   background: rgba(255, 255, 255, 0.14);
 }
+
+/* 문서 목표 활성화 표시 */
+.settings-btn.active-goal {
+  color: var(--accent-color, #8ab4f8);
+  font-weight: 600;
+}

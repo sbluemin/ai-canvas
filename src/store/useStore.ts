@@ -5,6 +5,7 @@ import { createUiSlice } from './slices/uiSlice';
 import { createProjectSlice } from './slices/projectSlice';
 import { createAuthSlice } from './slices/authSlice';
 import { createModelSlice } from './slices/modelSlice';
+import { createWritingGoalSlice } from './slices/writingGoalSlice';
 
 export * from './types';
 
@@ -14,4 +15,5 @@ export const useStore = create<AppState>()((...a) => ({
   ...createProjectSlice(...a),
   ...createAuthSlice(...a),
   ...createModelSlice(...a),
+  ...createWritingGoalSlice(...a),
 }));
