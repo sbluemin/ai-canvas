@@ -1,4 +1,5 @@
 import { truncateToFit } from './canvas';
+import type { WritingGoal } from '../ai/types';
 
 export interface PromptOptions {
   maxCanvasLength?: number;
@@ -7,6 +8,7 @@ export interface PromptOptions {
     before: string;
     after: string;
   };
+  writingGoal?: WritingGoal;  // 문서 목표 메타데이터 (옵셔널)
 }
 
 export interface ConversationMessage {
@@ -34,6 +36,17 @@ Context after: "${options.selection.after.slice(0, 150)}"
 `
     : '';
 
+  const writingGoalBlock = options?.writingGoal
+    ? `
+<writing_goal>
+Purpose: ${options.writingGoal.purpose}
+Audience: ${options.writingGoal.audience}
+Tone: ${options.writingGoal.tone}
+Target Length: ${options.writingGoal.targetLength}
+</writing_goal>
+`
+    : '';
+
   const historyBlock = history.length > 0
     ? `<conversation_history>
 ${formatHistory(history)}
@@ -49,6 +62,7 @@ ${PHASE1_PROMPT}
 ${truncatedCanvas}
 </canvas>
 ${selectionBlock}
+${writingGoalBlock}
 ${historyBlock}
 <user_request>
 ${userRequest}
@@ -58,8 +72,20 @@ ${userRequest}
 export function buildPhase2Prompt(
   userRequest: string,
   canvasContent: string,
-  updatePlan: string
+  updatePlan: string,
+  writingGoal?: WritingGoal  // 문서 목표 메타데이터 (옵셔널)
 ): string {
+  const writingGoalBlock = writingGoal
+    ? `
+<writing_goal>
+Purpose: ${writingGoal.purpose}
+Audience: ${writingGoal.audience}
+Tone: ${writingGoal.tone}
+Target Length: ${writingGoal.targetLength}
+</writing_goal>
+`
+    : '';
+
   return `<system>
 ${PHASE2_PROMPT}
 </system>
@@ -74,7 +100,8 @@ ${canvasContent}
 
 <update_plan>
 ${updatePlan}
-</update_plan>`;
+</update_plan>
+${writingGoalBlock}`;
 }
 
 function formatHistory(history: ConversationMessage[]): string {
@@ -149,6 +176,7 @@ Ask yourself: *"Would updating the canvas right now genuinely advance the user's
 - **Match User's Language** - Respond in the same language as the 'user request'
 - **Be Collaborative** - Act as a partner, not a reactive tool
 - **Be Concrete** - Avoid vague suggestions; provide specific insights
+- **Honor Writing Goals** - When a <writing_goal> block is provided, treat it as persistent context: ensure purpose, audience, tone, and length preferences shape every response and plan
 - Sometimes the best help is a question; sometimes it's committing to action`;
 
 const PHASE2_PROMPT = `
@@ -186,6 +214,7 @@ You MUST respond with a valid JSON object only. No text before or after.
 3. **Preserve Unchanged Content** - Do not modify sections not mentioned in the plan
 4. **Maintain Structure** - Keep existing formatting and organization unless the plan specifies otherwise
 5. **Explain Changes** - Your message should describe what you modified and why
+6. **Respect Writing Goals** - When a <writing_goal> block is provided, ensure the output aligns with the specified purpose, audience, tone, and target length
 
 [MESSAGE GUIDELINES]
 Your message should:

@@ -18,6 +18,12 @@ export interface ChatRequestOptions {
     before: string;
     after: string;
   };
+  writingGoal?: {
+    purpose: string;
+    audience: string;
+    tone: string;
+    targetLength: 'short' | 'medium' | 'long';
+  };
 }
 
 export const api = {
@@ -84,6 +90,7 @@ export const api = {
       canvasContent,
       modelId: options?.modelId,
       selection: options?.selection,
+      writingGoal: options?.writingGoal,
     });
   },
 

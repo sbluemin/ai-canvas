@@ -1,5 +1,13 @@
 export type AiProvider = 'gemini' | 'openai' | 'anthropic';
 
+/** 문서 목표 기반 작성 모드 메타데이터 */
+export interface WritingGoal {
+  purpose: string;      // 문서 목적 (예: "기술 제안서 작성")
+  audience: string;     // 대상 독자 (예: "경영진")
+  tone: string;         // 어조 (예: "격식체, 전문적")
+  targetLength: 'short' | 'medium' | 'long';  // 목표 길이
+}
+
 export interface AiChatRequest {
   runId: string;
   provider: AiProvider;
@@ -12,6 +20,7 @@ export interface AiChatRequest {
     before: string;
     after: string;
   };
+  writingGoal?: WritingGoal;  // 문서 목표 메타데이터 (옵셔널)
 }
 
 export interface ConversationMessage {

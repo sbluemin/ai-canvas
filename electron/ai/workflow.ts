@@ -80,7 +80,7 @@ export async function executeAiChatWorkflow(
   event: IpcMainInvokeEvent,
   request: AiChatRequest
 ): Promise<void> {
-  const { runId, provider, prompt, history, canvasContent, selection, modelId } = request;
+  const { runId, provider, prompt, history, canvasContent, selection, modelId, writingGoal } = request;
   
   const sendEvent = (evt: AiChatEvent) => {
     if (!event.sender.isDestroyed()) {
@@ -136,7 +136,7 @@ export async function executeAiChatWorkflow(
   try {
     sendEvent({ runId, type: 'phase', phase: 'evaluating' });
     
-    const phase1Prompt = buildPhase1Prompt(prompt, canvasContent, history, { selection });
+    const phase1Prompt = buildPhase1Prompt(prompt, canvasContent, history, { selection, writingGoal });
     
     let phase1RawBuffer = '';
     let lastPhase1Message = '';
@@ -168,7 +168,7 @@ export async function executeAiChatWorkflow(
       currentPhase = 'updating';
       sendEvent({ runId, type: 'phase', phase: 'updating' });
       
-      const phase2Prompt = buildPhase2Prompt(prompt, canvasContent, phase1Result.updatePlan);
+      const phase2Prompt = buildPhase2Prompt(prompt, canvasContent, phase1Result.updatePlan, writingGoal);
       
       const phase2RawText = await callProvider(provider, event, phase2Prompt, undefined, modelId);
       
