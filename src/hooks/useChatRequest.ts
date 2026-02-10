@@ -101,6 +101,7 @@ export function useChatRequest() {
     activeProvider,
     selectedModels,
     showError,
+    activeWritingGoal,
   } = useStore();
 
   const currentRunIdRef = useRef<string | null>(null);
@@ -255,7 +256,11 @@ export function useChatRequest() {
         history,
         canvasContent,
         activeProvider,
-        { ...options, modelId }
+        {
+          ...options,
+          modelId,
+          ...(activeWritingGoal ? { writingGoal: activeWritingGoal } : {}),
+        }
       );
 
       if (!result.success && result.error) {
@@ -286,6 +291,7 @@ export function useChatRequest() {
       activeProvider,
       selectedModels,
       showError,
+      activeWritingGoal,
     ]
   );
 
