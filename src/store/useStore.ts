@@ -163,6 +163,7 @@ interface AppState {
 }
 
 
+
 const DEFAULT_WRITING_GOAL_PRESETS: WritingGoalPreset[] = [
   {
     id: 'meeting-notes',
