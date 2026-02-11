@@ -9,7 +9,7 @@ import { useStore } from '../../store/useStore';
 import { Logo } from '../Logo';
 
 export function CommandBar() {
-  const { toggleSettings, toggleExportModal, activeProvider } = useStore();
+  const { toggleSettings, toggleExportModal, activeProvider, toggleWritingGoal, activeWritingGoal } = useStore();
 
   return (
     <div className="command-bar">
@@ -27,6 +27,14 @@ export function CommandBar() {
         <ProjectSelector />
       </div>
       <div className="command-bar-right">
+        <button
+          type="button"
+          className={`settings-btn${activeWritingGoal ? ' active-goal' : ''}`}
+          onClick={toggleWritingGoal}
+          title="Writing Goal"
+        >
+          {activeWritingGoal ? '🎯 Goal' : 'Goal'}
+        </button>
         <button type="button" className="settings-btn" onClick={toggleExportModal} title="Export &amp; Share">
           Export
         </button>

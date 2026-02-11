@@ -34,6 +34,12 @@ interface AiChatRequest {
     before: string;
     after: string;
   };
+  writingGoal?: {
+    purpose: string;
+    audience: string;
+    tone: string;
+    targetLength: 'short' | 'medium' | 'long';
+  };
 }
 
 type AiChatEvent =

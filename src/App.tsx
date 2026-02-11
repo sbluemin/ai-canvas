@@ -8,6 +8,7 @@ import { ErrorPopup } from './components/ErrorPopup';
 import { ToastContainer } from './components/ToastContainer';
 import { SettingsModal } from './components/SettingsModal';
 import { ExportModal } from './components/ExportModal';
+import { WritingGoalModal } from './components/WritingGoalModal';
 import { useStore } from './store/useStore';
 import { api } from './api';
 import { AUTOSAVE_DELAY, logger } from './utils';
@@ -150,6 +151,7 @@ function App() {
           <CanvasPanel />
         </div>
         <SettingsModal />
+        <WritingGoalModal />
         <ExportModal />
         <ToastContainer />
         <ErrorPopup />
@@ -173,6 +175,7 @@ function App() {
         </div>
       </div>
       <SettingsModal />
+      <WritingGoalModal />
       <ExportModal />
       <ToastContainer />
       <ErrorPopup />
