@@ -1,8 +1,9 @@
-import { describe, expect, it, test } from "bun:test";
+// @ts-ignore bun:test 모듈은 런타임에서 제공됨
+import { describe, it, expect } from "bun:test";
 import { parsePhase1Response, parsePhase2Response } from "./parser";
 
 describe("parsePhase1Response", () => {
-  test("should parse valid JSON response", () => {
+  it("should parse valid JSON response", () => {
     const validJson = JSON.stringify({
       message: "Test message",
       needsCanvasUpdate: true,
@@ -18,7 +19,7 @@ describe("parsePhase1Response", () => {
     });
   });
 
-  test("should handle valid JSON embedded in text", () => {
+  it("should handle valid JSON embedded in text", () => {
     const text = `Here is the response:
     {
       "message": "Embedded message",
@@ -35,7 +36,7 @@ describe("parsePhase1Response", () => {
     });
   });
 
-  test("should return default response for invalid JSON", () => {
+  it("should return default response for invalid JSON", () => {
     const invalidJson = "{ invalid json }";
     const result = parsePhase1Response(invalidJson);
 
@@ -45,7 +46,7 @@ describe("parsePhase1Response", () => {
     });
   });
 
-  test("should return default response for non-JSON text", () => {
+  it("should return default response for non-JSON text", () => {
     const text = "Just plain text response";
     const result = parsePhase1Response(text);
 
@@ -55,7 +56,7 @@ describe("parsePhase1Response", () => {
     });
   });
 
-  test("should return default response for schema mismatch (missing fields)", () => {
+  it("should return default response for schema mismatch (missing fields)", () => {
     const json = JSON.stringify({
       message: "Missing needsCanvasUpdate"
     });
@@ -68,7 +69,7 @@ describe("parsePhase1Response", () => {
     });
   });
 
-  test("should return default response for schema mismatch (wrong types)", () => {
+  it("should return default response for schema mismatch (wrong types)", () => {
     const json = JSON.stringify({
       message: "Wrong type",
       needsCanvasUpdate: "not a boolean"
@@ -82,7 +83,7 @@ describe("parsePhase1Response", () => {
     });
   });
 
-  test("should handle empty string", () => {
+  it("should handle empty string", () => {
     const result = parsePhase1Response("");
 
     expect(result).toEqual({
