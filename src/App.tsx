@@ -10,7 +10,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ExportModal } from './components/ExportModal';
 import { useStore } from './store/useStore';
 import { api } from './api';
-import { AUTOSAVE_DELAY } from './utils';
+import { AUTOSAVE_DELAY, logger } from './utils';
 import './App.css';
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -46,7 +46,7 @@ function App() {
           setAvailableModels(result.models);
         }
       })
-      .catch((error) => console.error('Auto-fetch models failed:', error))
+      .catch((error) => logger.error('Auto-fetch models failed:', error))
       .finally(() => setModelsLoading(false));
   }, [setAvailableModels, setModelsLoading]);
 
@@ -109,7 +109,7 @@ function App() {
         autosaveStatus,
       };
       api.writeWorkspace(projectPath, workspace).catch((error: unknown) => {
-        console.error('Workspace save failed:', error);
+        logger.error('Workspace save failed:', error);
       });
     }, AUTOSAVE_DELAY);
 

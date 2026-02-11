@@ -8,6 +8,11 @@ export interface ParseResult {
   error?: string;
 }
 
+type ZodIssueLike = {
+  path: Array<string | number>;
+  message: string;
+};
+
 function buildFallback(rawText: string, error?: string): ParseResult {
   const result: ParseResult = {
     success: true,
@@ -116,7 +121,7 @@ export function parseAIResponse(rawText: string): ParseResult {
     // Zod 에러를 읽기 쉬운 형식으로 변환
     let errorMessages = 'Validation failed';
     if (zodResult.error && zodResult.error.issues) {
-      errorMessages = zodResult.error.issues.map((err: { path: Array<string | number>; message: string }) => {
+      errorMessages = zodResult.error.issues.map((err: ZodIssueLike) => {
         const path = err.path.join('.');
         return `${path}: ${err.message}`;
       }).join('; ');
