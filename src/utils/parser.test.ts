@@ -91,7 +91,6 @@ Second block:
   });
 
   test("should handle incomplete JSON structure gracefully (return what it can parse or null)", () => {
-    // parser implementation details: it looks for balanced braces
     const input = "Incomplete: { \"a\": 1";
     expect(extractJSON(input)).toBeNull();
   });
@@ -107,15 +106,11 @@ Second block:
   });
 
   test("should extract JSON even if code block has non-json language but contains JSON", () => {
-    // The regex matches \`\`\`(?:json)? which allows \"json\" or nothing.
-    // If language is \"javascript\", regex won\"t match as code block.
-    // So it falls back to full text search.
     const input = `
 \`\`\`javascript
 const obj = { "a": 1 };
 \`\`\`
 `;
-    // It should extract { "a": 1 } from the full text
     const result = extractJSON(input);
     expect(result).toBe("{ \"a\": 1 }");
   });
