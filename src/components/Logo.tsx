@@ -1,6 +1,8 @@
-export function Logo() {
+import type { SVGProps } from 'react';
+
+export function Logo(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" aria-label="AI Canvas">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" aria-label="AI Canvas" {...props}>
       <defs>
         <linearGradient id="ai-canvas-logo-grad" x1="5" y1="19" x2="20" y2="6" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#D8B4FE" />
@@ -39,6 +41,54 @@ export function Logo() {
         <circle cx="-1.9" cy="1.4" r="0.28" fill="#93C5FD" opacity="0.9" />
         <circle cx="1.4" cy="1.9" r="0.38" fill="#D8B4FE" opacity="0.7" />
         <circle cx="1.9" cy="-0.9" r="0.19" fill="#FFFFFF" opacity="0.6" />
+      </g>
+    </svg>
+  );
+}
+
+export function DetailLogo(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 512 512" fill="none" role="img" aria-label="AI Canvas Mark" {...props}>
+      <defs>
+        <linearGradient id="aic-grad-detail" x1="100" y1="400" x2="400" y2="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#D8B4FE"/>
+          <stop offset="0.5" stopColor="#818CF8"/>
+          <stop offset="1" stopColor="#93C5FD"/>
+        </linearGradient>
+        <filter id="aic-glow-detail" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="12" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+        <filter id="aic-sparkle-detail" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      <g transform="translate(256 256) scale(1.15) translate(-256 -256)">
+        {/* Canvas Frame */}
+        <g transform="translate(256 256) rotate(-8) translate(-256 -256)">
+          <rect x="132" y="156" width="260" height="208" rx="56" fill="white" fillOpacity="0.10" stroke="white" strokeOpacity="0.22" strokeWidth="10"/>
+          <rect x="164" y="188" width="196" height="144" rx="44" fill="none" stroke="white" strokeOpacity="0.14" strokeWidth="8"/>
+        </g>
+
+        {/* Main Stroke + Highlight */}
+        <g filter="url(#aic-glow-detail)">
+          <path d="M 120 380 C 180 380, 180 280, 260 240 S 370 180, 400 130" stroke="url(#aic-grad-detail)" strokeWidth="56" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M 130 370 C 185 370, 185 275, 260 235 S 360 175, 390 130" stroke="white" strokeOpacity="0.3" strokeWidth="8" strokeLinecap="round" fill="none" style={{ mixBlendMode: 'overlay' as const }}/>
+        </g>
+
+        {/* Sparkle Points */}
+        <g transform="translate(410 110)" filter="url(#aic-sparkle-detail)">
+          <path d="M 0 -48 C 4 -16, 16 -4, 48 0 C 16 4, 4 16, 0 48 C -4 16, -16 4, -48 0 C -16 -4, -4 -16, 0 -48 Z" fill="#FFFFFF"/>
+          <circle r="12" fill="#D8B4FE" opacity="0.4"/>
+          <circle cx="-40" cy="30" r="6" fill="#93C5FD" opacity="0.9"/>
+          <circle cx="30" cy="40" r="8" fill="#D8B4FE" opacity="0.7"/>
+          <circle cx="40" cy="-20" r="4" fill="#FFFFFF" opacity="0.6"/>
+        </g>
       </g>
     </svg>
   );
