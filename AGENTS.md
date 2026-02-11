@@ -197,6 +197,11 @@ ai-canvas/
 │   │   └── feature_request.yml  # 기능 제안 이슈 템플릿
 │   └── workflows/
 │       └── publish.yml          # GitHub Release 빌드/배포 워크플로우
+<<<<<<< HEAD
+=======
+├── tests/                       # Playwright 테스트
+│   └── electron-chat.test.ts    # Electron 채팅 테스트
+>>>>>>> origin/main
 ├── version.json                 # nbgv 버저닝 설정
 └── vite.config.ts               # Vite + Electron 설정
 ```
@@ -209,6 +214,12 @@ ai-canvas/
 # 개발
 npm run dev          # Electron 개발 모드
 
+<<<<<<< HEAD
+=======
+# 테스트
+npm test             # Playwright 테스트
+
+>>>>>>> origin/main
 # 빌드
 npm run build        # Electron 앱 프로덕션 빌드
 ```
