@@ -115,7 +115,6 @@ export function parseAIResponse(rawText: string): ParseResult {
 
     // Zod 에러를 읽기 쉬운 형식으로 변환
     let errorMessages = 'Validation failed';
-    
     if (zodResult.error && zodResult.error.issues) {
       errorMessages = zodResult.error.issues.map((err) => {
         const path = err.path.join('.');

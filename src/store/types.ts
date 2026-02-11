@@ -52,6 +52,16 @@ export interface AppSettings {
   theme: 'dark' | 'light' | 'system';
 }
 
+export interface ShareBundle {
+  version: string;
+  createdAt: string;
+  conversations: any[];
+  activeConversationId: string | null;
+  canvasFiles: string[];
+  canvasContent: string;
+  autosaveStatus: AutosaveStatus;
+}
+
 export interface ChatSlice {
   messages: Message[];
   conversations: Conversation[];
@@ -114,6 +124,7 @@ export interface ProjectSlice {
   setCanvasFiles: (files: string[]) => void;
   setActiveCanvasFile: (fileName: string | null) => void;
   setAutosaveStatus: (status: AutosaveStatus) => void;
+  restoreState: (bundle: ShareBundle) => void;
 }
 
 export interface AuthSlice {

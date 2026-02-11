@@ -1,5 +1,4 @@
 export { generateId } from '../utils';
-
 export const DEFAULT_CANVAS_CONTENT = `# AI Canvas - 재사용 가능한 코어 아키텍처
 
 ## 기술 스택 개요
