@@ -4,8 +4,12 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { TokenData, ValidTokenResult, AuthStatus } from './types';
 
-const CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
-const REDIRECT_URI = 'https://console.anthropic.com/oauth/code/callback';
+const CLIENT_ID = process.env.ANTHROPIC_CLIENT_ID || '';
+const REDIRECT_URI = process.env.ANTHROPIC_REDIRECT_URI || 'https://console.anthropic.com/oauth/code/callback';
+
+if (!CLIENT_ID) {
+  console.warn('Anthropic Client ID is missing. Anthropic authentication may not work correctly.');
+}
 const SCOPES = [
   'org:create_api_key',
   'user:profile',

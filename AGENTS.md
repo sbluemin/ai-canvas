@@ -243,7 +243,13 @@ npm run build        # Electron 앱 프로덕션 빌드
 
 ## AI 설정
 
-인증은 앱 내에서 직접 수행됩니다:
+인증은 앱 내에서 직접 수행됩니다. 개발 및 빌드 시 다음 환경 변수가 필요합니다:
+
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`
+- `ANTHROPIC_CLIENT_ID`, `ANTHROPIC_REDIRECT_URI`
+- `CODEX_CLIENT_ID`, `CODEX_REDIRECT_URI`
+
+자세한 내용은 `.env.example` 파일을 참조하세요.
 
 ### Gemini
 1. 우측 상단 Gemini 버튼 클릭

@@ -5,9 +5,21 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { TokenData, ValidTokenResult, AuthStatus } from './types';
 
-const CLIENT_ID = '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
-const REDIRECT_URI = 'http://localhost:8085/oauth2callback';
+// NOTE: These are Google OAuth credentials.
+// In a production desktop application, it is better practice to use a proxy server
+// to handle the OAuth exchange to avoid exposing the CLIENT_SECRET.
+// However, if a proxy is not available, using environment variables is preferred
+// over hardcoding them in the source code to prevent exposure in the codebase.
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8085/oauth2callback';
+
+if (!CLIENT_ID || !CLIENT_SECRET) {
+  console.warn(
+    'Google OAuth credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET) are missing. ' +
+    'Gemini authentication will not work correctly.'
+  );
+}
 const SCOPES = [
   'https://www.googleapis.com/auth/cloud-platform',
   'https://www.googleapis.com/auth/userinfo.email',

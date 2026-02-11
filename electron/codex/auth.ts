@@ -5,8 +5,12 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { TokenData, ValidTokenResult, AuthStatus, JWTPayload } from './types';
 
-const CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
-const REDIRECT_URI = 'http://localhost:1455/auth/callback';
+const CLIENT_ID = process.env.CODEX_CLIENT_ID || '';
+const REDIRECT_URI = process.env.CODEX_REDIRECT_URI || 'http://localhost:1455/auth/callback';
+
+if (!CLIENT_ID) {
+  console.warn('Codex Client ID is missing. Codex authentication may not work correctly.');
+}
 const SCOPE = 'openid profile email offline_access';
 
 const TOKEN_ENDPOINT = 'https://auth.openai.com/oauth/token';

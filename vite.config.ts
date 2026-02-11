@@ -26,6 +26,15 @@ export default defineConfig({
             resolve: {
               conditions: ['node'],
             },
+            define: {
+              'process.env.GOOGLE_CLIENT_ID': JSON.stringify(process.env.GOOGLE_CLIENT_ID),
+              'process.env.GOOGLE_CLIENT_SECRET': JSON.stringify(process.env.GOOGLE_CLIENT_SECRET),
+              'process.env.GOOGLE_REDIRECT_URI': JSON.stringify(process.env.GOOGLE_REDIRECT_URI),
+              'process.env.ANTHROPIC_CLIENT_ID': JSON.stringify(process.env.ANTHROPIC_CLIENT_ID),
+              'process.env.ANTHROPIC_REDIRECT_URI': JSON.stringify(process.env.ANTHROPIC_REDIRECT_URI),
+              'process.env.CODEX_CLIENT_ID': JSON.stringify(process.env.CODEX_CLIENT_ID),
+              'process.env.CODEX_REDIRECT_URI': JSON.stringify(process.env.CODEX_REDIRECT_URI),
+            },
           },
         },
       ]),
