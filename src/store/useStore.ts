@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { generateId } from '../utils';
 import { AiProvider, ModelInfo, AvailableModels, SelectedModels } from '../types/chat';
 
 export type { AiProvider, ModelInfo, AvailableModels, SelectedModels };
@@ -149,10 +150,6 @@ interface AppState {
 restoreState: (bundle: ShareBundle) => void;
 }
 
-function generateRunId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
 const DEFAULT_CANVAS_CONTENT = `# AI Canvas - 재사용 가능한 코어 아키텍처
 
 ## 기술 스택 개요
@@ -237,7 +234,7 @@ export const useStore = create<AppState>((set) => ({
   addMessage: (role, content, provider?) =>
     set((state) => {
       const nextMessage: Message = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        id: generateId(),
         role,
         content,
         timestamp: new Date(),
@@ -352,7 +349,7 @@ export const useStore = create<AppState>((set) => ({
   closeDrawer: () => set({ isDrawerOpen: false }),
 
   startAiRun: () => {
-    const runId = generateRunId();
+    const runId = generateId();
     set({
       aiRun: {
         runId,
@@ -408,7 +405,7 @@ export const useStore = create<AppState>((set) => ({
       toasts: [
         ...state.toasts,
         {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          id: generateId(),
           type,
           message,
         },
