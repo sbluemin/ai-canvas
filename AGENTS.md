@@ -68,6 +68,14 @@
 ### API 모듈 (`src/api/`)
 - **index.ts**: Electron/Web 분기 로직, IPC 래퍼
 
+### IPC 핸들러 (`electron/ipc/`)
+- **index.ts**: IPC 핸들러 등록
+- **ai.ts**: AI 관련 IPC
+- **dialog.ts**: 파일/다이얼로그 IPC
+- **fs.ts**: 파일 읽기/쓰기 IPC
+- **project.ts**: 프로젝트/캔버스 관리 IPC
+- **window.ts**: 윈도우 제어 IPC
+
 ### 렌더러 프롬프트 (`src/prompts/`)
 - 경량 호환 레이어 (타입 export만 유지, 실제 로직은 electron/prompts 사용)
 
@@ -164,6 +172,15 @@ ai-canvas/
 ├── electron/
 │   ├── main.ts                  # IPC 핸들러 (ai:chat 통합 엔드포인트)
 │   ├── preload.ts               # Electron API
+│   ├── consts.ts                # IPC 공용 상수
+│   ├── utils.ts                 # IPC 공용 유틸
+│   ├── ipc/                     # IPC 핸들러 모듈
+│   │   ├── index.ts
+│   │   ├── ai.ts
+│   │   ├── dialog.ts
+│   │   ├── fs.ts
+│   │   ├── project.ts
+│   │   └── window.ts
 │   ├── ai/                      # AI 오케스트레이션 레이어
 │   │   ├── workflow.ts          # Phase 1/2 실행 흐름
 │   │   ├── providerAdapter.ts   # Provider 통합 호출
@@ -197,11 +214,8 @@ ai-canvas/
 │   │   └── feature_request.yml  # 기능 제안 이슈 템플릿
 │   └── workflows/
 │       └── publish.yml          # GitHub Release 빌드/배포 워크플로우
-<<<<<<< HEAD
-=======
 ├── tests/                       # Playwright 테스트
 │   └── electron-chat.test.ts    # Electron 채팅 테스트
->>>>>>> origin/main
 ├── version.json                 # nbgv 버저닝 설정
 └── vite.config.ts               # Vite + Electron 설정
 ```
@@ -214,12 +228,8 @@ ai-canvas/
 # 개발
 npm run dev          # Electron 개발 모드
 
-<<<<<<< HEAD
-=======
 # 테스트
 npm test             # Playwright 테스트
-
->>>>>>> origin/main
 # 빌드
 npm run build        # Electron 앱 프로덕션 빌드
 ```

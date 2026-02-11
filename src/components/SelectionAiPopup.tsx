@@ -6,7 +6,6 @@ import { useStore } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import { DetailLogo } from './Logo';
 import './SelectionAiPopup.css';
-
 function extractSelectionContext(canvasContent: string, selectedText: string) {
   const selectionIndex = canvasContent.indexOf(selectedText);
   if (selectionIndex === -1) {
