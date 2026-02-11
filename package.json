@@ -13,7 +13,8 @@
     "build": "tsc && vite build && esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron && electron-builder --publish never",
     "test:vitest": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:e2e": "esbuild electron/preload.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-electron/preload.js --external:electron && playwright test"
   },
   "dependencies": {
     "@lobehub/icons": "^4.1.0",
@@ -42,6 +43,7 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
@@ -50,6 +52,7 @@
     "electron": "^34.5.8",
     "electron-builder": "^25.1.8",
     "esbuild": "^0.27.2",
+    "playwright": "^1.58.1",
     "tsx": "^4.19.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",

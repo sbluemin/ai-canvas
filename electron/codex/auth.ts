@@ -244,7 +244,11 @@ function waitForCallback(expectedState: string): Promise<string> {
       }
     });
 
+<<<<<<< HEAD
     server.listen(1455, '127.0.0.1');
+=======
+    server.listen(1455);
+>>>>>>> origin/main
 
     setTimeout(() => {
       server.close();
