@@ -166,4 +166,33 @@ export interface WritingGoalSlice {
   closeWritingGoal: () => void;
 }
 
-export type AppState = ChatSlice & UiSlice & ProjectSlice & AuthSlice & ModelSlice & WritingGoalSlice;
+// DiffChunk: diff 라이브러리의 결과를 기반으로 한 개별 변경 블록
+export interface DiffChunk {
+  id: string;                          // 고유 ID (예: 'chunk-0', 'chunk-1')
+  type: 'equal' | 'add' | 'remove';   // 변경 유형
+  value: string;                       // 해당 블록의 텍스트
+  selected: boolean;                   // 사용자가 적용할지 선택한 여부 (기본값: true)
+}
+
+// PendingCanvasPatch: 대기 중인 변경안
+export interface PendingCanvasPatch {
+  runId: string;                       // AI 실행 ID
+  originalContent: string;             // 변경 전 원본 캔버스 내용
+  proposedContent: string;             // AI가 제안한 변경 후 내용
+  chunks: DiffChunk[];                 // diff 결과 chunk 배열
+}
+
+export interface DiffPreviewSlice {
+  // PendingCanvasPatch: AI 제안 변경안 관리
+  pendingCanvasPatch: PendingCanvasPatch | null;
+
+  // PendingCanvasPatch 관리 액션
+  setPendingCanvasPatch: (patch: PendingCanvasPatch) => void;
+  toggleChunkSelection: (chunkId: string) => void;
+  selectAllChunks: () => void;
+  deselectAllChunks: () => void;
+  applyPendingPatch: () => void;
+  discardPendingPatch: () => void;
+}
+
+export type AppState = ChatSlice & UiSlice & ProjectSlice & AuthSlice & ModelSlice & WritingGoalSlice & DiffPreviewSlice;

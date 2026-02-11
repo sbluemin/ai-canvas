@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useStore, ErrorInfo } from '../store/useStore';
+import { useStore, ErrorInfo, DiffChunk, PendingCanvasPatch } from '../store/useStore';
 import { api } from '../api';
+import { diffLines } from 'diff';
 
 export interface SelectionContext {
   text: string;
@@ -10,6 +11,27 @@ export interface SelectionContext {
 
 export interface ChatRequestOptions {
   selection?: SelectionContext;
+}
+
+function buildPendingPatch(runId: string, originalContent: string, proposedContent: string): PendingCanvasPatch {
+  const changes = diffLines(originalContent, proposedContent);
+  let chunkIndex = 0;
+  const chunks: DiffChunk[] = changes.map((change) => {
+    const chunk: DiffChunk = {
+      id: `chunk-${chunkIndex++}`,
+      type: change.added ? 'add' : change.removed ? 'remove' : 'equal',
+      value: change.value,
+      selected: true,  // 기본값: 전체 선택
+    };
+    return chunk;
+  });
+
+  return {
+    runId,
+    originalContent,
+    proposedContent,
+    chunks,
+  };
 }
 
 const ERROR_TYPE_MESSAGES: Record<string, { title: string; message: string }> = {
@@ -102,6 +124,7 @@ export function useChatRequest() {
     selectedModels,
     showError,
     activeWritingGoal,
+    setPendingCanvasPatch,
   } = useStore();
 
   const currentRunIdRef = useRef<string | null>(null);
@@ -166,7 +189,12 @@ export function useChatRequest() {
             phase2FinalMessageRef.current = event.message;
             streamedPhase2MessageRef.current = '';
             hasPhase2StreamEventRef.current = false;
-            setCanvasContent(event.canvasContent);
+            // 즉시 반영 대신 pending patch로 저장
+            {
+              const currentCanvasContent = useStore.getState().canvasContent;
+              const patch = buildPendingPatch(event.runId, currentCanvasContent, event.canvasContent);
+              setPendingCanvasPatch(patch);
+            }
             if (streamedPhase1MessageRef.current) {
               setLastMessageContent(streamedPhase1MessageRef.current);
             }
@@ -227,6 +255,7 @@ export function useChatRequest() {
     showError,
     removeLastUserMessage,
     removeLastAssistantMessage,
+    setPendingCanvasPatch,
   ]);
 
   const sendMessage = useCallback(

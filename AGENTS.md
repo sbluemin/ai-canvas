@@ -40,6 +40,7 @@
   - **MilkdownEditor**: 마크다운 WYSIWYG
   - **EditorToolbar**: 서식 도구
   - **SelectionAiPopup**: 텍스트 선택 시 AI 질문 팝업
+  - **DiffPreview**: AI 수정안 diff 미리보기 (블록 선택 적용/취소)
   - 캔버스 파일 탭: `.ai-canvas/*.md` 파일 간 전환 (활성 탭 클릭 시 이름 변경)
   - 저장 상태 표시기: 자동 저장 상태 (대기/저장 중/저장됨/오류)
 - **ErrorPopup**: AI 요청 오류 팝업
@@ -80,6 +81,13 @@
 ### 렌더러 프롬프트 (`src/prompts/`)
 - 경량 호환 레이어 (타입 export만 유지, 실제 로직은 electron/prompts 사용)
 
+### Agent Harness (`.opencode/agents/`)
+- **leader.md**: 작업 분석/계획/위임 전담 리더 (직접 코딩 금지)
+- **ai_workflow_specialist.md**: AI Phase 1/2 워크플로우, 프롬프트, 파서 담당
+- **electron_platform_specialist.md**: IPC/인증/보안/CSP 등 Electron 플랫폼 담당
+- **renderer_experience_specialist.md**: React UI/UX, 상태 연동, 반응형 인터랙션 담당
+- **quality_release_specialist.md**: 테스트/빌드/릴리즈 안정화 및 문서 동기화 담당
+
 ### 상태 관리 (Zustand)
 ```typescript
 // src/store/useStore.ts
@@ -116,6 +124,9 @@ interface AppState {
   activeWritingGoal: WritingGoal | null;    // 활성 문서 목표
   writingGoalPresets: WritingGoalPreset[];  // 목표 프리셋 목록
   isWritingGoalOpen: boolean;               // 목표 모달 열림 상태
+
+  // AI 수정안 Diff 미리보기
+  pendingCanvasPatch: PendingCanvasPatch | null; // Phase 2 후보 변경안
   
   settings: AppSettings;
   isSettingsOpen: boolean;
@@ -159,6 +170,8 @@ ai-canvas/
 │   │   ├── MilkdownEditor.tsx   # Milkdown 래퍼
 │   │   ├── EditorToolbar.tsx    # 에디터 도구모음
 │   │   ├── SelectionAiPopup.tsx # 텍스트 선택 AI 팝업
+│   │   ├── DiffPreview.tsx      # AI 수정안 diff 미리보기
+│   │   ├── DiffPreview.css
 │   │   └── ...
 │   ├── store/useStore.ts        # Zustand 상태
 │   ├── hooks/useChatRequest.ts  # 채팅 요청 훅 (Phase 1/2 흐름)
@@ -218,6 +231,13 @@ ai-canvas/
 │   │   └── index.ts
 │   ├── api/                     # Electron 내부 API
 │   │   └── models.ts            # 모델 목록 관리
+├── .opencode/
+│   └── agents/                  # Agent Harness 정의
+│       ├── leader.md
+│       ├── ai_workflow_specialist.md
+│       ├── electron_platform_specialist.md
+│       ├── renderer_experience_specialist.md
+│       └── quality_release_specialist.md
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   │   └── feature_request.yml  # 기능 제안 이슈 템플릿
@@ -259,7 +279,7 @@ npm run build        # Electron 앱 프로덕션 빌드
 3. Phase 1 Provider 스트리밍 중 `message` 필드 부분 추출 → `ai:chat:event` 이벤트 송신 (`phase_message_stream`)
 4. Phase 1 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase1_result`)
 5. needsCanvasUpdate=true 시 → Phase 2 프롬프트 생성 → Provider 호출
-6. Phase 2 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase2_result`, 캔버스 우선 반영)
+6. Phase 2 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase2_result`, `pendingCanvasPatch`에 후보 저장 → Diff 미리보기 표시)
 7. Phase 2 `message` 후속 스트리밍 이벤트 송신 (`phase_message_stream`)
 8. 완료 → `done` 이벤트 송신
 

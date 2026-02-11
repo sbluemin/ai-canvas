@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { MilkdownEditor } from './MilkdownEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorProvider } from '../context/EditorContext';
+import { DiffPreview } from './DiffPreview';
 import { api } from '../api';
 import './CanvasPanel.css';
 
@@ -19,6 +20,7 @@ export function CanvasPanel() {
     addToast,
     setAutosaveStatus,
     autosaveStatus,
+    pendingCanvasPatch,
   } = useStore();
   const [showOverlay, setShowOverlay] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -42,13 +44,16 @@ export function CanvasPanel() {
   }, [isUpdating, showOverlay]);
 
   useEffect(() => {
-    if (!projectPath || !activeCanvasFile) return;
+    // pending 상태에서는 autosave 억제 (최신 상태 참조)
+    if (!projectPath || !activeCanvasFile || useStore.getState().pendingCanvasPatch) return;
     if (autosaveTimerRef.current) {
       window.clearTimeout(autosaveTimerRef.current);
     }
-    const savingStatus = { state: 'saving' as const, updatedAt: Date.now() };
-    setAutosaveStatus(savingStatus);
+    setAutosaveStatus({ state: 'idle' });
     autosaveTimerRef.current = window.setTimeout(async () => {
+      // 저장 직전에도 pending 상태 재확인
+      if (useStore.getState().pendingCanvasPatch) return;
+      setAutosaveStatus({ state: 'saving', updatedAt: Date.now() });
       const result = await api.writeCanvasFile(projectPath, activeCanvasFile, canvasContent);
       if (result.success) {
         const status = { state: 'saved' as const, updatedAt: Date.now() };
@@ -57,7 +62,7 @@ export function CanvasPanel() {
       } else {
         setAutosaveStatus({ state: 'error' as const, updatedAt: Date.now(), message: result.error ?? 'Save failed' });
       }
-    }, 1200);
+    }, 1000);
     return () => {
       if (autosaveTimerRef.current) {
         window.clearTimeout(autosaveTimerRef.current);
@@ -146,7 +151,8 @@ export function CanvasPanel() {
               </div>
             </div>
             <div className="header-right">
-              <EditorToolbar />
+              {/* Diff 미리보기 모드가 아닐 때만 EditorToolbar 표시 */}
+              {!pendingCanvasPatch && <EditorToolbar />}
               <div className={`save-status-indicator ${autosaveStatus.state}`}>
                 {autosaveStatus.state === 'saving'
                   ? 'Saving...'
@@ -159,7 +165,12 @@ export function CanvasPanel() {
             </div>
           </div>
           <div className="canvas-content">
-            <MilkdownEditor />
+            {/* Diff 미리보기 모드 또는 에디터 모드 */}
+            {pendingCanvasPatch ? (
+              <DiffPreview />
+            ) : (
+              <MilkdownEditor />
+            )}
             {showOverlay && (
               <div className={`canvas-updating-overlay ${isClosing ? 'closing' : ''}`}>
                 {!isClosing && <div className="pulse-indicator" />}
