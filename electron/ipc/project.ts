@@ -1,9 +1,9 @@
-import { dialog, shell, BrowserWindow } from "electron";
+import { dialog, shell, BrowserWindow } from 'electron';
 import { handleIpc } from '../ipc';
-import { Buffer } from "node:buffer";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { Buffer } from 'node:buffer';
 import {
   AI_CANVAS_DIR,
   DEFAULT_CANVAS_NAME,
@@ -52,7 +52,6 @@ export function registerProjectHandlers() {
         .map((e) => e.name);
       return { success: true, files: mdFiles };
     } catch (error) {
-      // 디렉터리가 없으면 빈 리스트 반환
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return { success: true, files: [] };
       }
@@ -99,6 +98,21 @@ export function registerProjectHandlers() {
 
     try {
       await fs.rename(oldPath, newPath);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  handleIpc('project:delete-canvas-file', async (_event: any, projectPath: string, fileName: string) => {
+    if (!isValidCanvasFileName(fileName)) {
+      return { success: false, error: 'Invalid file name.' };
+    }
+
+    const filePath = getCanvasFilePath(projectPath, fileName);
+    try {
+      await fs.unlink(filePath);
       return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -358,4 +372,5 @@ export function registerProjectHandlers() {
       return { success: false, error: errorMessage };
     }
   });
+
 }

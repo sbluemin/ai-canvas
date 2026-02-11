@@ -1,5 +1,5 @@
 import type { AIResponse } from '../prompts/types';
-import { AIResponseSchema } from '../prompts/types';
+import { AIResponseSchema, validateAIResponse } from '../prompts/types';
 
 export interface ParseResult {
   success: boolean;
@@ -112,13 +112,12 @@ export function parseAIResponse(rawText: string): ParseResult {
 
   try {
     const parsed = JSON.parse(jsonText) as unknown;
-    const zodResult = AIResponseSchema.safeParse(parsed);
-
-    if (zodResult.success) {
-      return { success: true, data: zodResult.data };
+    const validated = validateAIResponse(parsed);
+    if (validated) {
+      return { success: true, data: validated };
     }
 
-    // Zod 에러를 읽기 쉬운 형식으로 변환
+    const zodResult = AIResponseSchema.safeParse(parsed);
     let errorMessages = 'Validation failed';
     if (zodResult.error && zodResult.error.issues) {
       errorMessages = zodResult.error.issues.map((err: ZodIssueLike) => {
