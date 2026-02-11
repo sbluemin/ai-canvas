@@ -11,6 +11,7 @@ import * as codex from './codex';
 import * as anthropic from './anthropic';
 import { executeAiChatWorkflow, type AiChatRequest } from './ai';
 import { fetchModelsFromApi } from './api/models';
+import { handleIpc } from './ipc';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -233,14 +234,9 @@ ipcMain.handle('fs:readFile', async (_event, filePath: string) => {
   return await fs.readFile(filePath, 'utf-8');
 });
 
-ipcMain.handle('gemini:auth:start', async () => {
-  try {
-    await gemini.startAuth();
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+handleIpc('gemini:auth:start', async () => {
+  await gemini.startAuth();
+  return { success: true };
 });
 
 ipcMain.handle('gemini:auth:status', async () => {
@@ -252,14 +248,9 @@ ipcMain.handle('gemini:auth:logout', async () => {
   return { success: true };
 });
 
-ipcMain.handle('codex:auth:start', async () => {
-  try {
-    await codex.startAuth();
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+handleIpc('codex:auth:start', async () => {
+  await codex.startAuth();
+  return { success: true };
 });
 
 ipcMain.handle('codex:auth:status', async () => {
@@ -271,14 +262,9 @@ ipcMain.handle('codex:auth:logout', async () => {
   return { success: true };
 });
 
-ipcMain.handle('anthropic:auth:start', async () => {
-  try {
-    await anthropic.startAuth();
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+handleIpc('anthropic:auth:start', async () => {
+  await anthropic.startAuth();
+  return { success: true };
 });
 
 ipcMain.handle('anthropic:auth:status', async () => {
@@ -290,24 +276,14 @@ ipcMain.handle('anthropic:auth:logout', async () => {
   return { success: true };
 });
 
-ipcMain.handle('ai:chat', async (event, request: AiChatRequest) => {
-  try {
-    await executeAiChatWorkflow(event, request);
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+handleIpc('ai:chat', async (event, request: AiChatRequest) => {
+  await executeAiChatWorkflow(event, request);
+  return { success: true };
 });
 
-ipcMain.handle('ai:fetch-models', async () => {
-  try {
-    const models = await fetchModelsFromApi();
-    return { success: true, models };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+handleIpc('ai:fetch-models', async () => {
+  const models = await fetchModelsFromApi();
+  return { success: true, models };
 });
 
 const AI_CANVAS_DIR = '.ai-canvas';
@@ -435,18 +411,13 @@ ipcMain.handle('project:open-directory', async () => {
   return result.filePaths[0];
 });
 
-ipcMain.handle('project:init-canvas-dir', async (_event, projectPath: string) => {
+handleIpc('project:init-canvas-dir', async (_event, projectPath: string) => {
   const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
-  try {
-    await fs.mkdir(canvasDir, { recursive: true });
-    return { success: true, path: canvasDir };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  await fs.mkdir(canvasDir, { recursive: true });
+  return { success: true, path: canvasDir };
 });
 
-ipcMain.handle('project:list-canvas-files', async (_event, projectPath: string) => {
+handleIpc('project:list-canvas-files', async (_event, projectPath: string) => {
   const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
   try {
     const entries = await fs.readdir(canvasDir, { withFileTypes: true });
@@ -459,40 +430,29 @@ ipcMain.handle('project:list-canvas-files', async (_event, projectPath: string) 
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return { success: true, files: [] };
     }
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
+    throw error;
   }
 });
 
-ipcMain.handle('project:read-canvas-file', async (_event, projectPath: string, fileName: string) => {
+handleIpc('project:read-canvas-file', async (_event, projectPath: string, fileName: string) => {
   if (!isValidCanvasFileName(fileName)) {
     return { success: false, error: 'Invalid file name.' };
   }
   const filePath = getCanvasFilePath(projectPath, fileName);
-  try {
-    const content = await fs.readFile(filePath, 'utf-8');
-    return { success: true, content };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  const content = await fs.readFile(filePath, 'utf-8');
+  return { success: true, content };
 });
 
-ipcMain.handle('project:write-canvas-file', async (_event, projectPath: string, fileName: string, content: string) => {
+handleIpc('project:write-canvas-file', async (_event, projectPath: string, fileName: string, content: string) => {
   if (!isValidCanvasFileName(fileName)) {
     return { success: false, error: 'Invalid file name.' };
   }
   const filePath = getCanvasFilePath(projectPath, fileName);
-  try {
-    await fs.writeFile(filePath, content, 'utf-8');
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  await fs.writeFile(filePath, content, 'utf-8');
+  return { success: true };
 });
 
-ipcMain.handle('project:rename-canvas-file', async (_event, projectPath: string, oldFileName: string, newFileName: string) => {
+handleIpc('project:rename-canvas-file', async (_event, projectPath: string, oldFileName: string, newFileName: string) => {
   if (!isValidCanvasFileName(oldFileName) || !isValidCanvasFileName(newFileName)) {
     return { success: false, error: 'Invalid file name.' };
   }
@@ -507,31 +467,21 @@ ipcMain.handle('project:rename-canvas-file', async (_event, projectPath: string,
     // 대상 파일이 없을 때만 rename 진행
   }
 
-  try {
-    await fs.rename(oldPath, newPath);
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  await fs.rename(oldPath, newPath);
+  return { success: true };
 });
 
-ipcMain.handle('project:delete-canvas-file', async (_event, projectPath: string, fileName: string) => {
+handleIpc('project:delete-canvas-file', async (_event, projectPath: string, fileName: string) => {
   if (!isValidCanvasFileName(fileName)) {
     return { success: false, error: 'Invalid file name.' };
   }
 
   const filePath = getCanvasFilePath(projectPath, fileName);
-  try {
-    await fs.unlink(filePath);
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  await fs.unlink(filePath);
+  return { success: true };
 });
 
-ipcMain.handle('project:read-chat-session', async (_event, projectPath: string) => {
+handleIpc('project:read-chat-session', async (_event, projectPath: string) => {
   const filePath = getChatSessionPath(projectPath);
   try {
     const raw = await fs.readFile(filePath, 'utf-8');
@@ -544,38 +494,27 @@ ipcMain.handle('project:read-chat-session', async (_event, projectPath: string) 
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return { success: true, messages: [] };
     }
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
+    throw error;
   }
 });
 
-ipcMain.handle('project:write-chat-session', async (_event, projectPath: string, messages: unknown[]) => {
+handleIpc('project:write-chat-session', async (_event, projectPath: string, messages: unknown[]) => {
   const filePath = getChatSessionPath(projectPath);
-  try {
-    const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
-    await fs.mkdir(canvasDir, { recursive: true });
-    await fs.writeFile(filePath, JSON.stringify(messages), 'utf-8');
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  await fs.mkdir(canvasDir, { recursive: true });
+  await fs.writeFile(filePath, JSON.stringify(messages), 'utf-8');
+  return { success: true };
 });
 
-ipcMain.handle('project:create-default-canvas', async (_event, projectPath: string) => {
+handleIpc('project:create-default-canvas', async (_event, projectPath: string) => {
   const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
   const filePath = path.join(canvasDir, DEFAULT_CANVAS_NAME);
-  try {
-    await fs.mkdir(canvasDir, { recursive: true });
-    await fs.writeFile(filePath, DEFAULT_CANVAS_CONTENT, 'utf-8');
-    return { success: true, fileName: DEFAULT_CANVAS_NAME };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  await fs.mkdir(canvasDir, { recursive: true });
+  await fs.writeFile(filePath, DEFAULT_CANVAS_CONTENT, 'utf-8');
+  return { success: true, fileName: DEFAULT_CANVAS_NAME };
 });
 
-ipcMain.handle('project:read-workspace', async (_event, projectPath: string) => {
+handleIpc('project:read-workspace', async (_event, projectPath: string) => {
   const workspacePath = getWorkspacePath(projectPath);
   try {
     const raw = await fs.readFile(workspacePath, 'utf-8');
@@ -585,25 +524,19 @@ ipcMain.handle('project:read-workspace', async (_event, projectPath: string) => 
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return { success: true, workspace: null };
     }
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
+    throw error;
   }
 });
 
-ipcMain.handle('project:write-workspace', async (_event, projectPath: string, workspace: unknown) => {
+handleIpc('project:write-workspace', async (_event, projectPath: string, workspace: unknown) => {
   const workspacePath = getWorkspacePath(projectPath);
-  try {
-    const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
-    await fs.mkdir(canvasDir, { recursive: true });
-    await fs.writeFile(workspacePath, JSON.stringify(workspace), 'utf-8');
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  await fs.mkdir(canvasDir, { recursive: true });
+  await fs.writeFile(workspacePath, JSON.stringify(workspace), 'utf-8');
+  return { success: true };
 });
 
-ipcMain.handle('project:read-autosave-status', async (_event, projectPath: string) => {
+handleIpc('project:read-autosave-status', async (_event, projectPath: string) => {
   const autosaveStatusPath = getAutosaveStatusPath(projectPath);
   try {
     const raw = await fs.readFile(autosaveStatusPath, 'utf-8');
@@ -613,25 +546,19 @@ ipcMain.handle('project:read-autosave-status', async (_event, projectPath: strin
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return { success: true, status: null };
     }
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
+    throw error;
   }
 });
 
-ipcMain.handle('project:write-autosave-status', async (_event, projectPath: string, status: unknown) => {
+handleIpc('project:write-autosave-status', async (_event, projectPath: string, status: unknown) => {
   const autosaveStatusPath = getAutosaveStatusPath(projectPath);
-  try {
-    const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
-    await fs.mkdir(canvasDir, { recursive: true });
-    await fs.writeFile(autosaveStatusPath, JSON.stringify(status), 'utf-8');
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  await fs.mkdir(canvasDir, { recursive: true });
+  await fs.writeFile(autosaveStatusPath, JSON.stringify(status), 'utf-8');
+  return { success: true };
 });
 
-ipcMain.handle('project:save-image-asset', async (_event, projectPath: string, base64: string, mimeType: string) => {
+handleIpc('project:save-image-asset', async (_event, projectPath: string, base64: string, mimeType: string) => {
   const assetDir = getAssetsDirPath(projectPath);
   const ext = mimeType === 'image/png'
     ? 'png'
@@ -643,26 +570,21 @@ ipcMain.handle('project:save-image-asset', async (_event, projectPath: string, b
           ? 'gif'
           : 'png';
 
-  try {
-    await fs.mkdir(assetDir, { recursive: true });
-    const buffer = Buffer.from(base64, 'base64');
-    const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 12);
-    const fileName = `${Date.now()}-${hash}.${ext}`;
-    const fullPath = path.join(assetDir, fileName);
-    await fs.writeFile(fullPath, buffer);
+  await fs.mkdir(assetDir, { recursive: true });
+  const buffer = Buffer.from(base64, 'base64');
+  const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 12);
+  const fileName = `${Date.now()}-${hash}.${ext}`;
+  const fullPath = path.join(assetDir, fileName);
+  await fs.writeFile(fullPath, buffer);
 
-    return {
-      success: true,
-      relativePath: `${ASSET_DIR_NAME}/${fileName}`,
-      absolutePath: fullPath,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  return {
+    success: true,
+    relativePath: `${ASSET_DIR_NAME}/${fileName}`,
+    absolutePath: fullPath,
+  };
 });
 
-ipcMain.handle('project:export-document', async (_event, projectPath: string, format: 'html' | 'pdf' | 'docx', markdownContent: string) => {
+handleIpc('project:export-document', async (_event, projectPath: string, format: 'html' | 'pdf' | 'docx', markdownContent: string) => {
   const defaultName = `canvas-export-${Date.now()}`;
   const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'html';
 
@@ -676,8 +598,7 @@ ipcMain.handle('project:export-document', async (_event, projectPath: string, fo
     return { success: false, error: 'User cancelled the export.' };
   }
 
-  try {
-    const html = markdownToBasicHtml(markdownContent);
+  const html = markdownToBasicHtml(markdownContent);
 
     if (format === 'html') {
       await fs.writeFile(result.filePath, html, 'utf-8');
@@ -727,13 +648,9 @@ ipcMain.handle('project:export-document', async (_event, projectPath: string, fo
     const buffer = await docxModule.Packer.toBuffer(doc);
     await fs.writeFile(result.filePath, buffer);
     return { success: true, filePath: result.filePath };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
 });
 
-ipcMain.handle('project:export-share-bundle', async (_event, projectPath: string, bundle: unknown) => {
+handleIpc('project:export-share-bundle', async (_event, projectPath: string, bundle: unknown) => {
   const result = await dialog.showSaveDialog({
     title: 'Export Share Bundle',
     defaultPath: path.join(projectPath, `canvas-share-${Date.now()}.aic`),
@@ -744,16 +661,11 @@ ipcMain.handle('project:export-share-bundle', async (_event, projectPath: string
     return { success: false, error: 'User cancelled the export.' };
   }
 
-  try {
-    await fs.writeFile(result.filePath, JSON.stringify(bundle, null, 2), 'utf-8');
-    return { success: true, filePath: result.filePath };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  await fs.writeFile(result.filePath, JSON.stringify(bundle, null, 2), 'utf-8');
+  return { success: true, filePath: result.filePath };
 });
 
-ipcMain.handle('project:import-share-bundle', async (_event) => {
+handleIpc('project:import-share-bundle', async (_event) => {
   const result = await dialog.showOpenDialog({
     title: 'Import Share Bundle',
     properties: ['openFile'],
@@ -764,34 +676,19 @@ ipcMain.handle('project:import-share-bundle', async (_event) => {
     return { success: false, error: 'User cancelled the import.' };
   }
 
-  try {
-    const raw = await fs.readFile(result.filePaths[0], 'utf-8');
-    const bundle = JSON.parse(raw) as unknown;
-    return { success: true, bundle };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+  const raw = await fs.readFile(result.filePaths[0], 'utf-8');
+  const bundle = JSON.parse(raw) as unknown;
+  return { success: true, bundle };
 });
 
-ipcMain.handle('project:open-in-explorer', async (_event, projectPath: string) => {
-  try {
-    await shell.openPath(projectPath);
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+handleIpc('project:open-in-explorer', async (_event, projectPath: string) => {
+  await shell.openPath(projectPath);
+  return { success: true };
 });
 
-ipcMain.handle('window:create', async () => {
-  try {
-    createWindow();
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
-  }
+handleIpc('window:create', async () => {
+  createWindow();
+  return { success: true };
 });
 
 app.whenReady().then(() => {
