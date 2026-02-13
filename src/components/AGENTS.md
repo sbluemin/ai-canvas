@@ -6,16 +6,16 @@
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
-| 채팅 UI | `src/components/ChatPanel.tsx` | 대화 목록 + provider 선택 + 메시지 렌더 |
+| 채팅 UI | `src/components/ChatPanel.tsx` | 대화 목록 + 메시지 렌더 |
 | 캔버스 메인 | `src/components/CanvasPanel.tsx` | 파일 탭, autosave, overlay 제어 |
 | 파일 트리 | `src/components/FileExplorer.tsx` | 폴더/파일 CRUD + 트리 렌더 |
 | 에디터 연결 | `src/components/MilkdownEditor.tsx` | 콘텐츠 반영 + 이미지 저장 |
 | 변경안 미리보기 | `src/components/DiffPreview.tsx` | chunk 선택 적용 |
-| 상단 커맨드바 | `src/components/CommandBar/index.tsx` | project/model/auth orchestration |
+| 상단 커맨드바 | `src/components/CommandBar/index.tsx` | project/model/variant orchestration |
 
 ## CONVENTIONS
 - CommandBar 하위 버튼들은 도메인별 서브디렉터리(`*/index.tsx`)로 분리한다.
-- auth 버튼은 provider별 상태 플래그를 store에서 읽고 api auth 메서드를 호출한다.
+- 모델 선택은 `opencode models --verbose` 결과(`provider/model`, variants)를 기준으로 동작한다.
 - 캔버스 적용 UX는 `phase2_result -> pendingCanvasPatch -> DiffPreview` 순서로 유지한다.
 
 ## INTERACTION BOUNDARIES

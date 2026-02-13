@@ -26,7 +26,7 @@ function parseStoredMessages(rawMessages: unknown[] | undefined): Message[] {
         role,
         content: item.content,
         timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
-        provider: item.provider === 'gemini' || item.provider === 'openai' || item.provider === 'anthropic' ? item.provider : undefined,
+        provider: item.provider === 'opencode' ? item.provider : undefined,
       });
   });
 
@@ -46,20 +46,9 @@ function parseSelectedModels(raw: unknown): Partial<SelectedModels> | null {
 
   const data = raw as Record<string, unknown>;
   const parsed: Partial<SelectedModels> = {};
-
-  const gemini = data.gemini;
-  if (typeof gemini === 'string' || gemini === null) {
-    parsed.gemini = gemini;
-  }
-
-  const openai = data.openai;
-  if (typeof openai === 'string' || openai === null) {
-    parsed.openai = openai;
-  }
-
-  const anthropic = data.anthropic;
-  if (typeof anthropic === 'string' || anthropic === null) {
-    parsed.anthropic = anthropic;
+  const opencode = data.opencode;
+  if (typeof opencode === 'string' || opencode === null) {
+    parsed.opencode = opencode;
   }
 
   return Object.keys(parsed).length > 0 ? parsed : null;
@@ -100,8 +89,11 @@ function parseWorkspace(rawWorkspace: unknown) {
     : null;
 
   const selectedModels = parseSelectedModels(data.selectedModels);
+  const selectedVariant = typeof data.selectedVariant === 'string' || data.selectedVariant === null
+    ? data.selectedVariant
+    : null;
 
-  return { conversations, activeConversationId, canvasOrder, selectedModels };
+  return { conversations, activeConversationId, canvasOrder, selectedModels, selectedVariant };
 }
 
 function orderCanvasFiles(files: string[], canvasOrder: string[] | null) {
@@ -124,6 +116,7 @@ export function ProjectSelector() {
     setActiveConversationId,
     setAutosaveStatus,
     restoreSelectedModels,
+    setSelectedVariant,
   } = useStore();
 
   const handleOpenProject = async () => {
@@ -154,6 +147,7 @@ export function ProjectSelector() {
 
     setProjectPath(path);
     restoreSelectedModels(workspace?.selectedModels ?? null);
+    setSelectedVariant(workspace?.selectedVariant ?? null);
     setCanvasFiles(orderedFiles);
     clearMessages();
 

@@ -75,7 +75,6 @@ export interface ChatSlice {
   activeConversationId: string | null;
   isLoading: boolean;
   aiRun: AiRunState | null;
-  activeProvider: AiProvider;
 
   addMessage: (role: 'user' | 'assistant', content: string, provider?: AiProvider) => void;
   removeLastUserMessage: () => void;
@@ -92,7 +91,6 @@ export interface ChatSlice {
   setAiPhase: (phase: AiPhase) => void;
   setAiRunResult: (result: Partial<AiRunState>) => void;
   clearAiRun: () => void;
-  setActiveProvider: (provider: AiProvider) => void;
   saveCanvasSnapshot: () => void;
 }
 
@@ -138,29 +136,15 @@ export interface ProjectSlice {
   restoreState: (bundle: ShareBundle) => void;
 }
 
-export interface AuthSlice {
-  isAuthenticated: boolean;
-  authLoading: boolean;
-  isCodexAuthenticated: boolean;
-  codexAuthLoading: boolean;
-  isAnthropicAuthenticated: boolean;
-  anthropicAuthLoading: boolean;
-
-  setAuthStatus: (isAuthenticated: boolean) => void;
-  setAuthLoading: (loading: boolean) => void;
-  setCodexAuthStatus: (isAuthenticated: boolean) => void;
-  setCodexAuthLoading: (loading: boolean) => void;
-  setAnthropicAuthStatus: (isAuthenticated: boolean) => void;
-  setAnthropicAuthLoading: (loading: boolean) => void;
-}
-
 export interface ModelSlice {
   availableModels: AvailableModels;
   selectedModels: SelectedModels;
+  selectedVariant: string | null;
   modelsLoading: boolean;
 
   setAvailableModels: (models: AvailableModels) => void;
-  setSelectedModel: (provider: AiProvider, modelId: string | null) => void;
+  setSelectedModel: (modelId: string | null) => void;
+  setSelectedVariant: (variant: string | null) => void;
   restoreSelectedModels: (models?: Partial<SelectedModels> | null) => void;
   setModelsLoading: (loading: boolean) => void;
 }
@@ -207,4 +191,4 @@ export interface DiffPreviewSlice {
   discardPendingPatch: () => void;
 }
 
-export type AppState = ChatSlice & UiSlice & ProjectSlice & AuthSlice & ModelSlice & WritingGoalSlice & DiffPreviewSlice;
+export type AppState = ChatSlice & UiSlice & ProjectSlice & ModelSlice & WritingGoalSlice & DiffPreviewSlice;

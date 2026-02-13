@@ -108,9 +108,7 @@ function formatHistory(history: ConversationMessage[]): string {
   if (history.length === 0) return '';
   
   const providerDisplayName: Record<string, string> = {
-    gemini: 'Gemini',
-    openai: 'OpenAI',
-    anthropic: 'Claude',
+    opencode: 'OpenCode',
   };
 
   return history

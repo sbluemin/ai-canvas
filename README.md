@@ -18,15 +18,13 @@
 
 Conversations with AI always stay confined to "chat." Even when great ideas emerge, you end up opening a separate document editor to organize them — losing context and flow along the way.
 
-AI Canvas bridges this gap. The conversation itself becomes the document. AI doesn't just answer — it plans and edits the markdown document directly on the canvas. Switch freely between Gemini, Codex, and Claude in one workspace, leveraging each model's strengths to craft a single document.
+AI Canvas bridges this gap. The conversation itself becomes the document. AI doesn't just answer — it plans and edits the markdown document directly on the canvas.
 
 ## Features
 
-### AI Providers
+### AI Provider
 
-- **Gemini**: Google AI Plan
-- **Codex**: ChatGPT Go/Plus/Pro
-- **Claude**: Claude Pro/Max
+- **OpenCode**: OpenCode CLI Provider (`provider/model/variant` selection)
 
 ### Canvas Editor
 

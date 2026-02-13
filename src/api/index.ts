@@ -24,6 +24,8 @@ export interface ChatRequestOptions {
     tone: string;
     targetLength: 'short' | 'medium' | 'long';
   };
+  modelId?: string;
+  variant?: string;
 }
 
 export const api = {
@@ -75,8 +77,7 @@ export const api = {
     prompt: string,
     history: { role: 'user' | 'assistant'; content: string; provider?: AiProvider }[],
     canvasContent: string,
-    provider: AiProvider,
-    options?: ChatRequestOptions & { modelId?: string }
+    options?: ChatRequestOptions
   ): Promise<{ success: boolean; error?: string }> {
     if (!isElectron) {
       return { success: false, error: 'Chat is only available in Electron environment' };
@@ -84,11 +85,11 @@ export const api = {
 
     return window.electronAPI.ai.chat({
       runId,
-      provider,
       prompt,
       history,
       canvasContent,
       modelId: options?.modelId,
+      variant: options?.variant,
       selection: options?.selection,
       writingGoal: options?.writingGoal,
     });

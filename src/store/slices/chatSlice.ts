@@ -8,7 +8,6 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
   activeConversationId: null,
   isLoading: false,
   aiRun: null,
-  activeProvider: 'gemini',
 
   addMessage: (role, content, provider?) =>
     set((state) => {
@@ -142,7 +141,6 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
     })),
 
   clearAiRun: () => set({ aiRun: null }),
-  setActiveProvider: (provider) => set({ activeProvider: provider }),
 
   saveCanvasSnapshot: () =>
     set((state) => ({

@@ -3,7 +3,6 @@ import { AppState } from './types';
 import { createChatSlice } from './slices/chatSlice';
 import { createUiSlice } from './slices/uiSlice';
 import { createProjectSlice } from './slices/projectSlice';
-import { createAuthSlice } from './slices/authSlice';
 import { createModelSlice } from './slices/modelSlice';
 import { createWritingGoalSlice } from './slices/writingGoalSlice';
 import { createDiffPreviewSlice } from './slices/diffPreviewSlice';
@@ -14,7 +13,6 @@ export const useStore = create<AppState>()((...a) => ({
   ...createChatSlice(...a),
   ...createUiSlice(...a),
   ...createProjectSlice(...a),
-  ...createAuthSlice(...a),
   ...createModelSlice(...a),
   ...createWritingGoalSlice(...a),
   ...createDiffPreviewSlice(...a),

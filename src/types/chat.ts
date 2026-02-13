@@ -1,12 +1,15 @@
-export type AiProvider = 'gemini' | 'openai' | 'anthropic';
+export type AiProvider = 'opencode';
 
-/** models.dev API에서 가져온 모델 정보 */
+/** Provider에서 가져온 모델 정보 */
 export interface ModelInfo {
   id: string;
   name: string;
+  providerId?: string;
+  modelId?: string;
   family?: string;
   releaseDate?: string;
   knowledge?: string;
+  variants?: string[];
   cost?: {
     input?: number;
     output?: number;
@@ -17,7 +20,7 @@ export interface ModelInfo {
   };
 }
 
-/** models.dev API 응답에서 Provider별로 파싱한 모델 목록 */
+/** Provider별로 파싱한 모델 목록 */
 export type AvailableModels = Record<AiProvider, ModelInfo[]>;
 
 /** Provider별 선택된 모델 ID */

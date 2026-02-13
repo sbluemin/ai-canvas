@@ -1,15 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-export interface AuthStatus {
-  isAuthenticated: boolean;
-  expiresAt?: number;
-}
-
-export interface AuthResult {
-  success: boolean;
-  error?: string;
-}
-
 export interface ChatResponse {
   success: boolean;
   content?: string;
@@ -22,15 +12,15 @@ export interface ChatChunk {
   done?: boolean;
 }
 
-export type AiProvider = 'gemini' | 'openai' | 'anthropic';
+export type AiProvider = 'opencode';
 
 export interface AiChatRequest {
   runId: string;
-  provider: AiProvider;
   prompt: string;
   history: { role: 'user' | 'assistant'; content: string; provider?: AiProvider }[];
   canvasContent: string;
   modelId?: string;
+  variant?: string;
   selection?: {
     text: string;
     before: string;
@@ -70,24 +60,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('ai:chat:event', listener);
       return () => ipcRenderer.removeListener('ai:chat:event', listener);
     },
-  },
-
-  gemini: {
-    authStart: (): Promise<AuthResult> => ipcRenderer.invoke('gemini:auth:start'),
-    authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('gemini:auth:status'),
-    authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('gemini:auth:logout'),
-  },
-
-  codex: {
-    authStart: (): Promise<AuthResult> => ipcRenderer.invoke('codex:auth:start'),
-    authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('codex:auth:status'),
-    authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('codex:auth:logout'),
-  },
-
-  anthropic: {
-    authStart: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:start'),
-    authStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('anthropic:auth:status'),
-    authLogout: (): Promise<AuthResult> => ipcRenderer.invoke('anthropic:auth:logout'),
   },
 
   project: {

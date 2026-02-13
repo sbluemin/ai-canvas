@@ -9,7 +9,7 @@ export interface ParseResult {
 }
 
 type ZodIssueLike = {
-  path: Array<string | number>;
+  path: PropertyKey[];
   message: string;
 };
 

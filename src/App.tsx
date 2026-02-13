@@ -35,6 +35,7 @@ function App() {
     canvasFiles,
     autosaveStatus,
     selectedModels,
+    selectedVariant,
   } = useStore();
 
   useEffect(() => {
@@ -110,6 +111,7 @@ function App() {
         canvasOrder: canvasFiles,
         autosaveStatus,
         selectedModels,
+        selectedVariant,
       };
       api.writeWorkspace(projectPath, workspace).catch((error: unknown) => {
         logger.error('Workspace save failed:', error);
@@ -117,7 +119,7 @@ function App() {
     }, AUTOSAVE_DELAY);
 
     return () => window.clearTimeout(timer);
-  }, [projectPath, conversations, activeConversationId, canvasFiles, autosaveStatus, selectedModels]);
+  }, [projectPath, conversations, activeConversationId, canvasFiles, autosaveStatus, selectedModels, selectedVariant]);
 
   useEffect(() => {
     const handleResize = () => {

@@ -120,8 +120,8 @@ export function useChatRequest() {
     setAiRunResult,
     saveCanvasSnapshot,
     clearAiRun,
-    activeProvider,
     selectedModels,
+    selectedVariant,
     showError,
     activeWritingGoal,
     setPendingCanvasPatch,
@@ -145,7 +145,7 @@ export function useChatRequest() {
         switch (event.type) {
           case 'phase_message_stream': {
             if (!hasStreamingAssistantRef.current) {
-              addMessage('assistant', '', activeProvider);
+              addMessage('assistant', '', 'opencode');
               hasStreamingAssistantRef.current = true;
             }
 
@@ -184,7 +184,7 @@ export function useChatRequest() {
             if (hasStreamingAssistantRef.current) {
               setLastMessageContent(event.message);
             } else {
-              addMessage('assistant', event.message, activeProvider);
+              addMessage('assistant', event.message, 'opencode');
               hasStreamingAssistantRef.current = true;
             }
             break;
@@ -255,7 +255,6 @@ export function useChatRequest() {
     saveCanvasSnapshot,
     clearAiRun,
     setIsLoading,
-    activeProvider,
     showError,
     removeLastUserMessage,
     removeLastAssistantMessage,
@@ -282,16 +281,16 @@ export function useChatRequest() {
         ...(msg.provider ? { provider: msg.provider } : {}),
       }));
 
-      const modelId = selectedModels[activeProvider] ?? undefined;
+      const modelId = selectedModels.opencode ?? undefined;
       const result = await api.chat(
         runId,
         prompt,
         history,
         canvasContent,
-        activeProvider,
         {
           ...options,
           modelId,
+          variant: selectedVariant ?? undefined,
           ...(activeWritingGoal ? { writingGoal: activeWritingGoal } : {}),
         }
       );
@@ -321,8 +320,8 @@ export function useChatRequest() {
       setAiRunResult,
       setAiPhase,
       clearAiRun,
-      activeProvider,
       selectedModels,
+      selectedVariant,
       showError,
       activeWritingGoal,
     ]

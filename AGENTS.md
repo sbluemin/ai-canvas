@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 (핵심 플랫폼) |
-| AI | Cloud Code Assist API (Gemini) |
+| AI | OpenCode CLI |
 | State | Zustand |
 | Styling | CSS Modules |
 
@@ -30,11 +30,8 @@
 - **App.tsx**: 루트 - 반응형 레이아웃 (데스크톱: Allotment 좌우 분할, 모바일: 단일 캔버스)
 - **CommandBar**: 상단 커맨드 바
   - **ProjectSelector**: 프로젝트 폴더 선택 (`.ai-canvas` 디렉터리 관리)
-  - **ModelSelector**: AI 모델 선택 (Gemini, Codex, Anthropic)
+  - **ModelSelector**: OpenCode 모델 컨트롤 (Provider / Model / Variant)
   - **ModelRefreshButton**: 사용 가능한 모델 목록 갱신
-  - **GeminiAuthButton**: Gemini OAuth 로그인 버튼
-  - **CodexAuthButton**: Codex OAuth 로그인 버튼
-  - **AnthropicAuthButton**: Anthropic OAuth 로그인 버튼
 - **ChatPanel**: 좌측 AI 채팅 패널 (SSE 스트리밍)
 - **CanvasPanel**: 우측 마크다운 에디터 패널
   - **MilkdownEditor**: 마크다운 WYSIWYG
@@ -57,14 +54,11 @@
 
 
 ### AI 인증
-- **Gemini** (`electron/gemini/auth.ts`): PKCE OAuth 2.0, Cloud Code Assist API
-- **Codex** (`electron/codex/auth.ts`): OpenAI OAuth 2.0
-- **Anthropic** (`electron/anthropic/auth.ts`): Anthropic OAuth 2.0
-- safeStorage 암호화 토큰 저장, 자동 갱신
+- OpenCode CLI 인증 사용 (`opencode auth login`)
 
 ### AI 오케스트레이션 (`electron/ai/`)
 - **workflow.ts**: Phase 1/2 실행 흐름 제어, 이벤트 송신
-- **providerAdapter.ts**: Provider별 chat 함수 통합 호출
+- **providerAdapter.ts**: OpenCode chat 호출 어댑터
 - **parser.ts**: Phase 1/2 응답 JSON 파싱 및 fallback 처리
 - **types.ts**: AI 요청/응답/이벤트 타입 정의
 
@@ -106,15 +100,8 @@ interface AppState {
   currentFilePath: string | null;
   isDrawerOpen: boolean;         // 모바일 드로어
   aiRun: AiRunState | null;      // AI 실행 상태
-  activeProvider: AiProvider;
   errorPopup: ErrorInfo | null;  // 오류 팝업
   autosaveStatus: AutosaveStatus; // 자동 저장 상태
-  isAuthenticated: boolean;      // 현재 Provider 인증 상태
-  authLoading: boolean;          // 인증 로딩
-  isCodexAuthenticated: boolean;
-  codexAuthLoading: boolean;
-  isAnthropicAuthenticated: boolean;
-  anthropicAuthLoading: boolean;
   
   // 프로젝트/캔버스 파일 관리
   projectPath: string | null;    // 선택된 프로젝트 경로
@@ -125,7 +112,8 @@ interface AppState {
 
   // 모델 선택 및 설정
   availableModels: AvailableModels;
-  selectedModels: SelectedModels;     // Provider별 마지막 선택 모델 (프로젝트 workspace 기준)
+  selectedModels: SelectedModels;     // 마지막 선택 모델 (프로젝트 workspace 기준)
+  selectedVariant: string | null;     // 마지막 선택 variant
   modelsLoading: boolean;
   
   // 문서 작성 목표
@@ -158,9 +146,6 @@ ai-canvas/
 │   │   │   ├── ProjectSelector/
 │   │   │   ├── ModelSelector/
 │   │   │   ├── ModelRefreshButton/
-│   │   │   ├── GeminiAuthButton/
-│   │   │   ├── CodexAuthButton/
-│   │   │   └── AnthropicAuthButton/
 │   │   ├── CanvasPanel.tsx      # 마크다운 에디터 패널
 │   │   ├── CanvasPanel.css
 │   │   ├── ChatPanel.tsx        # AI 채팅 패널
@@ -224,18 +209,7 @@ ai-canvas/
 │   │   ├── types.ts             # 응답 스키마 (Zod)
 │   │   ├── canvas.ts            # 캔버스 컨텍스트 유틸
 │   │   └── index.ts
-│   ├── gemini/                  # Gemini 프로바이더
-│   │   ├── auth.ts              # Google OAuth (PKCE)
-│   │   ├── chat.ts              # Cloud Code Assist 스트리밍
-│   │   ├── types.ts
-│   │   └── index.ts
-│   ├── codex/                   # Codex (OpenAI) 프로바이더
-│   │   ├── auth.ts
-│   │   ├── chat.ts
-│   │   ├── types.ts
-│   │   └── index.ts
-│   ├── anthropic/               # Anthropic 프로바이더
-│   │   ├── auth.ts
+│   ├── opencode/                # OpenCode 프로바이더
 │   │   ├── chat.ts
 │   │   ├── types.ts
 │   │   └── index.ts
@@ -280,13 +254,13 @@ npm run build        # Electron 앱 프로덕션 빌드
 | 기능 | Electron (프로덕션) |
 |------|---------------------|
 | 파일 접근 | 네이티브 파일시스템 |
-| AI 채팅 | IPC `ai:chat` → 오케스트레이터 → Provider별 API |
-| 인증 | Provider별 OAuth 2.0 (`electron/{provider}/auth.ts`) |
+| AI 채팅 | IPC `ai:chat` → 오케스트레이터 → OpenCode CLI |
+| 인증 | OpenCode CLI (`opencode auth login`) |
 
 ### AI 채팅 흐름
-1. 렌더러 → `ai:chat` IPC 요청 (runId, provider, prompt, history, canvasContent, selection, modelId?, writingGoal?)
-2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → Provider 호출
-3. Phase 1 Provider 스트리밍 중 `message` 필드 부분 추출 → `ai:chat:event` 이벤트 송신 (`phase_message_stream`)
+1. 렌더러 → `ai:chat` IPC 요청 (runId, prompt, history, canvasContent, selection, modelId?, variant?, writingGoal?)
+2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → OpenCode 호출
+3. Phase 1 스트리밍 중 `message` 필드 부분 추출 → `ai:chat:event` 이벤트 송신 (`phase_message_stream`)
 4. Phase 1 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase1_result`)
 5. needsCanvasUpdate=true 시 → Phase 2 프롬프트 생성 → Provider 호출
 6. Phase 2 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase2_result`, `pendingCanvasPatch`에 후보 저장 → Diff 미리보기 표시)
@@ -305,25 +279,11 @@ npm run build        # Electron 앱 프로덕션 빌드
 
 ## AI 설정
 
-인증은 앱 내에서 직접 수행됩니다:
+OpenCode CLI를 사용합니다:
 
-### Gemini
-1. 우측 상단 Gemini 버튼 클릭
-2. 브라우저에서 Google OAuth 인증
-3. 기본 모델: `gemini-3-flash-preview`
-4. 토큰: `~/Library/Application Support/AI Canvas/gemini-auth.enc`
-
-### Codex (OpenAI)
-1. 우측 상단 Codex 버튼 클릭
-2. 브라우저에서 OpenAI OAuth 인증
-3. 기본 모델: `gpt-5.2`
-4. 토큰: `~/Library/Application Support/AI Canvas/codex-auth.enc`
-
-### Anthropic
-1. 우측 상단 Anthropic 버튼 클릭
-2. 브라우저에서 Anthropic OAuth 인증
-3. 기본 모델: `claude-haiku-4-5`
-4. 토큰: `~/Library/Application Support/AI Canvas/anthropic-auth.enc`
+1. 터미널에서 `opencode auth login` 수행
+2. 앱에서 모델 목록 새로고침 (`opencode models --verbose` 기반)
+3. CommandBar에서 Provider / Model / Variant 선택
 
 
 ---

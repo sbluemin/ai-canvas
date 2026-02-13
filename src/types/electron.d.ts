@@ -1,13 +1,3 @@
-interface AuthStatus {
-  isAuthenticated: boolean;
-  expiresAt?: number;
-}
-
-interface AuthResult {
-  success: boolean;
-  error?: string;
-}
-
 interface ChatResponse {
   success: boolean;
   content?: string;
@@ -20,15 +10,15 @@ interface ChatChunk {
   done?: boolean;
 }
 
-type AiProvider = 'gemini' | 'openai' | 'anthropic';
+type AiProvider = 'opencode';
 
 interface AiChatRequest {
   runId: string;
-  provider: AiProvider;
   prompt: string;
   history: { role: 'user' | 'assistant'; content: string; provider?: AiProvider }[];
   canvasContent: string;
   modelId?: string;
+  variant?: string;
   selection?: {
     text: string;
     before: string;
@@ -66,18 +56,12 @@ interface ModelInfo {
   };
 }
 
-type AiProviderModels = Record<AiProvider, ModelInfo[]>;
+type AiProviderModels = Record<'opencode', ModelInfo[]>;
 
 interface AiAPI {
   chat: (request: AiChatRequest) => Promise<{ success: boolean; error?: string }>;
   fetchModels: () => Promise<{ success: boolean; models?: AiProviderModels; error?: string }>;
   onChatEvent: (callback: (event: AiChatEvent) => void) => () => void;
-}
-
-interface AuthOnlyProviderAPI {
-  authStart: () => Promise<AuthResult>;
-  authStatus: () => Promise<AuthStatus>;
-  authLogout: () => Promise<AuthResult>;
 }
 
 interface ProjectAPI {
@@ -118,9 +102,6 @@ interface ElectronAPI {
   writeFile: (filePath: string, content: string) => Promise<boolean>;
   readFile: (filePath: string) => Promise<string>;
   ai: AiAPI;
-  gemini: AuthOnlyProviderAPI;
-  codex: AuthOnlyProviderAPI;
-  anthropic: AuthOnlyProviderAPI;
   project: ProjectAPI;
   window: WindowAPI;
 }

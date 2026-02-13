@@ -2,23 +2,17 @@ import './CommandBar.css';
 import { ProjectSelector } from './ProjectSelector';
 import { ModelSelector } from './ModelSelector';
 import { ModelRefreshButton } from './ModelRefreshButton';
-import { CodexAuthButton } from './CodexAuthButton';
-import { AnthropicAuthButton } from './AnthropicAuthButton';
-import { GeminiAuthButton } from './GeminiAuthButton';
 import { useStore } from '../../store/useStore';
 import { Logo } from '../Logo';
 
 export function CommandBar() {
-  const { toggleSettings, toggleExportModal, activeProvider, toggleWritingGoal, activeWritingGoal } = useStore();
+  const { toggleSettings, toggleExportModal, toggleWritingGoal, activeWritingGoal } = useStore();
 
   return (
     <div className="command-bar">
       <div className="command-bar-left">
-        <GeminiAuthButton />
-        <CodexAuthButton />
-        <AnthropicAuthButton />
         <ModelRefreshButton />
-        <ModelSelector provider={activeProvider} />
+        <ModelSelector />
       </div>
       <div className="command-bar-content">
         <div className="logo-container">

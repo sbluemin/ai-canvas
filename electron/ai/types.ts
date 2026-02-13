@@ -1,4 +1,4 @@
-export type AiProvider = 'gemini' | 'openai' | 'anthropic';
+export type AiProvider = 'opencode';
 
 /** 문서 목표 기반 작성 모드 메타데이터 */
 export interface WritingGoal {
@@ -10,11 +10,11 @@ export interface WritingGoal {
 
 export interface AiChatRequest {
   runId: string;
-  provider: AiProvider;
   prompt: string;
   history: ConversationMessage[];
   canvasContent: string;
   modelId?: string;
+  variant?: string;
   selection?: {
     text: string;
     before: string;

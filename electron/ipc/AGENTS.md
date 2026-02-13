@@ -7,7 +7,7 @@
 | Task | Location | Notes |
 |------|----------|-------|
 | handler 등록 순서 | `electron/ipc/index.ts` | dialog/fs/project/ai/window 등록 |
-| AI+Auth 채널 | `electron/ipc/ai.ts` | `ai:*`, `{provider}:auth:*` |
+| AI 채널 | `electron/ipc/ai.ts` | `ai:*` |
 | 프로젝트 파일 관리 | `electron/ipc/project.ts` | `.ai-canvas` CRUD + export |
 | 파일 IO 단순 래퍼 | `electron/ipc/fs.ts` | `fs:readFile`, `fs:writeFile` |
 | 네이티브 다이얼로그 | `electron/ipc/dialog.ts` | open/save dialog |
@@ -19,7 +19,7 @@
 - 채널 추가 시 반드시 preload API와 `src/api/index.ts`를 함께 확장한다.
 
 ## CHANNEL MAP
-- `ai:*` + `{provider}:auth:*` -> `electron/ipc/ai.ts`.
+- `ai:*` -> `electron/ipc/ai.ts`.
 - `project:*` -> `electron/ipc/project.ts`.
 - `fs:*` -> `electron/ipc/fs.ts`.
 - `dialog:*` -> `electron/ipc/dialog.ts`.

@@ -1,15 +1,12 @@
 import type { IpcMainInvokeEvent } from 'electron';
-import type { AiProvider } from './types';
-import * as gemini from '../gemini';
-import * as codex from '../codex';
-import * as anthropic from '../anthropic';
+import * as opencode from '../opencode';
 
 export async function callProvider(
-  provider: AiProvider,
   _event: IpcMainInvokeEvent,
   prompt: string,
   systemInstruction?: string,
   modelId?: string,
+  variant?: string,
   onChunk?: (chunk: string) => void
 ): Promise<string> {
   const chunks: string[] = [];
@@ -30,36 +27,9 @@ export async function callProvider(
     },
   } as unknown as IpcMainInvokeEvent;
   
-  switch (provider) {
-    case 'gemini': {
-      const auth = await gemini.getValidAccessToken();
-      if (!auth) throw new Error('Gemini not authenticated');
-      const result = await gemini.chat(mockEvent, auth, { prompt, systemInstruction, model: modelId });
-      if (!result.success) {
-        throw new Error(result.error || capturedError || 'Gemini chat failed');
-      }
-      break;
-    }
-    case 'openai': {
-      const auth = await codex.getValidAccessToken();
-      if (!auth) throw new Error('OpenAI not authenticated');
-      const result = await codex.chat(mockEvent, auth, { prompt, systemInstruction, model: modelId });
-      if (!result.success) {
-        throw new Error(result.error || capturedError || 'OpenAI chat failed');
-      }
-      break;
-    }
-    case 'anthropic': {
-      const auth = await anthropic.getValidAccessToken();
-      if (!auth) throw new Error('Anthropic not authenticated');
-      const result = await anthropic.chat(mockEvent, auth, { prompt, systemInstruction, model: modelId });
-      if (!result.success) {
-        throw new Error(result.error || capturedError || 'Anthropic chat failed');
-      }
-      break;
-    }
-    default:
-      throw new Error(`Unknown provider: ${provider}`);
+  const result = await opencode.chat(mockEvent, { prompt, systemInstruction, model: modelId, variant });
+  if (!result.success) {
+    throw new Error(result.error || capturedError || 'OpenCode chat failed');
   }
   
   if (capturedError) {
