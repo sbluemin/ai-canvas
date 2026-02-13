@@ -11,7 +11,7 @@ electron/
 ├── ipc/             # namespace별 handler 등록
 ├── ai/              # 2-phase workflow + parser
 ├── prompts/         # phase prompt builders/schemas
-└── opencode/        # OpenCode CLI adapter
+└── ai-backend/      # OpenCode runtime manager (cross-spawn)
 ```
 
 ## WHERE TO LOOK
@@ -21,8 +21,9 @@ electron/
 | API 노출 | `electron/preload.ts` | renderer 접근 가능한 표면적 |
 | IPC 진입점 | `electron/ipc/index.ts` | 핸들러 wiring |
 | AI 실행 엔진 | `electron/ai/workflow.ts` | phase 전환 + 이벤트 송신 |
-| provider 통합 호출 | `electron/ai/providerAdapter.ts` | opencode chat adapter |
-| 모델 조회 | `electron/api/models.ts` | ai:fetch-models backend |
+| provider 통합 호출 | `electron/ai/providerAdapter.ts` | ai-backend chat adapter |
+| OpenCode 런타임 | `electron/ai-backend/opencodeRuntime.ts` | spawn~exit, stream parsing, shutdown |
+| 모델 조회 | `electron/api/models.ts` | ai-backend 경유 ai:fetch-models backend |
 
 ## CONVENTIONS
 - IPC 채널은 prefix 기반 네임스페이스를 유지한다 (`ai:`, `project:`, `fs:`, `dialog:`, `window:`).

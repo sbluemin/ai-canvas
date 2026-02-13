@@ -1,5 +1,5 @@
 import type { IpcMainInvokeEvent } from 'electron';
-import * as opencode from '../opencode';
+import { chatWithOpenCode } from '../ai-backend';
 
 export async function callProvider(
   _event: IpcMainInvokeEvent,
@@ -9,32 +9,27 @@ export async function callProvider(
   variant?: string,
   onChunk?: (chunk: string) => void
 ): Promise<string> {
-  const chunks: string[] = [];
   let capturedError: string | undefined;
-  
-  const mockEvent = {
-    sender: {
-      send: (_channel: string, data: { text?: string; done?: boolean; error?: string }) => {
-        if (data.error) {
-          capturedError = data.error;
-        }
-        if (data.text) {
-          chunks.push(data.text);
-          onChunk?.(data.text);
-        }
-      },
-      isDestroyed: () => false,
-    },
-  } as unknown as IpcMainInvokeEvent;
-  
-  const result = await opencode.chat(mockEvent, { prompt, systemInstruction, model: modelId, variant });
+
+  const result = await chatWithOpenCode(
+    { prompt, systemInstruction, model: modelId, variant },
+    (chunk) => {
+      if (chunk.error) {
+        capturedError = chunk.error;
+      }
+      if (chunk.text) {
+        onChunk?.(chunk.text);
+      }
+    }
+  );
+
   if (!result.success) {
     throw new Error(result.error || capturedError || 'OpenCode chat failed');
   }
-  
+
   if (capturedError) {
     throw new Error(capturedError);
   }
-  
-  return chunks.join('');
+
+  return result.text ?? '';
 }

@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 (핵심 플랫폼) |
-| AI | OpenCode CLI |
+| AI | OpenCode CLI + cross-spawn 런타임 관리 |
 | State | Zustand |
 | Styling | CSS Modules |
 
@@ -58,9 +58,15 @@
 
 ### AI 오케스트레이션 (`electron/ai/`)
 - **workflow.ts**: Phase 1/2 실행 흐름 제어, 이벤트 송신
-- **providerAdapter.ts**: OpenCode chat 호출 어댑터
+- **providerAdapter.ts**: `electron/ai-backend` API 계층 호출 어댑터
 - **parser.ts**: Phase 1/2 응답 JSON 파싱 및 fallback 처리
 - **types.ts**: AI 요청/응답/이벤트 타입 정의
+- **models.ts**: OpenCode 모델 목록 파싱/정렬
+
+### AI 백엔드 런타임 (`electron/ai-backend/`)
+- **runtime/opencodeRuntime.ts**: OpenCode 프로세스 spawn/스트림 파싱/종료 구현체 (내부 전용)
+- **api/opencodeService.ts**: 런타임 접근 API (`chatWithOpenCode`, `fetchOpenCodeModelsVerbose`, `shutdownOpenCodeRuntime`)
+- **index.ts**: `ai-backend` 공개 API re-export (런타임 클래스 직접 노출 금지)
 
 ### 프롬프트 시스템 (`electron/prompts/`)
 - **system.ts**: Phase 1/2 프롬프트 빌더, 히스토리 압축
@@ -209,12 +215,12 @@ ai-canvas/
 │   │   ├── types.ts             # 응답 스키마 (Zod)
 │   │   ├── canvas.ts            # 캔버스 컨텍스트 유틸
 │   │   └── index.ts
-│   ├── opencode/                # OpenCode 프로바이더
-│   │   ├── chat.ts
-│   │   ├── types.ts
-│   │   └── index.ts
-│   ├── api/                     # Electron 내부 API
-│   │   └── models.ts            # 모델 목록 관리
+│   ├── ai-backend/              # OpenCode 런타임 API/구현 분리 패키지
+│   │   ├── api/
+│   │   │   └── opencodeService.ts  # 런타임 접근 공개 API
+│   │   ├── runtime/
+│   │   │   └── opencodeRuntime.ts  # spawn~exit 내부 구현
+│   │   └── index.ts             # 공개 API 진입점
 ├── .opencode/
 │   └── agents/                  # Agent Harness 정의
 │       ├── leader.md
@@ -259,7 +265,7 @@ npm run build        # Electron 앱 프로덕션 빌드
 
 ### AI 채팅 흐름
 1. 렌더러 → `ai:chat` IPC 요청 (runId, prompt, history, canvasContent, selection, modelId?, variant?, writingGoal?)
-2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → OpenCode 호출
+2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → `electron/ai/providerAdapter.ts` → `electron/ai-backend` API 계층 호출
 3. Phase 1 스트리밍 중 `message` 필드 부분 추출 → `ai:chat:event` 이벤트 송신 (`phase_message_stream`)
 4. Phase 1 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase1_result`)
 5. needsCanvasUpdate=true 시 → Phase 2 프롬프트 생성 → Provider 호출

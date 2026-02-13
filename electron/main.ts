@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
 import { registerIpcHandlers } from './ipc/index';
+import { shutdownOpenCodeRuntime } from './ai-backend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -278,4 +279,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  shutdownOpenCodeRuntime();
 });

@@ -1,6 +1,6 @@
 import { handleIpc } from '../ipc';
 import { executeAiChatWorkflow, type AiChatRequest } from '../ai';
-import { fetchModelsFromApi } from '../api/models';
+import { fetchModelsFromApi } from '../ai/models';
 
 export function registerAiHandlers() {
   handleIpc('ai:chat', async (event: any, request: AiChatRequest) => {

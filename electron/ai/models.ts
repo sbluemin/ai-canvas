@@ -1,7 +1,4 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
+import { fetchOpenCodeModelsVerbose } from '../ai-backend';
 
 interface OpenCodeVerboseModelData {
   name?: string;
@@ -122,12 +119,8 @@ function parseOpenCodeVerboseOutput(stdout: string): ModelInfo[] {
 }
 
 async function fetchOpenCodeModelsFromCli(): Promise<ModelInfo[]> {
-  const { stdout } = await execFileAsync('opencode', ['models', '--verbose'], {
-    timeout: 60_000,
-    maxBuffer: 20 * 1024 * 1024,
-  });
-
-  return parseOpenCodeVerboseOutput(stdout ?? '');
+  const stdout = await fetchOpenCodeModelsVerbose();
+  return parseOpenCodeVerboseOutput(String(stdout ?? ''));
 }
 
 export async function fetchModelsFromApi(): Promise<FetchModelsResult> {
