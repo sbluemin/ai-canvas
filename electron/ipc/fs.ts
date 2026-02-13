@@ -1,4 +1,4 @@
-import { handleIpc } from '../ipc';
+import { handleIpc } from '../core';
 import fs from 'node:fs/promises';
 
 export function registerFsHandlers() {

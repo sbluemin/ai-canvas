@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron';
-import { handleIpc } from '../ipc';
+import { handleIpc } from '../core';
 
 export function registerWindowHandlers(createWindow: () => BrowserWindow) {
   handleIpc('window:create', async () => {

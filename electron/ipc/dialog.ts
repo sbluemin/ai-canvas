@@ -1,5 +1,5 @@
 import { dialog } from 'electron';
-import { handleIpc } from '../ipc';
+import { handleIpc } from '../core';
 
 export function registerDialogHandlers() {
   handleIpc('dialog:showSaveDialog', async () => {

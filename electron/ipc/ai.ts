@@ -1,4 +1,4 @@
-import { handleIpc } from '../ipc';
+import { handleIpc } from '../core';
 import { executeAiChatWorkflow, type AiChatRequest } from '../ai';
 import { fetchModelsFromApi } from '../ai/models';
 

@@ -1,10 +1,10 @@
-export const AI_CANVAS_DIR = '.ai-canvas';
-export const DEFAULT_CANVAS_NAME = 'canvas.md';
-export const CHAT_SESSION_NAME = 'chat-session.json';
-export const WORKSPACE_NAME = 'workspace.json';
-export const AUTOSAVE_STATUS_NAME = 'autosave-status.json';
-export const ASSET_DIR_NAME = 'assets';
-export const DEFAULT_CANVAS_CONTENT = `# New Canvas
-
-Start writing here.
-`;
+// 하위 호환성을 위한 re-export — 새 코드에서는 ../core를 직접 import하세요.
+export {
+  AI_CANVAS_DIR,
+  DEFAULT_CANVAS_NAME,
+  CHAT_SESSION_NAME,
+  WORKSPACE_NAME,
+  AUTOSAVE_STATUS_NAME,
+  ASSET_DIR_NAME,
+  DEFAULT_CANVAS_CONTENT,
+} from './core/consts';

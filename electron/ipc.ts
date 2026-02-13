@@ -1,17 +1,2 @@
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
-
-export type IpcHandler<T = any> = (
-  event: IpcMainInvokeEvent,
-  ...args: any[]
-) => Promise<T> | T;
-
-export function handleIpc<T>(channel: string, handler: IpcHandler<T>) {
-  ipcMain.handle(channel, async (event, ...args) => {
-    try {
-      return await handler(event, ...args);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return { success: false, error: errorMessage };
-    }
-  });
-}
+// 하위 호환성을 위한 re-export — 새 코드에서는 ../core를 직접 import하세요.
+export { handleIpc, type IpcHandler } from './core/ipc';
