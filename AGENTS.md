@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 (핵심 플랫폼) |
-| AI | OpenCode CLI + cross-spawn 런타임 관리 |
+| AI | OpenCode CLI 런타임 관리 |
 | State | Zustand |
 | Styling | CSS Modules |
 
@@ -64,9 +64,11 @@
 - **models.ts**: OpenCode 모델 목록 파싱/정렬
 
 ### AI 백엔드 런타임 (`electron/ai-backend/`)
-- **runtime/opencodeRuntime.ts**: OpenCode 프로세스 spawn/스트림 파싱/종료 구현체 (내부 전용)
-- **api/opencodeService.ts**: 런타임 접근 API (`chatWithOpenCode`, `fetchOpenCodeModelsVerbose`, `shutdownOpenCodeRuntime`)
-- **index.ts**: `ai-backend` 공개 API re-export (런타임 클래스 직접 노출 금지)
+- **index.ts**: 공개 API surface (런타임 내부 캡슐화)
+- **client.ts**: 런타임 싱글톤 관리 + API 함수 (`chatWithOpenCode`, `fetchOpenCodeModelsVerbose`, `shutdownOpenCodeRuntime`)
+- **runtime.ts**: OpenCode 프로세스 spawn/스트림 파싱/종료 구현체 (내부 전용)
+- **binary-resolver.ts**: Windows 바이너리 탐색 로직 (내부 전용)
+- **types.ts**: OpenCode 관련 타입 정의
 
 ### 프롬프트 시스템 (`electron/prompts/`)
 - **system.ts**: Phase 1/2 프롬프트 빌더, 히스토리 압축
@@ -193,17 +195,24 @@ ai-canvas/
 │   ├── App.tsx
 │   └── main.tsx
 ├── electron/
-│   ├── main.ts                  # IPC 핸들러 (ai:chat 통합 엔드포인트)
-│   ├── preload.ts               # Electron API
-│   ├── consts.ts                # IPC 공용 상수
-│   ├── utils.ts                 # IPC 공용 유틸
-│   ├── ipc/                     # IPC 핸들러 모듈
+│   ├── main.ts                  # BrowserWindow, CSP, updater
+│   ├── preload.ts               # contextBridge API
+│   ├── core/                    # 공유 인프라
+│   │   ├── index.ts             # 배럴 export
+│   │   ├── ipc.ts               # handleIpc 유틸
+│   │   ├── consts.ts            # 앱 상수
+│   │   └── utils.ts             # 경로/마크다운 유틸
+│   ├── ipc/                     # IPC 핸들러 (얇은 라우팅 레이어)
 │   │   ├── index.ts
 │   │   ├── ai.ts
 │   │   ├── dialog.ts
 │   │   ├── fs.ts
-│   │   ├── project.ts
+│   │   ├── project.ts           # services/project.service 위임
 │   │   └── window.ts
+│   ├── services/                # 비즈니스 로직 서비스
+│   │   ├── index.ts
+│   │   ├── project.service.ts   # 캔버스 CRUD, 세션, 에셋
+│   │   └── export.service.ts    # HTML/PDF/DOCX 내보내기
 │   ├── ai/                      # AI 오케스트레이션 레이어
 │   │   ├── workflow.ts          # Phase 1/2 실행 흐름
 │   │   ├── providerAdapter.ts   # Provider 통합 호출
@@ -215,12 +224,12 @@ ai-canvas/
 │   │   ├── types.ts             # 응답 스키마 (Zod)
 │   │   ├── canvas.ts            # 캔버스 컨텍스트 유틸
 │   │   └── index.ts
-│   ├── ai-backend/              # OpenCode 런타임 API/구현 분리 패키지
-│   │   ├── api/
-│   │   │   └── opencodeService.ts  # 런타임 접근 공개 API
-│   │   ├── runtime/
-│   │   │   └── opencodeRuntime.ts  # spawn~exit 내부 구현
-│   │   └── index.ts             # 공개 API 진입점
+│   ├── ai-backend/              # OpenCode 런타임 (API 계층만 외부 노출)
+│   │   ├── index.ts             # 공개 API surface
+│   │   ├── client.ts            # 런타임 싱글톤 + API 함수
+│   │   ├── runtime.ts           # 프로세스 spawn/kill (내부)
+│   │   ├── binary-resolver.ts   # Windows 바이너리 탐색 (내부)
+│   │   └── types.ts             # OpenCode 타입 정의
 ├── .opencode/
 │   └── agents/                  # Agent Harness 정의
 │       ├── leader.md

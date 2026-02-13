@@ -79,15 +79,15 @@ export function markdownToBasicHtml(markdown: string): string {
     .replace(/>/g, '&gt;');
 
   const html = escaped
-    .replace(/^######\s+(.+)$/gm, '<h6></h6>')
-    .replace(/^#####\s+(.+)$/gm, '<h5></h5>')
-    .replace(/^####\s+(.+)$/gm, '<h4></h4>')
-    .replace(/^###\s+(.+)$/gm, '<h3></h3>')
-    .replace(/^##\s+(.+)$/gm, '<h2></h2>')
-    .replace(/^#\s+(.+)$/gm, '<h1></h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong></strong>')
-    .replace(/\*(.+?)\*/g, '<em></em>')
-    .replace(/`([^`]+)`/g, '<code></code>')
+    .replace(/^######\s+(.+)$/gm, '<h6>$1</h6>')
+    .replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>')
+    .replace(/^####\s+(.+)$/gm, '<h4>$1</h4>')
+    .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
+    .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+    .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\n\n+/g, '</p><p>')
     .replace(/\n/g, '<br/>');
 
