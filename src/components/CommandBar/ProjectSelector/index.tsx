@@ -1,4 +1,4 @@
-import { useStore, type Message, type Conversation, type AutosaveStatus } from '../../../store/useStore';
+import { useStore, type Message, type Conversation, type AutosaveStatus, type SelectedModels } from '../../../store/useStore';
 import { api } from '../../../api';
 import { generateId } from '../../../utils';
 import './ProjectSelector.css';
@@ -41,6 +41,30 @@ function createConversationTitle(index: number) {
   return `Chat ${index + 1}`;
 }
 
+function parseSelectedModels(raw: unknown): Partial<SelectedModels> | null {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const data = raw as Record<string, unknown>;
+  const parsed: Partial<SelectedModels> = {};
+
+  const gemini = data.gemini;
+  if (typeof gemini === 'string' || gemini === null) {
+    parsed.gemini = gemini;
+  }
+
+  const openai = data.openai;
+  if (typeof openai === 'string' || openai === null) {
+    parsed.openai = openai;
+  }
+
+  const anthropic = data.anthropic;
+  if (typeof anthropic === 'string' || anthropic === null) {
+    parsed.anthropic = anthropic;
+  }
+
+  return Object.keys(parsed).length > 0 ? parsed : null;
+}
+
 function parseWorkspace(rawWorkspace: unknown) {
   if (!rawWorkspace || typeof rawWorkspace !== 'object') return null;
   const data = rawWorkspace as Record<string, unknown>;
@@ -75,7 +99,9 @@ function parseWorkspace(rawWorkspace: unknown) {
     ? data.canvasOrder.filter((item) => typeof item === 'string')
     : null;
 
-  return { conversations, activeConversationId, canvasOrder };
+  const selectedModels = parseSelectedModels(data.selectedModels);
+
+  return { conversations, activeConversationId, canvasOrder, selectedModels };
 }
 
 function orderCanvasFiles(files: string[], canvasOrder: string[] | null) {
@@ -97,6 +123,7 @@ export function ProjectSelector() {
     setConversations,
     setActiveConversationId,
     setAutosaveStatus,
+    restoreSelectedModels,
   } = useStore();
 
   const handleOpenProject = async () => {
@@ -126,6 +153,7 @@ export function ProjectSelector() {
     const orderedFiles = orderCanvasFiles(files, workspace?.canvasOrder ?? null);
 
     setProjectPath(path);
+    restoreSelectedModels(workspace?.selectedModels ?? null);
     setCanvasFiles(orderedFiles);
     clearMessages();
 

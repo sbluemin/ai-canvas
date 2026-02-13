@@ -161,6 +161,7 @@ export interface ModelSlice {
 
   setAvailableModels: (models: AvailableModels) => void;
   setSelectedModel: (provider: AiProvider, modelId: string | null) => void;
+  restoreSelectedModels: (models?: Partial<SelectedModels> | null) => void;
   setModelsLoading: (loading: boolean) => void;
 }
 

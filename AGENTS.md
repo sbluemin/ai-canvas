@@ -125,7 +125,7 @@ interface AppState {
 
   // 모델 선택 및 설정
   availableModels: AvailableModels;
-  selectedModels: SelectedModels;
+  selectedModels: SelectedModels;     // Provider별 마지막 선택 모델 (프로젝트 workspace 기준)
   modelsLoading: boolean;
   
   // 문서 작성 목표
