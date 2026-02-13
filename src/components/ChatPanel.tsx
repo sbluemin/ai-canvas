@@ -216,11 +216,11 @@ export function ChatPanel() {
           </div>
         ) : (
           messages.map((msg: Message, index: number) => {
-            if (msg.role === 'assistant' && !msg.content) {
+            const isLastAssistantMessage = msg.role === 'assistant' && index === messages.length - 1;
+            const showInlineProgress = isLastAssistantMessage && isUpdatingCanvas && isLoading;
+            if (msg.role === 'assistant' && !msg.content && !showInlineProgress) {
               return null;
             }
-            const isLastAssistantMessage = msg.role === 'assistant' && index === messages.length - 1;
-            const showInlineProgress = isLastAssistantMessage && isUpdatingCanvas && msg.content;
             const providerInfo = msg.role === 'assistant' ? getProviderInfo(msg.provider) : null;
             
             return (
@@ -249,7 +249,15 @@ export function ChatPanel() {
                       msg.content
                     )
                   ) : (
-                    isLoading && msg.role === 'assistant' && <span className="typing-indicator">●●●</span>
+                    msg.role === 'assistant' &&
+                    (showInlineProgress ? (
+                      <div className="progress-indicator inline-progress">
+                        <span className="typing-indicator">●●●</span>
+                        <span className="progress-text">Updating canvas...</span>
+                      </div>
+                    ) : (
+                      isLoading && <span className="typing-indicator">●●●</span>
+                    ))
                   )}
                 </div>
 

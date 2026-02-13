@@ -100,6 +100,11 @@ interface ProjectAPI {
   importShareBundle: () => Promise<{ success: boolean; bundle?: unknown; error?: string }>;
   createDefaultCanvas: (projectPath: string) => Promise<{ success: boolean; fileName?: string; error?: string }>;
   openInExplorer: (projectPath: string) => Promise<{ success: boolean; error?: string }>;
+  listCanvasTree: (projectPath: string) => Promise<{ success: boolean; tree?: unknown[]; error?: string }>;
+  createCanvasFolder: (projectPath: string, folderPath: string) => Promise<{ success: boolean; error?: string }>;
+  deleteCanvasFolder: (projectPath: string, folderPath: string) => Promise<{ success: boolean; error?: string }>;
+  moveCanvasFile: (projectPath: string, oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>;
+  renameCanvasFolder: (projectPath: string, oldFolderPath: string, newFolderPath: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface WindowAPI {

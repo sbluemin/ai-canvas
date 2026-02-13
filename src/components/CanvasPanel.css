@@ -7,6 +7,23 @@
   padding: 16px;
 }
 
+.canvas-panel-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.canvas-panel-layout .canvas-wrapper {
+  border: none;
+  border-radius: 0;
+}
+
+.canvas-panel-layout:not(.with-explorer) .canvas-wrapper {
+  border-radius: 0;
+}
+
 .canvas-wrapper {
   display: flex;
   flex-direction: column;
@@ -334,4 +351,143 @@
       0 0 105px rgba(96, 165, 250, 0.4),
       0 0 180px rgba(167, 139, 250, 0.3);
   }
+}
+
+.explorer-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.explorer-toggle-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.canvas-tab-add {
+  color: var(--text-muted) !important;
+  font-size: 18px !important;
+  font-weight: 300 !important;
+  padding: 4px 10px !important;
+  opacity: 0.7;
+  transition: all 0.15s ease !important;
+}
+
+.canvas-tab-add:hover {
+  opacity: 1;
+  color: var(--text-primary) !important;
+}
+
+.tab-context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  min-width: 150px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-context-menu button {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+  text-align: left;
+}
+
+.tab-context-menu button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.tab-context-menu button.danger {
+  color: #f87171;
+}
+
+.tab-context-menu button.danger:hover {
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.delete-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.delete-confirm-dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  min-width: 320px;
+  max-width: 420px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.delete-confirm-dialog p {
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.delete-confirm-hint {
+  color: var(--text-muted) !important;
+  font-size: 12px !important;
+  margin-bottom: 20px !important;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.delete-confirm-actions button {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.delete-confirm-actions button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.delete-confirm-actions button.danger {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: #f87171;
+}
+
+.delete-confirm-actions button.danger:hover {
+  background: rgba(248, 113, 113, 0.25);
 }

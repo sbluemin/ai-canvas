@@ -11,6 +11,8 @@ export const createProjectSlice: StateCreator<AppState, [], [], ProjectSlice> = 
   autosaveStatus: {
     state: 'idle',
   },
+  canvasTree: [],
+  isFileExplorerOpen: false,
 
   setCanvasContent: (content) => set({ canvasContent: content }),
   setCurrentFilePath: (path) => set({ currentFilePath: path }),
@@ -18,6 +20,8 @@ export const createProjectSlice: StateCreator<AppState, [], [], ProjectSlice> = 
   setCanvasFiles: (canvasFiles) => set({ canvasFiles }),
   setActiveCanvasFile: (activeCanvasFile) => set({ activeCanvasFile }),
   setAutosaveStatus: (autosaveStatus) => set({ autosaveStatus }),
+  setCanvasTree: (canvasTree) => set({ canvasTree }),
+  toggleFileExplorer: () => set((state) => ({ isFileExplorerOpen: !state.isFileExplorerOpen })),
 
   restoreState: (bundle) =>
     set(() => {

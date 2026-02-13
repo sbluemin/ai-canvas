@@ -199,6 +199,31 @@ export const api = {
     return window.electronAPI.project.openInExplorer(projectPath);
   },
 
+  async listCanvasTree(projectPath: string): Promise<{ success: boolean; tree?: unknown[]; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.listCanvasTree(projectPath);
+  },
+
+  async createCanvasFolder(projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.createCanvasFolder(projectPath, folderPath);
+  },
+
+  async deleteCanvasFolder(projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.deleteCanvasFolder(projectPath, folderPath);
+  },
+
+  async moveCanvasFile(projectPath: string, oldPath: string, newPath: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.moveCanvasFile(projectPath, oldPath, newPath);
+  },
+
+  async renameCanvasFolder(projectPath: string, oldFolderPath: string, newFolderPath: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.renameCanvasFolder(projectPath, oldFolderPath, newFolderPath);
+  },
+
   async createWindow(): Promise<{ success: boolean; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.window.create();

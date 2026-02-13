@@ -229,11 +229,7 @@ function waitForCallback(expectedState: string): Promise<string> {
       }
     });
 
-<<<<<<< HEAD
     server.listen(8085, '127.0.0.1');
-=======
-    server.listen(8085);
->>>>>>> origin/main
 
     setTimeout(() => {
       server.close();

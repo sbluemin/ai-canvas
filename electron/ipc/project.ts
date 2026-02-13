@@ -12,7 +12,9 @@ import {
 } from '../consts';
 import {
   getCanvasFilePath,
+  getCanvasFolderPath,
   isValidCanvasFileName,
+  isValidCanvasFolderPath,
   getChatSessionPath,
   getWorkspacePath,
   getAutosaveStatusPath,
@@ -60,6 +62,112 @@ export function registerProjectHandlers() {
     }
   });
 
+  handleIpc('project:list-canvas-tree', async (_event: any, projectPath: string) => {
+    const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+
+    interface TreeEntry {
+      name: string;
+      type: 'file' | 'folder';
+      path: string;
+      children?: TreeEntry[];
+    }
+
+    async function readDirRecursive(dirPath: string, relativePath: string): Promise<TreeEntry[]> {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      const result: TreeEntry[] = [];
+
+      for (const entry of entries) {
+        if (entry.name.startsWith('.')) continue;
+        const entryRelPath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+
+        if (entry.isDirectory() && entry.name !== ASSET_DIR_NAME) {
+          const children = await readDirRecursive(path.join(dirPath, entry.name), entryRelPath);
+          result.push({ name: entry.name, type: 'folder', path: entryRelPath, children });
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
+          result.push({ name: entry.name, type: 'file', path: entryRelPath });
+        }
+      }
+
+      result.sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      return result;
+    }
+
+    try {
+      const tree = await readDirRecursive(canvasDir, '');
+      return { success: true, tree };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return { success: true, tree: [] };
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  handleIpc('project:create-canvas-folder', async (_event: any, projectPath: string, folderPath: string) => {
+    if (!isValidCanvasFolderPath(folderPath)) {
+      return { success: false, error: 'Invalid folder path.' };
+    }
+    const fullPath = getCanvasFolderPath(projectPath, folderPath);
+    try {
+      await fs.mkdir(fullPath, { recursive: true });
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  handleIpc('project:delete-canvas-folder', async (_event: any, projectPath: string, folderPath: string) => {
+    if (!isValidCanvasFolderPath(folderPath)) {
+      return { success: false, error: 'Invalid folder path.' };
+    }
+    const fullPath = getCanvasFolderPath(projectPath, folderPath);
+    try {
+      await fs.rm(fullPath, { recursive: true, force: true });
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  handleIpc('project:move-canvas-file', async (_event: any, projectPath: string, oldPath: string, newPath: string) => {
+    if (!isValidCanvasFileName(oldPath) || !isValidCanvasFileName(newPath)) {
+      return { success: false, error: 'Invalid file path.' };
+    }
+    const srcPath = getCanvasFilePath(projectPath, oldPath);
+    const destPath = getCanvasFilePath(projectPath, newPath);
+    try {
+      const destDir = path.dirname(destPath);
+      await fs.mkdir(destDir, { recursive: true });
+      await fs.rename(srcPath, destPath);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  handleIpc('project:rename-canvas-folder', async (_event: any, projectPath: string, oldFolderPath: string, newFolderPath: string) => {
+    if (!isValidCanvasFolderPath(oldFolderPath) || !isValidCanvasFolderPath(newFolderPath)) {
+      return { success: false, error: 'Invalid folder path.' };
+    }
+    const oldFullPath = getCanvasFolderPath(projectPath, oldFolderPath);
+    const newFullPath = getCanvasFolderPath(projectPath, newFolderPath);
+    try {
+      await fs.rename(oldFullPath, newFullPath);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
+    }
+  });
+
   handleIpc('project:read-canvas-file', async (_event: any, projectPath: string, fileName: string) => {
     if (!isValidCanvasFileName(fileName)) {
       return { success: false, error: 'Invalid file name.' };
@@ -80,6 +188,8 @@ export function registerProjectHandlers() {
     }
     const filePath = getCanvasFilePath(projectPath, fileName);
     try {
+      const dir = path.dirname(filePath);
+      await fs.mkdir(dir, { recursive: true });
       await fs.writeFile(filePath, content, 'utf-8');
       return { success: true };
     } catch (error) {

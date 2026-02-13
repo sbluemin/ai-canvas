@@ -2,6 +2,13 @@ import { AiProvider, ModelInfo, AvailableModels, SelectedModels, WritingGoal, Wr
 
 export type { AiProvider, ModelInfo, AvailableModels, SelectedModels, WritingGoal, WritingGoalPreset };
 
+export interface TreeEntry {
+  name: string;
+  type: 'file' | 'folder';
+  path: string;
+  children?: TreeEntry[];
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -117,6 +124,8 @@ export interface ProjectSlice {
   canvasFiles: string[];
   activeCanvasFile: string | null;
   autosaveStatus: AutosaveStatus;
+  canvasTree: TreeEntry[];
+  isFileExplorerOpen: boolean;
 
   setCanvasContent: (content: string) => void;
   setCurrentFilePath: (path: string | null) => void;
@@ -124,6 +133,8 @@ export interface ProjectSlice {
   setCanvasFiles: (files: string[]) => void;
   setActiveCanvasFile: (fileName: string | null) => void;
   setAutosaveStatus: (status: AutosaveStatus) => void;
+  setCanvasTree: (tree: TreeEntry[]) => void;
+  toggleFileExplorer: () => void;
   restoreState: (bundle: ShareBundle) => void;
 }
 

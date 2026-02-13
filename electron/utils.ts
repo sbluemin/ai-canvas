@@ -7,11 +7,49 @@ import {
   ASSET_DIR_NAME,
 } from './consts';
 
+/**
+ * 캔버스 파일명 유효성 검증
+ * 서브디렉토리 경로 허용 (예: "auth/login-flow.md")
+ * 보안: ".." 경로 탈출, 백슬래시, 절대 경로 차단
+ */
 export function isValidCanvasFileName(fileName: string): boolean {
   if (!fileName.endsWith('.md')) return false;
-  if (fileName.includes('/') || fileName.includes('\\')) return false;
+  if (fileName.includes('\\')) return false;
   if (fileName.includes('..')) return false;
-  return fileName.length > 3;
+  if (fileName.startsWith('/')) return false;
+  const segments = fileName.split('/');
+  if (segments.some((s) => s.length === 0)) return false;
+  const baseName = segments[segments.length - 1];
+  return baseName.length > 3;
+}
+
+/**
+ * 폴더명 유효성 검증
+ * 보안: ".." 경로 탈출, 슬래시, 백슬래시 차단
+ */
+export function isValidCanvasFolderName(folderName: string): boolean {
+  if (!folderName || folderName.length === 0) return false;
+  if (folderName.includes('/') || folderName.includes('\\')) return false;
+  if (folderName.includes('..')) return false;
+  if (folderName.startsWith('.')) return false;
+  return folderName.length > 0;
+}
+
+/**
+ * 폴더 경로 유효성 검증 (중첩 경로 허용)
+ * 예: "auth", "auth/oauth" 허용, "../escape" 차단
+ */
+export function isValidCanvasFolderPath(folderPath: string): boolean {
+  if (!folderPath || folderPath.length === 0) return false;
+  if (folderPath.includes('\\')) return false;
+  if (folderPath.includes('..')) return false;
+  if (folderPath.startsWith('/')) return false;
+  const segments = folderPath.split('/');
+  return segments.every((s) => s.length > 0 && !s.startsWith('.'));
+}
+
+export function getCanvasFolderPath(projectPath: string, folderPath: string): string {
+  return path.join(projectPath, AI_CANVAS_DIR, folderPath);
 }
 
 export function getCanvasFilePath(projectPath: string, fileName: string): string {

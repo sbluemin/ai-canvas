@@ -41,7 +41,13 @@
   - **EditorToolbar**: 서식 도구
   - **SelectionAiPopup**: 텍스트 선택 시 AI 질문 팝업
   - **DiffPreview**: AI 수정안 diff 미리보기 (블록 선택 적용/취소)
-  - 캔버스 파일 탭: `.ai-canvas/*.md` 파일 간 전환 (활성 탭 클릭 시 이름 변경)
+  - **FileExplorer**: 폴더 기반 트리 뷰 사이드바 (토글 가능)
+    - 폴더/파일 생성, 삭제, 이름 변경
+    - 폴더 펼침/접기, 우클릭 컨텍스트 메뉴
+    - 서브디렉토리 구조 지원 (예: `auth/login-flow.md`)
+  - 캔버스 파일 탭: `.ai-canvas/**/*.md` 파일 간 전환 (활성 탭 클릭 시 이름 변경)
+  - '+' 버튼: 새 캔버스 파일 생성
+  - 탭 우클릭 컨텍스트 메뉴: 이름 변경 / 복제 / 삭제
   - 저장 상태 표시기: 자동 저장 상태 (대기/저장 중/저장됨/오류)
 - **ErrorPopup**: AI 요청 오류 팝업
 - **SettingsModal**: 앱 설정 (테마, 언어 등)
@@ -112,8 +118,10 @@ interface AppState {
   
   // 프로젝트/캔버스 파일 관리
   projectPath: string | null;    // 선택된 프로젝트 경로
-  canvasFiles: string[];         // .ai-canvas 내 .md 파일 목록
-  activeCanvasFile: string | null; // 현재 열린 캔버스 파일명
+  canvasFiles: string[];         // .ai-canvas 내 .md 파일 목록 (서브디렉토리 포함)
+  activeCanvasFile: string | null; // 현재 열린 캔버스 파일명 (예: "auth/login.md")
+  canvasTree: TreeEntry[];       // 재귀적 폴더/파일 트리 구조
+  isFileExplorerOpen: boolean;   // 파일 탐색기 사이드바 열림 상태
 
   // 모델 선택 및 설정
   availableModels: AvailableModels;
@@ -172,6 +180,8 @@ ai-canvas/
 │   │   ├── SelectionAiPopup.tsx # 텍스트 선택 AI 팝업
 │   │   ├── DiffPreview.tsx      # AI 수정안 diff 미리보기
 │   │   ├── DiffPreview.css
+│   │   ├── FileExplorer.tsx     # 폴더 기반 트리 뷰 사이드바
+│   │   ├── FileExplorer.css
 │   │   └── ...
 │   ├── store/useStore.ts        # Zustand 상태
 │   ├── hooks/useChatRequest.ts  # 채팅 요청 훅 (Phase 1/2 흐름)

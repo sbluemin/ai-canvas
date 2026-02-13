@@ -129,6 +129,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:create-default-canvas', projectPath),
     openInExplorer: (projectPath: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('project:open-in-explorer', projectPath),
+    listCanvasTree: (projectPath: string): Promise<{ success: boolean; tree?: unknown[]; error?: string }> =>
+      ipcRenderer.invoke('project:list-canvas-tree', projectPath),
+    createCanvasFolder: (projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:create-canvas-folder', projectPath, folderPath),
+    deleteCanvasFolder: (projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:delete-canvas-folder', projectPath, folderPath),
+    moveCanvasFile: (projectPath: string, oldPath: string, newPath: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:move-canvas-file', projectPath, oldPath, newPath),
+    renameCanvasFolder: (projectPath: string, oldFolderPath: string, newFolderPath: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:rename-canvas-folder', projectPath, oldFolderPath, newFolderPath),
   },
   window: {
     create: (): Promise<{ success: boolean; error?: string }> =>

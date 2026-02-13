@@ -176,6 +176,10 @@ export function useChatRequest() {
               needsCanvasUpdate: event.needsCanvasUpdate,
               updatePlan: event.updatePlan,
             });
+            if (event.needsCanvasUpdate && event.updatePlan) {
+              saveCanvasSnapshot();
+              setAiPhase('updating');
+            }
             streamedPhase1MessageRef.current = event.message;
             if (hasStreamingAssistantRef.current) {
               setLastMessageContent(event.message);
