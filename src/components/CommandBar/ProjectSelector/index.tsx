@@ -1,4 +1,4 @@
-import { useStore, type Message, type Conversation, type AutosaveStatus, type SelectedModels } from '../../../store/useStore';
+import { useStore, type Message, type Conversation, type AutosaveStatus, type SelectedModels, type CanvasSnapshot } from '../../../store/useStore';
 import { api } from '../../../api';
 import { generateId } from '../../../utils';
 import './ProjectSelector.css';
@@ -117,6 +117,7 @@ export function ProjectSelector() {
     setAutosaveStatus,
     restoreSelectedModels,
     setSelectedVariant,
+    setSnapshots,
   } = useStore();
 
   const handleOpenProject = async () => {
@@ -185,6 +186,11 @@ export function ProjectSelector() {
         updatedAt: typeof rawStatus.updatedAt === 'number' ? rawStatus.updatedAt : Date.now(),
         message: typeof rawStatus.message === 'string' ? rawStatus.message : undefined,
       });
+    }
+
+    const versionResult = await api.readVersionHistory(path);
+    if (versionResult.success && Array.isArray(versionResult.snapshots)) {
+      setSnapshots(versionResult.snapshots as CanvasSnapshot[]);
     }
 
     if (orderedFiles.length > 0) {

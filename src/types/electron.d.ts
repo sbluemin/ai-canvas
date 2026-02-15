@@ -89,6 +89,8 @@ interface ProjectAPI {
   deleteCanvasFolder: (projectPath: string, folderPath: string) => Promise<{ success: boolean; error?: string }>;
   moveCanvasFile: (projectPath: string, oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>;
   renameCanvasFolder: (projectPath: string, oldFolderPath: string, newFolderPath: string) => Promise<{ success: boolean; error?: string }>;
+  readVersionHistory: (projectPath: string) => Promise<{ success: boolean; snapshots?: unknown[]; error?: string }>;
+  writeVersionHistory: (projectPath: string, snapshots: unknown[]) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface WindowAPI {

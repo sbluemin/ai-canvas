@@ -9,6 +9,9 @@ export {
   AUTOSAVE_STATUS_NAME,
   ASSET_DIR_NAME,
   DEFAULT_CANVAS_CONTENT,
+  VERSION_HISTORY_DIR_NAME,
+  VERSION_MANIFEST_NAME,
+  MAX_SNAPSHOTS_PER_FILE,
 } from './consts';
 
 export {
@@ -21,5 +24,6 @@ export {
   getWorkspacePath,
   getAutosaveStatusPath,
   getAssetsDirPath,
+  getVersionHistoryDirPath,
   markdownToBasicHtml,
 } from './utils';
