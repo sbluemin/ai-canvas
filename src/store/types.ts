@@ -59,6 +59,17 @@ export interface AppSettings {
   theme: 'dark' | 'light' | 'system';
 }
 
+export type SnapshotTrigger = 'ai' | 'manual';
+
+export interface CanvasSnapshot {
+  id: string;
+  timestamp: number;
+  content: string;
+  trigger: SnapshotTrigger;
+  fileName: string;
+  description?: string;
+}
+
 export interface ShareBundle {
   version: string;
   createdAt: string;
@@ -191,4 +202,16 @@ export interface DiffPreviewSlice {
   discardPendingPatch: () => void;
 }
 
-export type AppState = ChatSlice & UiSlice & ProjectSlice & ModelSlice & WritingGoalSlice & DiffPreviewSlice;
+export interface VersionHistorySlice {
+  canvasSnapshots: CanvasSnapshot[];
+  isVersionHistoryOpen: boolean;
+
+  addSnapshot: (trigger: SnapshotTrigger, description?: string) => void;
+  revertToSnapshot: (snapshotId: string) => void;
+  deleteSnapshot: (snapshotId: string) => void;
+  setSnapshots: (snapshots: CanvasSnapshot[]) => void;
+  toggleVersionHistory: () => void;
+  closeVersionHistory: () => void;
+}
+
+export type AppState = ChatSlice & UiSlice & ProjectSlice & ModelSlice & WritingGoalSlice & DiffPreviewSlice & VersionHistorySlice;

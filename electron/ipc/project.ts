@@ -191,6 +191,18 @@ export function registerProjectHandlers() {
     }
   });
 
+  // ─── 버전 히스토리 ───
+
+  handleIpc('project:read-version-history', async (_event: any, projectPath: string) => {
+    const result = await projectService.readVersionHistory(projectPath);
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, snapshots: result.data!.snapshots };
+  });
+
+  handleIpc('project:write-version-history', async (_event: any, projectPath: string, snapshots: unknown[]) => {
+    return projectService.writeVersionHistory(projectPath, snapshots as any[]);
+  });
+
   // ─── 탐색기 열기 ───
 
   handleIpc('project:open-in-explorer', async (_event: any, projectPath: string) => {

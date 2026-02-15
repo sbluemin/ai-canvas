@@ -5,6 +5,7 @@ import {
   WORKSPACE_NAME,
   AUTOSAVE_STATUS_NAME,
   ASSET_DIR_NAME,
+  VERSION_HISTORY_DIR_NAME,
 } from './consts';
 
 /**
@@ -70,6 +71,10 @@ export function getAutosaveStatusPath(projectPath: string): string {
 
 export function getAssetsDirPath(projectPath: string): string {
   return path.join(projectPath, AI_CANVAS_DIR, ASSET_DIR_NAME);
+}
+
+export function getVersionHistoryDirPath(projectPath: string): string {
+  return path.join(projectPath, AI_CANVAS_DIR, VERSION_HISTORY_DIR_NAME);
 }
 
 export function markdownToBasicHtml(markdown: string): string {

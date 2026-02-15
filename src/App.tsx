@@ -36,6 +36,7 @@ function App() {
     autosaveStatus,
     selectedModels,
     selectedVariant,
+    canvasSnapshots,
   } = useStore();
 
   useEffect(() => {
@@ -120,6 +121,17 @@ function App() {
 
     return () => window.clearTimeout(timer);
   }, [projectPath, conversations, activeConversationId, canvasFiles, autosaveStatus, selectedModels, selectedVariant]);
+
+  useEffect(() => {
+    if (!projectPath || canvasSnapshots.length === 0) return;
+    const timer = window.setTimeout(() => {
+      api.writeVersionHistory(projectPath, canvasSnapshots).catch((error: unknown) => {
+        logger.error('Version history save failed:', error);
+      });
+    }, AUTOSAVE_DELAY);
+
+    return () => window.clearTimeout(timer);
+  }, [projectPath, canvasSnapshots]);
 
   useEffect(() => {
     const handleResize = () => {

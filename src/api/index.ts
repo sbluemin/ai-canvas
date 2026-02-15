@@ -225,6 +225,16 @@ export const api = {
     return window.electronAPI.project.renameCanvasFolder(projectPath, oldFolderPath, newFolderPath);
   },
 
+  async readVersionHistory(projectPath: string): Promise<{ success: boolean; snapshots?: unknown[]; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.readVersionHistory(projectPath);
+  },
+
+  async writeVersionHistory(projectPath: string, snapshots: unknown[]): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.writeVersionHistory(projectPath, snapshots);
+  },
+
   async createWindow(): Promise<{ success: boolean; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.window.create();

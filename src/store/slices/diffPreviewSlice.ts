@@ -1,5 +1,6 @@
 import { StateCreator } from 'zustand';
 import { AppState, DiffPreviewSlice } from '../types';
+import { generateId } from '../../utils/id';
 
 export const createDiffPreviewSlice: StateCreator<AppState, [], [], DiffPreviewSlice> = (set) => ({
   pendingCanvasPatch: null,
@@ -57,7 +58,7 @@ export const createDiffPreviewSlice: StateCreator<AppState, [], [], DiffPreviewS
 
   applyPendingPatch: () => set((state) => {
     if (!state.pendingCanvasPatch) return state;
-    const { chunks } = state.pendingCanvasPatch;
+    const { chunks, originalContent } = state.pendingCanvasPatch;
     let result = '';
     for (const chunk of chunks) {
       if (chunk.type === 'equal') {
@@ -68,9 +69,29 @@ export const createDiffPreviewSlice: StateCreator<AppState, [], [], DiffPreviewS
         result += chunk.value;
       }
     }
+
+    // AI 적용 전 스냅샷 자동 저장
+    const activeCanvasFile = state.activeCanvasFile;
+    let updatedSnapshots = state.canvasSnapshots;
+    if (activeCanvasFile && originalContent) {
+      const snapshot = {
+        id: generateId('snap'),
+        timestamp: Date.now(),
+        content: originalContent,
+        trigger: 'ai' as const,
+        fileName: activeCanvasFile,
+        description: state.aiRun?.updatePlan,
+      };
+      const fileSnapshots = state.canvasSnapshots.filter(s => s.fileName === activeCanvasFile);
+      const otherSnapshots = state.canvasSnapshots.filter(s => s.fileName !== activeCanvasFile);
+      const newFileSnapshots = [snapshot, ...fileSnapshots].slice(0, 50);
+      updatedSnapshots = [...newFileSnapshots, ...otherSnapshots];
+    }
+
     return {
       canvasContent: result,
       pendingCanvasPatch: null,
+      canvasSnapshots: updatedSnapshots,
     };
   }),
 

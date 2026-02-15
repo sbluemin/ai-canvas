@@ -5,6 +5,7 @@ import { EditorToolbar } from './EditorToolbar';
 import { EditorProvider } from '../context/EditorContext';
 import { DiffPreview } from './DiffPreview';
 import { FileExplorer } from './FileExplorer';
+import { VersionHistory } from './VersionHistory';
 import { api } from '../api';
 import './CanvasPanel.css';
 
@@ -31,6 +32,8 @@ export function CanvasPanel() {
     isFileExplorerOpen,
     toggleFileExplorer,
     setCanvasTree,
+    isVersionHistoryOpen,
+    toggleVersionHistory,
   } = useStore();
   const [showOverlay, setShowOverlay] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -297,6 +300,14 @@ export function CanvasPanel() {
               </div>
               <div className="header-right">
                 {!pendingCanvasPatch && <EditorToolbar />}
+                <button
+                  type="button"
+                  className={`version-history-toggle-btn ${isVersionHistoryOpen ? 'active' : ''}`}
+                  onClick={toggleVersionHistory}
+                  title="버전 히스토리"
+                >
+                  🕐
+                </button>
                 <div className={`save-status-indicator ${autosaveStatus.state}`}>
                   {autosaveStatus.state === 'saving'
                     ? 'Saving...'
@@ -326,6 +337,7 @@ export function CanvasPanel() {
               </div>
             )}
           </div>
+          {isVersionHistoryOpen && <VersionHistory />}
         </div>
 
         {contextMenu && (

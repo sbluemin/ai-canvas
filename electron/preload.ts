@@ -111,6 +111,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:move-canvas-file', projectPath, oldPath, newPath),
     renameCanvasFolder: (projectPath: string, oldFolderPath: string, newFolderPath: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('project:rename-canvas-folder', projectPath, oldFolderPath, newFolderPath),
+    readVersionHistory: (projectPath: string): Promise<{ success: boolean; snapshots?: unknown[]; error?: string }> =>
+      ipcRenderer.invoke('project:read-version-history', projectPath),
+    writeVersionHistory: (projectPath: string, snapshots: unknown[]): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:write-version-history', projectPath, snapshots),
   },
   window: {
     create: (): Promise<{ success: boolean; error?: string }> =>

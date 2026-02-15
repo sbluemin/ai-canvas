@@ -13,6 +13,9 @@ import {
   DEFAULT_CANVAS_NAME,
   DEFAULT_CANVAS_CONTENT,
   ASSET_DIR_NAME,
+  VERSION_HISTORY_DIR_NAME,
+  VERSION_MANIFEST_NAME,
+  MAX_SNAPSHOTS_PER_FILE,
   getCanvasFilePath,
   getCanvasFolderPath,
   isValidCanvasFileName,
@@ -21,6 +24,7 @@ import {
   getWorkspacePath,
   getAutosaveStatusPath,
   getAssetsDirPath,
+  getVersionHistoryDirPath,
 } from '../core';
 
 // ─── 결과 타입 ───
@@ -319,6 +323,58 @@ export async function writeAutosaveStatus(projectPath: string, status: unknown):
     const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
     await fs.mkdir(canvasDir, { recursive: true });
     await fs.writeFile(autosaveStatusPath, JSON.stringify(status), 'utf-8');
+    return ok();
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+// ─── 버전 히스토리 ───
+
+export interface CanvasSnapshotData {
+  id: string;
+  timestamp: number;
+  content: string;
+  trigger: 'ai' | 'manual';
+  fileName: string;
+  description?: string;
+}
+
+export async function readVersionHistory(projectPath: string): Promise<ServiceResult<{ snapshots: CanvasSnapshotData[] }>> {
+  const versionDir = getVersionHistoryDirPath(projectPath);
+  const manifestPath = path.join(versionDir, VERSION_MANIFEST_NAME);
+  try {
+    const raw = await fs.readFile(manifestPath, 'utf-8');
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return ok({ snapshots: [] });
+    }
+    return ok({ snapshots: parsed as CanvasSnapshotData[] });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return ok({ snapshots: [] });
+    }
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function writeVersionHistory(projectPath: string, snapshots: CanvasSnapshotData[]): Promise<ServiceResult> {
+  const versionDir = getVersionHistoryDirPath(projectPath);
+  const manifestPath = path.join(versionDir, VERSION_MANIFEST_NAME);
+  try {
+    await fs.mkdir(versionDir, { recursive: true });
+    // 파일별 스냅샷 수 제한 적용
+    const byFile = new Map<string, CanvasSnapshotData[]>();
+    for (const snap of snapshots) {
+      const list = byFile.get(snap.fileName) ?? [];
+      list.push(snap);
+      byFile.set(snap.fileName, list);
+    }
+    const limited: CanvasSnapshotData[] = [];
+    for (const [, list] of byFile) {
+      limited.push(...list.slice(0, MAX_SNAPSHOTS_PER_FILE));
+    }
+    await fs.writeFile(manifestPath, JSON.stringify(limited, null, 2), 'utf-8');
     return ok();
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error));
