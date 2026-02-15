@@ -99,6 +99,27 @@
 ### 상태 관리 (Zustand)
 ```typescript
 // src/store/useStore.ts
+
+// 첨부 파일 메타데이터 (src/types/chat.ts)
+interface Attachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  filePath: string;       // .ai-canvas/assets/ 내 경로
+  base64?: string;        // API 전송용
+  thumbnailUrl?: string;  // 미리보기용 (data URL)
+}
+
+// Message 인터페이스 (attachments 필드 추가)
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  provider?: AiProvider;
+  attachments?: Attachment[];  // 첨부 파일 목록
+}
+
 interface AppState {
   messages: Message[];           // 채팅 히스토리
   conversations: Conversation[]; // 대화 목록
@@ -273,7 +294,7 @@ npm run build        # Electron 앱 프로덕션 빌드
 | 인증 | OpenCode CLI (`opencode auth login`) |
 
 ### AI 채팅 흐름
-1. 렌더러 → `ai:chat` IPC 요청 (runId, prompt, history, canvasContent, selection, modelId?, variant?, writingGoal?)
+1. 렌더러 → `ai:chat` IPC 요청 (runId, prompt, history, canvasContent, selection, modelId?, variant?, writingGoal?, attachments?)
 2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → `electron/ai/providerAdapter.ts` → `electron/ai-backend` API 계층 호출
 3. Phase 1 스트리밍 중 `message` 필드 부분 추출 → `ai:chat:event` 이벤트 송신 (`phase_message_stream`)
 4. Phase 1 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase1_result`)

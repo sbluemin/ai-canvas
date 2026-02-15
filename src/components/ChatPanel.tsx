@@ -12,6 +12,26 @@ import './ChatPanel.css';
 import { PlusIcon, MicrophoneIcon, SendIcon, ChevronDownIcon, CloseIcon, PaperclipIcon } from './Icons';
 
 
+const SUPPORTED_MIME_TYPES: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.pdf': 'application/pdf',
+};
+
+const SUPPORTED_EXTENSIONS = Object.keys(SUPPORTED_MIME_TYPES);
+
+function getMimeType(filePath: string): string {
+  const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
+  return SUPPORTED_MIME_TYPES[ext] || 'application/octet-stream';
+}
+
+function getFileName(filePath: string): string {
+  return filePath.split(/[/\\]/).pop() || filePath;
+}
+
 const OPENCODE_INFO = {
   name: 'OpenCode',
   icon: <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.4 }}>OC</span>,
@@ -48,24 +68,6 @@ export function ChatPanel() {
   })));
   const { sendMessage } = useChatRequest();
 
-  const SUPPORTED_MIME_TYPES: Record<string, string> = {
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.gif': 'image/gif',
-    '.webp': 'image/webp',
-    '.pdf': 'application/pdf',
-  };
-
-  const getMimeType = useCallback((filePath: string): string => {
-    const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
-    return SUPPORTED_MIME_TYPES[ext] || 'application/octet-stream';
-  }, []);
-
-  const getFileName = useCallback((filePath: string): string => {
-    return filePath.split(/[/\\]/).pop() || filePath;
-  }, []);
-
   const handleAttachFiles = useCallback(async () => {
     if (!api.isElectron) return;
     const filePaths = await api.showOpenDialogForAttachments();
@@ -93,7 +95,7 @@ export function ChatPanel() {
       }
     }
     setPendingAttachments((prev) => [...prev, ...newAttachments]);
-  }, [getMimeType, getFileName]);
+  }, []);
 
   const removeAttachment = useCallback((attachmentId: string) => {
     setPendingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
@@ -110,10 +112,9 @@ export function ChatPanel() {
     if (!api.isElectron) return;
 
     const files = Array.from(e.dataTransfer.files || []);
-    const supportedExts = Object.keys(SUPPORTED_MIME_TYPES);
     const validFiles = files.filter((file) => {
       const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-      return supportedExts.includes(ext);
+      return SUPPORTED_EXTENSIONS.includes(ext);
     });
 
     if (validFiles.length === 0) return;
@@ -147,7 +148,7 @@ export function ChatPanel() {
       }
     }
     setPendingAttachments((prev) => [...prev, ...newAttachments]);
-  }, [getMimeType]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
