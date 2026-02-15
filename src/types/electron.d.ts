@@ -30,6 +30,13 @@ interface AiChatRequest {
     tone: string;
     targetLength: 'short' | 'medium' | 'long';
   };
+  attachments?: {
+    id: string;
+    fileName: string;
+    mimeType: string;
+    filePath: string;
+    base64?: string;
+  }[];
 }
 
 type AiChatEvent =
@@ -99,8 +106,10 @@ interface ElectronAPI {
   platform: NodeJS.Platform;
   showSaveDialog: () => Promise<string | null>;
   showOpenDialog: () => Promise<string | null>;
+  showOpenDialogForAttachments: () => Promise<string[]>;
   writeFile: (filePath: string, content: string) => Promise<boolean>;
   readFile: (filePath: string) => Promise<string>;
+  readFileAsBase64: (filePath: string) => Promise<string>;
   ai: AiAPI;
   project: ProjectAPI;
   window: WindowAPI;

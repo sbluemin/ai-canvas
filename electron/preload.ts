@@ -32,6 +32,13 @@ export interface AiChatRequest {
     tone: string;
     targetLength: 'short' | 'medium' | 'long';
   };
+  attachments?: {
+    id: string;
+    fileName: string;
+    mimeType: string;
+    filePath: string;
+    base64?: string;
+  }[];
 }
 
 export type AiChatEvent =
@@ -47,8 +54,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   showSaveDialog: () => ipcRenderer.invoke('dialog:showSaveDialog'),
   showOpenDialog: () => ipcRenderer.invoke('dialog:showOpenDialog'),
+  showOpenDialogForAttachments: (): Promise<string[]> => ipcRenderer.invoke('dialog:showOpenDialogForAttachments'),
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
   readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
+  readFileAsBase64: (filePath: string): Promise<string> => ipcRenderer.invoke('fs:readFileAsBase64', filePath),
   
   ai: {
     chat: (request: AiChatRequest): Promise<{ success: boolean; error?: string }> => 

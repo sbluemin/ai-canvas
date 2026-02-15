@@ -9,7 +9,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
   isLoading: false,
   aiRun: null,
 
-  addMessage: (role, content, provider?) =>
+  addMessage: (role, content, provider?, attachments?) =>
     set((state) => {
       const nextMessage: Message = {
         id: generateId(),
@@ -17,6 +17,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
         content,
         timestamp: new Date(),
         ...(provider ? { provider } : {}),
+        ...(attachments && attachments.length > 0 ? { attachments } : {}),
       };
       const nextMessages = [...state.messages, nextMessage];
       const nextConversations = state.activeConversationId

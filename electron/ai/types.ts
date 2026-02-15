@@ -8,6 +8,16 @@ export interface WritingGoal {
   targetLength: 'short' | 'medium' | 'long';  // 목표 길이
 }
 
+/** 첨부 파일 메타데이터 */
+export interface Attachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  filePath: string;
+  base64?: string;
+  thumbnailUrl?: string;
+}
+
 export interface AiChatRequest {
   runId: string;
   prompt: string;
@@ -21,6 +31,7 @@ export interface AiChatRequest {
     after: string;
   };
   writingGoal?: WritingGoal;  // 문서 목표 메타데이터 (옵셔널)
+  attachments?: Attachment[]; // 첨부 파일 목록 (옵셔널)
 }
 
 export interface ConversationMessage {

@@ -26,6 +26,13 @@ export interface ChatRequestOptions {
   };
   modelId?: string;
   variant?: string;
+  attachments?: {
+    id: string;
+    fileName: string;
+    mimeType: string;
+    filePath: string;
+    base64?: string;
+  }[];
 }
 
 export const api = {
@@ -47,6 +54,13 @@ export const api = {
     return filename ? filename : null;
   },
 
+  async showOpenDialogForAttachments(): Promise<string[]> {
+    if (isElectron) {
+      return window.electronAPI.showOpenDialogForAttachments();
+    }
+    return [];
+  },
+
   async readFile(filePath: string): Promise<string> {
     if (isElectron) {
       return window.electronAPI.readFile(filePath);
@@ -54,6 +68,13 @@ export const api = {
     const response = await fetch(`/api/files?path=${encodeURIComponent(filePath)}`);
     if (!response.ok) throw new Error('File read failed');
     return response.text();
+  },
+
+  async readFileAsBase64(filePath: string): Promise<string> {
+    if (isElectron) {
+      return window.electronAPI.readFileAsBase64(filePath);
+    }
+    throw new Error('readFileAsBase64 is only available in Electron environment');
   },
 
   async writeFile(filePath: string, content: string): Promise<boolean> {
@@ -92,6 +113,7 @@ export const api = {
       variant: options?.variant,
       selection: options?.selection,
       writingGoal: options?.writingGoal,
+      attachments: options?.attachments,
     });
   },
 

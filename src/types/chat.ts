@@ -26,12 +26,23 @@ export type AvailableModels = Record<AiProvider, ModelInfo[]>;
 /** Provider별 선택된 모델 ID */
 export type SelectedModels = Record<AiProvider, string | null>;
 
+/** 첨부 파일 메타데이터 */
+export interface Attachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  filePath: string;       // .ai-canvas/assets/ 내 경로
+  base64?: string;        // API 전송용
+  thumbnailUrl?: string;  // 미리보기용 (data URL)
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
   provider?: AiProvider;
+  attachments?: Attachment[];
 }
 
 export interface ChatHistory {

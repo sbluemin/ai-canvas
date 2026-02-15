@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { useShallow } from 'zustand/react/shallow';
-import { useStore, Message } from '../store/useStore';
+import { useStore, Message, Attachment } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import { api } from '../api';
 import { AUTOSAVE_DELAY, generateId } from '../utils';
 import { Logo } from './Logo';
 import './ChatPanel.css';
-import { PlusIcon, MicrophoneIcon, SendIcon, ChevronDownIcon } from './Icons';
+import { PlusIcon, MicrophoneIcon, SendIcon, ChevronDownIcon, CloseIcon, PaperclipIcon } from './Icons';
 
 
 const OPENCODE_INFO = {
@@ -27,8 +27,10 @@ function getProviderInfo(provider?: string) {
 export function ChatPanel() {
   const [input, setInput] = useState('');
   const [isConversationMenuOpen, setIsConversationMenuOpen] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationMenuRef = useRef<HTMLDivElement>(null);
+  const inputAreaRef = useRef<HTMLDivElement>(null);
   
   const {
     messages, isLoading, aiRun, projectPath, conversations, activeConversationId,
@@ -46,6 +48,107 @@ export function ChatPanel() {
   })));
   const { sendMessage } = useChatRequest();
 
+  const SUPPORTED_MIME_TYPES: Record<string, string> = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.pdf': 'application/pdf',
+  };
+
+  const getMimeType = useCallback((filePath: string): string => {
+    const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
+    return SUPPORTED_MIME_TYPES[ext] || 'application/octet-stream';
+  }, []);
+
+  const getFileName = useCallback((filePath: string): string => {
+    return filePath.split(/[/\\]/).pop() || filePath;
+  }, []);
+
+  const handleAttachFiles = useCallback(async () => {
+    if (!api.isElectron) return;
+    const filePaths = await api.showOpenDialogForAttachments();
+    if (filePaths.length === 0) return;
+
+    const newAttachments: Attachment[] = [];
+    for (const filePath of filePaths) {
+      const mimeType = getMimeType(filePath);
+      const fileName = getFileName(filePath);
+      try {
+        const base64 = await api.readFileAsBase64(filePath);
+        const thumbnailUrl = mimeType.startsWith('image/')
+          ? `data:${mimeType};base64,${base64}`
+          : undefined;
+        newAttachments.push({
+          id: generateId('attach'),
+          fileName,
+          mimeType,
+          filePath,
+          base64,
+          thumbnailUrl,
+        });
+      } catch (error) {
+        console.error(`Failed to read file: ${filePath}`, error);
+      }
+    }
+    setPendingAttachments((prev) => [...prev, ...newAttachments]);
+  }, [getMimeType, getFileName]);
+
+  const removeAttachment = useCallback((attachmentId: string) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!api.isElectron) return;
+
+    const files = Array.from(e.dataTransfer.files || []);
+    const supportedExts = Object.keys(SUPPORTED_MIME_TYPES);
+    const validFiles = files.filter((file) => {
+      const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+      return supportedExts.includes(ext);
+    });
+
+    if (validFiles.length === 0) return;
+
+    const newAttachments: Attachment[] = [];
+    for (const file of validFiles) {
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            resolve(dataUrl.split(',')[1] ?? '');
+          };
+          reader.onerror = () => reject(new Error('File read failed'));
+          reader.readAsDataURL(file);
+        });
+        const mimeType = file.type || getMimeType(file.name);
+        const thumbnailUrl = mimeType.startsWith('image/')
+          ? `data:${mimeType};base64,${base64}`
+          : undefined;
+        newAttachments.push({
+          id: generateId('attach'),
+          fileName: file.name,
+          mimeType,
+          filePath: file.name,
+          base64,
+          thumbnailUrl,
+        });
+      } catch (error) {
+        console.error(`Failed to read dropped file: ${file.name}`, error);
+      }
+    }
+    setPendingAttachments((prev) => [...prev, ...newAttachments]);
+  }, [getMimeType]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -57,6 +160,10 @@ export function ChatPanel() {
       const serialized = messages.map((msg) => ({
         ...msg,
         timestamp: msg.timestamp.toISOString(),
+        // Strip base64 and thumbnailUrl from attachments to avoid bloating session file
+        ...(msg.attachments ? {
+          attachments: msg.attachments.map(({ base64: _b, thumbnailUrl: _t, ...rest }) => rest),
+        } : {}),
       }));
 
       api.writeChatSession(projectPath, serialized).catch((error: unknown) => {
@@ -107,11 +214,13 @@ export function ChatPanel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && pendingAttachments.length === 0) || isLoading) return;
 
     const prompt = input.trim();
+    const attachments = pendingAttachments.length > 0 ? [...pendingAttachments] : undefined;
     setInput('');
-    await sendMessage(prompt);
+    setPendingAttachments([]);
+    await sendMessage(prompt || 'Please analyze the attached file(s).', { attachments });
   };
 
   const isUpdatingCanvas = aiRun?.phase === 'updating';
@@ -179,6 +288,22 @@ export function ChatPanel() {
                   </div>
                 )}
                 <div className="message-content">
+                  {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
+                    <div className="message-attachments">
+                      {msg.attachments.map((att) => (
+                        <div key={att.id} className="message-attachment-item">
+                          {att.thumbnailUrl ? (
+                            <img src={att.thumbnailUrl} alt={att.fileName} className="attachment-thumbnail-msg" />
+                          ) : (
+                            <div className="attachment-file-icon">
+                              <PaperclipIcon />
+                            </div>
+                          )}
+                          <span className="attachment-name-msg">{att.fileName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {msg.content ? (
                     msg.role === 'assistant' ? (
                       <>
@@ -229,10 +354,34 @@ export function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="input-area">
+      <div className="input-area" ref={inputAreaRef} onDragOver={handleDragOver} onDrop={handleDrop}>
         <div className="input-wrapper">
+          {pendingAttachments.length > 0 && (
+            <div className="attachment-preview-bar">
+              {pendingAttachments.map((att) => (
+                <div key={att.id} className="attachment-preview-item">
+                  {att.thumbnailUrl ? (
+                    <img src={att.thumbnailUrl} alt={att.fileName} className="attachment-thumbnail" />
+                  ) : (
+                    <div className="attachment-file-badge">
+                      <PaperclipIcon />
+                    </div>
+                  )}
+                  <span className="attachment-filename">{att.fileName}</span>
+                  <button
+                    type="button"
+                    className="attachment-remove-btn"
+                    onClick={() => removeAttachment(att.id)}
+                    title="Remove attachment"
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <form className="input-form" onSubmit={handleSubmit}>
-            <button type="button" className="input-action-btn" title="Attach file">
+            <button type="button" className="input-action-btn" title="Attach file" onClick={handleAttachFiles} disabled={isLoading}>
               <PlusIcon />
             </button>
             <input
@@ -248,7 +397,7 @@ export function ChatPanel() {
             <button 
               type="submit" 
               className="send-btn"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || (!input.trim() && pendingAttachments.length === 0)}
             >
               <SendIcon />
             </button>
