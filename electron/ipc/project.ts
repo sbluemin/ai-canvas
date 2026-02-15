@@ -200,7 +200,7 @@ export function registerProjectHandlers() {
   });
 
   handleIpc('project:write-version-history', async (_event: any, projectPath: string, snapshots: unknown[]) => {
-    return projectService.writeVersionHistory(projectPath, snapshots as any[]);
+    return projectService.writeVersionHistory(projectPath, snapshots as projectService.CanvasSnapshotData[]);
   });
 
   // ─── 탐색기 열기 ───

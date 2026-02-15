@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { AppState, DiffPreviewSlice } from '../types';
 import { generateId } from '../../utils/id';
+import { MAX_SNAPSHOTS } from './versionHistorySlice';
 
 export const createDiffPreviewSlice: StateCreator<AppState, [], [], DiffPreviewSlice> = (set) => ({
   pendingCanvasPatch: null,
@@ -84,7 +85,7 @@ export const createDiffPreviewSlice: StateCreator<AppState, [], [], DiffPreviewS
       };
       const fileSnapshots = state.canvasSnapshots.filter(s => s.fileName === activeCanvasFile);
       const otherSnapshots = state.canvasSnapshots.filter(s => s.fileName !== activeCanvasFile);
-      const newFileSnapshots = [snapshot, ...fileSnapshots].slice(0, 50);
+      const newFileSnapshots = [snapshot, ...fileSnapshots].slice(0, MAX_SNAPSHOTS);
       updatedSnapshots = [...newFileSnapshots, ...otherSnapshots];
     }
 

@@ -2,7 +2,7 @@ import { StateCreator } from 'zustand';
 import { AppState, VersionHistorySlice, SnapshotTrigger } from '../types';
 import { generateId } from '../../utils/id';
 
-const MAX_SNAPSHOTS = 50;
+export const MAX_SNAPSHOTS = 50;
 
 export const createVersionHistorySlice: StateCreator<AppState, [], [], VersionHistorySlice> = (set) => ({
   canvasSnapshots: [],
