@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { MilkdownEditor } from './MilkdownEditor';
 import { EditorToolbar } from './EditorToolbar';
@@ -6,6 +6,7 @@ import { EditorProvider } from '../context/EditorContext';
 import { DiffPreview } from './DiffPreview';
 import { FileExplorer } from './FileExplorer';
 import { api } from '../api';
+import { calculateDocumentStats } from '../utils/documentStats';
 import './CanvasPanel.css';
 
 interface ContextMenuState {
@@ -41,6 +42,8 @@ export function CanvasPanel() {
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const isUpdating = aiRun?.phase === 'updating';
+
+  const documentStats = useMemo(() => calculateDocumentStats(canvasContent), [canvasContent]);
 
   useEffect(() => {
     if (isUpdating) {
@@ -323,6 +326,13 @@ export function CanvasPanel() {
             {projectPath && activeCanvasFile && (
               <div className="canvas-footer">
                 <span className="file-path">{projectPath}/.ai-canvas/{activeCanvasFile}</span>
+                <span className="document-stats">
+                  <span title="Words">{documentStats.words.toLocaleString()} words</span>
+                  <span className="stats-separator">·</span>
+                  <span title="Characters">{documentStats.characters.toLocaleString()} chars</span>
+                  <span className="stats-separator">·</span>
+                  <span title="Estimated reading time">{documentStats.readingTimeMinutes} min read</span>
+                </span>
               </div>
             )}
           </div>
