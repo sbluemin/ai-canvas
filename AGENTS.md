@@ -261,7 +261,8 @@ ai-canvas/
 │       └── quality_release_specialist.md
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
-│   │   └── feature_request.yml  # 기능 제안 이슈 템플릿
+│   │   ├── feature_request.yml  # 범용 기능 제안 이슈 템플릿
+│   │   └── ai_outline_generator_feature.md # AI 문서 개요 자동 생성 제안 이슈 템플릿
 │   └── workflows/
 │       └── publish.yml          # GitHub Release 빌드/배포 워크플로우
 ├── tests/                       # Playwright 테스트
