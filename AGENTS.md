@@ -33,6 +33,8 @@
   - **ModelSelector**: OpenCode 모델 컨트롤 (Provider / Model / Variant)
   - **ModelRefreshButton**: 사용 가능한 모델 목록 갱신
 - **ChatPanel**: 좌측 AI 채팅 패널 (SSE 스트리밍)
+  - `@파일경로` 멘션 파싱 후 파일 참조 메타데이터 전달 (파일 본문/바이너리 직접 첨부 없음)
+  - 프로젝트 루트 파일 인덱스 기반 `@` 자동완성 (IntelliSense 유사 키보드 탐색/선택)
 - **CanvasPanel**: 우측 마크다운 에디터 패널
   - **MilkdownEditor**: 마크다운 WYSIWYG
   - **EditorToolbar**: 서식 도구
@@ -76,14 +78,14 @@
 - **canvas.ts**: 캔버스 컨텍스트 포맷팅, 토큰 추정
 
 ### API 모듈 (`src/api/`)
-- **index.ts**: Electron/Web 분기 로직, IPC 래퍼
+- **index.ts**: Electron/Web 분기 로직, IPC 래퍼 (`project:list-project-files` 포함)
 
 ### IPC 핸들러 (`electron/ipc/`)
 - **index.ts**: IPC 핸들러 등록
 - **ai.ts**: AI 관련 IPC
 - **dialog.ts**: 파일/다이얼로그 IPC
 - **fs.ts**: 파일 읽기/쓰기 IPC
-- **project.ts**: 프로젝트/캔버스 관리 IPC
+- **project.ts**: 프로젝트/캔버스 관리 IPC (`project:list-project-files` 제공)
 - **window.ts**: 윈도우 제어 IPC
 
 ### 렌더러 프롬프트 (`src/prompts/`)
@@ -99,6 +101,24 @@
 ### 상태 관리 (Zustand)
 ```typescript
 // src/store/useStore.ts
+
+// 파일 멘션 메타데이터 (src/types/chat.ts)
+interface FileMention {
+  id: string;
+  fileName: string;
+  filePath: string;       // 프로젝트 기준 상대 경로 또는 입력 경로
+}
+
+// Message 인터페이스 (fileMentions 필드)
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  provider?: AiProvider;
+  fileMentions?: FileMention[];  // '@' 멘션 파일 참조 목록
+}
+
 interface AppState {
   messages: Message[];           // 채팅 히스토리
   conversations: Conversation[]; // 대화 목록
@@ -211,7 +231,7 @@ ai-canvas/
 │   │   └── window.ts
 │   ├── services/                # 비즈니스 로직 서비스
 │   │   ├── index.ts
-│   │   ├── project.service.ts   # 캔버스 CRUD, 세션, 에셋
+│   │   ├── project.service.ts   # 캔버스 CRUD, 세션, 에셋, 프로젝트 루트 파일 인덱스
 │   │   └── export.service.ts    # HTML/PDF/DOCX 내보내기
 │   ├── ai/                      # AI 오케스트레이션 레이어
 │   │   ├── workflow.ts          # Phase 1/2 실행 흐름
@@ -273,7 +293,7 @@ npm run build        # Electron 앱 프로덕션 빌드
 | 인증 | OpenCode CLI (`opencode auth login`) |
 
 ### AI 채팅 흐름
-1. 렌더러 → `ai:chat` IPC 요청 (runId, prompt, history, canvasContent, selection, modelId?, variant?, writingGoal?)
+1. 렌더러 → `ai:chat` IPC 요청 (runId, prompt, history, canvasContent, selection, modelId?, variant?, writingGoal?, fileMentions?)
 2. `electron/ai/workflow.ts` → Phase 1 프롬프트 생성 → `electron/ai/providerAdapter.ts` → `electron/ai-backend` API 계층 호출
 3. Phase 1 스트리밍 중 `message` 필드 부분 추출 → `ai:chat:event` 이벤트 송신 (`phase_message_stream`)
 4. Phase 1 응답 파싱 완료 → `ai:chat:event` 이벤트 송신 (`phase1_result`)

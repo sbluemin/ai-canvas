@@ -30,6 +30,11 @@ interface AiChatRequest {
     tone: string;
     targetLength: 'short' | 'medium' | 'long';
   };
+  fileMentions?: {
+    id: string;
+    fileName: string;
+    filePath: string;
+  }[];
 }
 
 type AiChatEvent =
@@ -85,6 +90,7 @@ interface ProjectAPI {
   createDefaultCanvas: (projectPath: string) => Promise<{ success: boolean; fileName?: string; error?: string }>;
   openInExplorer: (projectPath: string) => Promise<{ success: boolean; error?: string }>;
   listCanvasTree: (projectPath: string) => Promise<{ success: boolean; tree?: unknown[]; error?: string }>;
+  listProjectFiles: (projectPath: string) => Promise<{ success: boolean; files?: string[]; error?: string }>;
   createCanvasFolder: (projectPath: string, folderPath: string) => Promise<{ success: boolean; error?: string }>;
   deleteCanvasFolder: (projectPath: string, folderPath: string) => Promise<{ success: boolean; error?: string }>;
   moveCanvasFile: (projectPath: string, oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>;

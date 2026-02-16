@@ -26,12 +26,20 @@ export type AvailableModels = Record<AiProvider, ModelInfo[]>;
 /** Provider별 선택된 모델 ID */
 export type SelectedModels = Record<AiProvider, string | null>;
 
+/** 채팅 파일 멘션 메타데이터 */
+export interface FileMention {
+  id: string;
+  fileName: string;
+  filePath: string;       // 프로젝트 기준 상대 경로 또는 입력 경로
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
   provider?: AiProvider;
+  fileMentions?: FileMention[];
 }
 
 export interface ChatHistory {

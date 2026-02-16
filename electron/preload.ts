@@ -32,6 +32,11 @@ export interface AiChatRequest {
     tone: string;
     targetLength: 'short' | 'medium' | 'long';
   };
+  fileMentions?: {
+    id: string;
+    fileName: string;
+    filePath: string;
+  }[];
 }
 
 export type AiChatEvent =
@@ -103,6 +108,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:open-in-explorer', projectPath),
     listCanvasTree: (projectPath: string): Promise<{ success: boolean; tree?: unknown[]; error?: string }> =>
       ipcRenderer.invoke('project:list-canvas-tree', projectPath),
+    listProjectFiles: (projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> =>
+      ipcRenderer.invoke('project:list-project-files', projectPath),
     createCanvasFolder: (projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('project:create-canvas-folder', projectPath, folderPath),
     deleteCanvasFolder: (projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> =>

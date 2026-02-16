@@ -47,6 +47,12 @@ export function registerProjectHandlers() {
     return { success: true, tree: result.data!.tree };
   });
 
+  handleIpc('project:list-project-files', async (_event: any, projectPath: string) => {
+    const result = await projectService.listProjectFiles(projectPath);
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, files: result.data!.files };
+  });
+
   // ─── 폴더 CRUD ───
 
   handleIpc('project:create-canvas-folder', async (_event: any, projectPath: string, folderPath: string) => {

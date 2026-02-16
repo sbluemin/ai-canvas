@@ -238,10 +238,10 @@ export class OpenCodeRuntime {
     });
   }
 
-  /** `opencode models --verbose` 명령을 실행한다. */
+  /** `opencode models --refresh --verbose` 명령을 실행해 캐시를 갱신한 뒤 전체 모델 목록을 반환한다. */
   async runModelsVerbose(): Promise<string> {
     return new Promise((resolve, reject) => {
-      const child = this.createChild(['models', '--verbose']);
+      const child = this.createChild(['models', '--refresh', '--verbose']);
       const stdout = child.stdout;
       const stderr = child.stderr;
 

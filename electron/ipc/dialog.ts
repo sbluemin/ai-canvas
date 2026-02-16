@@ -19,4 +19,5 @@ export function registerDialogHandlers() {
     }
     return result.filePaths[0];
   });
+
 }

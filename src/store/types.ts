@@ -1,6 +1,6 @@
-import { AiProvider, ModelInfo, AvailableModels, SelectedModels, WritingGoal, WritingGoalPreset } from '../types/chat';
+import { AiProvider, FileMention, ModelInfo, AvailableModels, SelectedModels, WritingGoal, WritingGoalPreset } from '../types/chat';
 
-export type { AiProvider, ModelInfo, AvailableModels, SelectedModels, WritingGoal, WritingGoalPreset };
+export type { AiProvider, FileMention, ModelInfo, AvailableModels, SelectedModels, WritingGoal, WritingGoalPreset };
 
 export interface TreeEntry {
   name: string;
@@ -15,6 +15,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   provider?: AiProvider;
+  fileMentions?: FileMention[];
 }
 
 export interface Conversation {
@@ -76,7 +77,7 @@ export interface ChatSlice {
   isLoading: boolean;
   aiRun: AiRunState | null;
 
-  addMessage: (role: 'user' | 'assistant', content: string, provider?: AiProvider) => void;
+  addMessage: (role: 'user' | 'assistant', content: string, provider?: AiProvider, fileMentions?: FileMention[]) => void;
   removeLastUserMessage: () => void;
   removeLastAssistantMessage: () => void;
   updateLastMessage: (content: string) => void;

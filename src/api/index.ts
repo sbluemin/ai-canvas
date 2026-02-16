@@ -26,6 +26,11 @@ export interface ChatRequestOptions {
   };
   modelId?: string;
   variant?: string;
+  fileMentions?: {
+    id: string;
+    fileName: string;
+    filePath: string;
+  }[];
 }
 
 export const api = {
@@ -92,6 +97,7 @@ export const api = {
       variant: options?.variant,
       selection: options?.selection,
       writingGoal: options?.writingGoal,
+      fileMentions: options?.fileMentions,
     });
   },
 
@@ -203,6 +209,11 @@ export const api = {
   async listCanvasTree(projectPath: string): Promise<{ success: boolean; tree?: unknown[]; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.listCanvasTree(projectPath);
+  },
+
+  async listProjectFiles(projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.listProjectFiles(projectPath);
   },
 
   async createCanvasFolder(projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> {
