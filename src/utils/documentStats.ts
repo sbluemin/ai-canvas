@@ -8,7 +8,7 @@ export interface DocumentStats {
  * Strips markdown syntax to extract plain text for accurate counting.
  */
 function stripMarkdown(markdown: string): string {
-  return markdown
+  let result = markdown
     // Remove code blocks
     .replace(/```[\s\S]*?```/g, '')
     // Remove inline code
@@ -25,13 +25,20 @@ function stripMarkdown(markdown: string): string {
     .replace(/~~(.*?)~~/g, '$1')
     // Remove horizontal rules
     .replace(/^[-*_]{3,}\s*$/gm, '')
-    // Remove HTML tags
-    .replace(/<[^>]+>/g, '')
     // Remove blockquote markers
     .replace(/^>\s+/gm, '')
     // Remove list markers
     .replace(/^[\s]*[-*+]\s+/gm, '')
     .replace(/^[\s]*\d+\.\s+/gm, '');
+
+  // Remove HTML tags iteratively to handle nested patterns
+  let prev = '';
+  while (prev !== result) {
+    prev = result;
+    result = result.replace(/<[^>]+>/g, '');
+  }
+
+  return result;
 }
 
 /**
