@@ -7,7 +7,7 @@
 }
 
 :root {
-  /* Gemini Canvas 다크 테마 색상 팔레트 */
+  /* Gemini Canvas 다크 테마 색상 팔레트 (기본값) */
   --bg-primary: #131314;        /* 메인 배경 (매우 어두운 차콜) */
   --bg-secondary: #1e1f20;      /* 패널 배경 */
   --bg-tertiary: #282a2c;       /* 카드/요소 배경 */
@@ -43,6 +43,31 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-full: 9999px;
+}
+
+[data-theme='light'] {
+  /* Gemini Canvas 라이트 테마 색상 팔레트 */
+  --bg-primary: #ffffff;        /* 메인 배경 */
+  --bg-secondary: #f8f9fa;      /* 패널 배경 */
+  --bg-tertiary: #f1f3f4;       /* 카드/요소 배경 */
+  --bg-hover: #e8eaed;          /* 호버 상태 */
+  --bg-input: #f1f3f4;          /* 입력 필드 배경 */
+  --bg-surface: #ffffff;        /* 서피스 배경 */
+  
+  --border-color: #dadce0;      /* 테두리 */
+  --border-light: #e8eaed;      /* 밝은 테두리 */
+  --border-subtle: #f1f3f4;     /* 미묘한 테두리 */
+  
+  --text-primary: #202124;      /* 주요 텍스트 */
+  --text-secondary: #5f6368;    /* 보조 텍스트 */
+  --text-muted: #70757a;        /* 흐린 텍스트 */
+  --text-hint: #80868b;         /* 힌트 텍스트 */
+  
+  --accent-blue: #1a73e8;       /* 파란색 액센트 */
+  --accent-blue-dim: #185abc;   /* 진한 파란색 */
+  --accent-purple: #9333ea;     /* 보라색 액센트 */
+  --accent-green: #1e8e3e;      /* 녹색 */
+  --accent-selection: rgba(26, 115, 232, 0.1);  /* 선택 영역 */
 }
 
 html, body, #root {
@@ -120,7 +145,7 @@ html, body, #root {
   z-index: 1000;
   width: 44px;
   height: 44px;
-  background: #131314;
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   cursor: pointer;

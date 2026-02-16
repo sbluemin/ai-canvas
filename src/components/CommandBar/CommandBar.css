@@ -1,6 +1,6 @@
 .command-bar {
   height: 56px;
-  background: #131314;
+  background: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -45,17 +45,17 @@
 }
 
 .settings-btn {
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f3f4f6;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-size: 12px;
   padding: 6px 10px;
   cursor: pointer;
 }
 
 .settings-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--bg-hover);
 }
 
 /* 문서 목표 활성화 표시 */

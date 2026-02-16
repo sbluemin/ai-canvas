@@ -47,6 +47,8 @@ export type AiChatEvent =
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
   | { runId: string; type: 'done' };
 
+type ThemeMode = 'dark' | 'light' | 'system';
+
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
   
@@ -118,6 +120,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:move-canvas-file', projectPath, oldPath, newPath),
     renameCanvasFolder: (projectPath: string, oldFolderPath: string, newFolderPath: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('project:rename-canvas-folder', projectPath, oldFolderPath, newFolderPath),
+  },
+  settings: {
+    read: (): Promise<{ success: boolean; settings?: { theme: ThemeMode }; error?: string }> =>
+      ipcRenderer.invoke('settings:read'),
+    write: (settings: { theme: ThemeMode }): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('settings:write', settings),
   },
   window: {
     create: (): Promise<{ success: boolean; error?: string }> =>

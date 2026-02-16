@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
 import { CommandBar } from './components/CommandBar';
@@ -25,6 +25,7 @@ function App() {
     setAvailableModels,
     setModelsLoading,
     settings,
+    setTheme,
     toggleSettings,
     addToast,
     projectPath,
@@ -37,6 +38,7 @@ function App() {
     selectedModels,
     selectedVariant,
   } = useStore();
+  const isThemeHydratedRef = useRef(false);
 
   useEffect(() => {
     const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
@@ -62,7 +64,50 @@ function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.dataset.theme = settings.theme;
+    
+    const applyTheme = () => {
+      if (settings.theme === 'system') {
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.dataset.theme = isDark ? 'dark' : 'light';
+      } else {
+        root.dataset.theme = settings.theme;
+      }
+    };
+
+    applyTheme();
+
+    if (settings.theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => applyTheme();
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [settings.theme]);
+
+  useEffect(() => {
+    const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
+    if (!isElectron) {
+      isThemeHydratedRef.current = true;
+      return;
+    }
+
+    api.readAppSettings()
+      .then((result) => {
+        if (result.success && result.settings?.theme) {
+          setTheme(result.settings.theme);
+        }
+      })
+      .finally(() => {
+        isThemeHydratedRef.current = true;
+      });
+  }, [setTheme]);
+
+  useEffect(() => {
+    if (!isThemeHydratedRef.current) return;
+    api.writeAppSettings({ theme: settings.theme }).catch((error: unknown) => {
+      logger.error('App settings save failed:', error);
+    });
   }, [settings.theme]);
 
   useEffect(() => {

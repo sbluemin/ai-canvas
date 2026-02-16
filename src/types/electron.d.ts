@@ -101,6 +101,13 @@ interface WindowAPI {
   create: () => Promise<{ success: boolean; error?: string }>;
 }
 
+type ThemeMode = 'dark' | 'light' | 'system';
+
+interface SettingsAPI {
+  read: () => Promise<{ success: boolean; settings?: { theme: ThemeMode }; error?: string }>;
+  write: (settings: { theme: ThemeMode }) => Promise<{ success: boolean; error?: string }>;
+}
+
 interface ElectronAPI {
   platform: NodeJS.Platform;
   showSaveDialog: () => Promise<string | null>;
@@ -109,6 +116,7 @@ interface ElectronAPI {
   readFile: (filePath: string) => Promise<string>;
   ai: AiAPI;
   project: ProjectAPI;
+  settings: SettingsAPI;
   window: WindowAPI;
 }
 

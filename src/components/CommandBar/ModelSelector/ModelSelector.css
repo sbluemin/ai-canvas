@@ -14,10 +14,10 @@
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f3f4f6;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
@@ -26,17 +26,17 @@
 }
 
 .model-selector-label {
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-muted);
   font-size: 11px;
 }
 
 .model-selector-trigger:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--bg-hover);
 }
 
 .model-selector-trigger.open {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--bg-hover);
+  border-color: var(--border-light);
 }
 
 .model-selector-trigger:disabled {
@@ -62,8 +62,8 @@
   top: calc(100% + 6px);
   left: 0;
   min-width: 220px;
-  background: #1e1f20;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 4px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -99,7 +99,7 @@
 }
 
 .model-selector-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--border-light);
   border-radius: 2px;
 }
 
@@ -111,7 +111,7 @@
   background: none;
   border: none;
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -120,13 +120,13 @@
 }
 
 .model-selector-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.95);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .model-selector-item.selected {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .model-name {
@@ -138,7 +138,7 @@
 
 .model-date {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 

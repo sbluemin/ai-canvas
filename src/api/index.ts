@@ -12,6 +12,8 @@ type AiChatEvent =
 
 export type { AiProvider };
 
+type ThemeMode = 'dark' | 'light' | 'system';
+
 export interface ChatRequestOptions {
   selection?: {
     text: string;
@@ -234,6 +236,16 @@ export const api = {
   async renameCanvasFolder(projectPath: string, oldFolderPath: string, newFolderPath: string): Promise<{ success: boolean; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.renameCanvasFolder(projectPath, oldFolderPath, newFolderPath);
+  },
+
+  async readAppSettings(): Promise<{ success: boolean; settings?: { theme: ThemeMode }; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.settings.read();
+  },
+
+  async writeAppSettings(settings: { theme: ThemeMode }): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.settings.write(settings);
   },
 
   async createWindow(): Promise<{ success: boolean; error?: string }> {
