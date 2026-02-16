@@ -8,6 +8,13 @@ export interface WritingGoal {
   targetLength: 'short' | 'medium' | 'long';  // 목표 길이
 }
 
+/** 채팅 파일 멘션 메타데이터 */
+export interface FileMention {
+  id: string;
+  fileName: string;
+  filePath: string;
+}
+
 export interface AiChatRequest {
   runId: string;
   prompt: string;
@@ -21,6 +28,7 @@ export interface AiChatRequest {
     after: string;
   };
   writingGoal?: WritingGoal;  // 문서 목표 메타데이터 (옵셔널)
+  fileMentions?: FileMention[]; // 채팅 파일 멘션 목록 (옵셔널)
 }
 
 export interface ConversationMessage {

@@ -1,5 +1,5 @@
 import { truncateToFit } from './canvas';
-import type { WritingGoal } from '../ai/types';
+import type { WritingGoal, FileMention } from '../ai/types';
 
 export interface PromptOptions {
   maxCanvasLength?: number;
@@ -9,6 +9,7 @@ export interface PromptOptions {
     after: string;
   };
   writingGoal?: WritingGoal;  // 문서 목표 메타데이터 (옵셔널)
+  fileMentions?: FileMention[]; // 채팅 파일 멘션 목록 (옵셔널)
 }
 
 export interface ConversationMessage {
@@ -47,6 +48,14 @@ Target Length: ${options.writingGoal.targetLength}
 `
     : '';
 
+  const fileMentionsBlock = options?.fileMentions && options.fileMentions.length > 0
+    ? `
+<file_mentions>
+${options.fileMentions.map((m) => `- [@${m.filePath}](project://${m.filePath})`).join('\n')}
+</file_mentions>
+`
+    : '';
+
   const historyBlock = history.length > 0
     ? `<conversation_history>
 ${formatHistory(history)}
@@ -63,6 +72,7 @@ ${truncatedCanvas}
 </canvas>
 ${selectionBlock}
 ${writingGoalBlock}
+${fileMentionsBlock}
 ${historyBlock}
 <user_request>
 ${userRequest}

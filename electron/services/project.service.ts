@@ -78,6 +78,28 @@ interface TreeEntry {
   children?: TreeEntry[];
 }
 
+const PROJECT_FILE_IGNORE_DIRS = new Set([
+  'node_modules',
+  '.git',
+  '.svn',
+  '.hg',
+  '.idea',
+  '.vscode',
+  'dist',
+  'build',
+  'release',
+  'coverage',
+  'out',
+  'tmp',
+  'temp',
+]);
+
+const PROJECT_FILE_IGNORE_FILES = new Set([
+  '.DS_Store',
+]);
+
+const MAX_PROJECT_FILE_RESULTS = 5000;
+
 async function readDirRecursive(dirPath: string, relativePath: string): Promise<TreeEntry[]> {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
   const result: TreeEntry[] = [];
@@ -102,6 +124,38 @@ async function readDirRecursive(dirPath: string, relativePath: string): Promise<
   return result;
 }
 
+async function collectProjectFilesRecursive(baseDir: string, currentDir: string, files: string[]): Promise<void> {
+  const entries = await fs.readdir(currentDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (files.length >= MAX_PROJECT_FILE_RESULTS) {
+      return;
+    }
+
+    const fullPath = path.join(currentDir, entry.name);
+    const relPath = path.relative(baseDir, fullPath).split(path.sep).join('/');
+
+    if (entry.isDirectory()) {
+      if (entry.name.startsWith('.') || PROJECT_FILE_IGNORE_DIRS.has(entry.name)) {
+        continue;
+      }
+
+      await collectProjectFilesRecursive(baseDir, fullPath, files);
+      continue;
+    }
+
+    if (!entry.isFile()) {
+      continue;
+    }
+
+    if (PROJECT_FILE_IGNORE_FILES.has(entry.name)) {
+      continue;
+    }
+
+    files.push(relPath);
+  }
+}
+
 export async function listCanvasTree(projectPath: string): Promise<ServiceResult<{ tree: TreeEntry[] }>> {
   const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
   try {
@@ -110,6 +164,20 @@ export async function listCanvasTree(projectPath: string): Promise<ServiceResult
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return ok({ tree: [] });
+    }
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function listProjectFiles(projectPath: string): Promise<ServiceResult<{ files: string[] }>> {
+  try {
+    const files: string[] = [];
+    await collectProjectFilesRecursive(projectPath, projectPath, files);
+    files.sort((a, b) => a.localeCompare(b));
+    return ok({ files });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return ok({ files: [] });
     }
     return fail(error instanceof Error ? error.message : String(error));
   }

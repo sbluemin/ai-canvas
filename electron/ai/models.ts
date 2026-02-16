@@ -50,10 +50,24 @@ function sortModels(models: ModelInfo[]): ModelInfo[] {
   });
 }
 
+/** ANSI 이스케이프 코드를 제거한다 (모델 헤더/JSON 파싱 전처리용) */
+function stripAnsi(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+}
+
+/**
+ * 라인에서 "provider/model" 토큰을 추출한다.
+ * - ANSI 제거 후 검사
+ * - strict full-line 대신 "라인 시작의 provider/model 토큰 추출" 방식으로 완화
+ *   (단, 토큰 이후에 공백·괄호·콜론 등 부가 텍스트가 있어도 파싱 성공)
+ * - provider/model 모두 alphanumeric + 하이픈/점/밑줄 허용
+ */
 function tryParseModelHeader(line: string): string | null {
-  const trimmed = line.trim();
-  if (!trimmed) return null;
-  return /^[a-z0-9-]+\/[a-z0-9._-]+$/i.test(trimmed) ? trimmed : null;
+  const clean = stripAnsi(line).trim();
+  if (!clean) return null;
+  const match = /^([a-z0-9-]+\/[a-z0-9._-]+)/i.exec(clean);
+  return match ? match[1] : null;
 }
 
 function parseOpenCodeVerboseOutput(stdout: string): ModelInfo[] {
@@ -95,7 +109,7 @@ function parseOpenCodeVerboseOutput(stdout: string): ModelInfo[] {
       }
     }
 
-    const rawBlock = blockLines.join('\n');
+    const rawBlock = stripAnsi(blockLines.join('\n'));
     try {
       const parsed = JSON.parse(rawBlock) as OpenCodeVerboseModelData;
       const [providerId, ...modelParts] = modelKey.split('/');

@@ -1,3 +1,0 @@
-Learned: Refactoring Electron IPC handlers into separate modules improves main process maintainability. Using 'registerIpcHandlers' pattern allows clean separation of concerns. Environment issues with types can be mitigated by manual verification and structural checks.
-Learned: When working in a restricted environment with missing types, creating a local declaration file (e.g., electron/types.d.ts) is a viable strategy to satisfy the TypeScript compiler and verify code correctness.
-Learned: Merge conflicts with unrelated histories can be tricky. Using 'git checkout origin/develop' to forcibly overwrite problematic files is effective. Always verify file content after checkout.
