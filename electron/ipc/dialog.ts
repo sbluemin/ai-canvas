@@ -20,19 +20,4 @@ export function registerDialogHandlers() {
     return result.filePaths[0];
   });
 
-  handleIpc('dialog:showOpenDialogForAttachments', async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openFile', 'multiSelections'],
-      filters: [
-        {
-          name: 'Images & Documents',
-          extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'],
-        },
-      ],
-    });
-    if (result.canceled || result.filePaths.length === 0) {
-      return [];
-    }
-    return result.filePaths;
-  });
 }

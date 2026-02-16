@@ -32,12 +32,10 @@ export interface AiChatRequest {
     tone: string;
     targetLength: 'short' | 'medium' | 'long';
   };
-  attachments?: {
+  fileMentions?: {
     id: string;
     fileName: string;
-    mimeType: string;
     filePath: string;
-    base64?: string;
   }[];
 }
 
@@ -54,10 +52,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   showSaveDialog: () => ipcRenderer.invoke('dialog:showSaveDialog'),
   showOpenDialog: () => ipcRenderer.invoke('dialog:showOpenDialog'),
-  showOpenDialogForAttachments: (): Promise<string[]> => ipcRenderer.invoke('dialog:showOpenDialogForAttachments'),
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
   readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
-  readFileAsBase64: (filePath: string): Promise<string> => ipcRenderer.invoke('fs:readFileAsBase64', filePath),
   
   ai: {
     chat: (request: AiChatRequest): Promise<{ success: boolean; error?: string }> => 
@@ -112,6 +108,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:open-in-explorer', projectPath),
     listCanvasTree: (projectPath: string): Promise<{ success: boolean; tree?: unknown[]; error?: string }> =>
       ipcRenderer.invoke('project:list-canvas-tree', projectPath),
+    listProjectFiles: (projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> =>
+      ipcRenderer.invoke('project:list-project-files', projectPath),
     createCanvasFolder: (projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('project:create-canvas-folder', projectPath, folderPath),
     deleteCanvasFolder: (projectPath: string, folderPath: string): Promise<{ success: boolean; error?: string }> =>

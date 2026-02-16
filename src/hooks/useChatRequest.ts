@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useStore, ErrorInfo, Attachment, DiffChunk, PendingCanvasPatch } from '../store/useStore';
+import { useStore, ErrorInfo, FileMention, DiffChunk, PendingCanvasPatch } from '../store/useStore';
 import { api } from '../api';
 import { diffLines } from 'diff';
 
@@ -11,7 +11,7 @@ export interface SelectionContext {
 
 export interface ChatRequestOptions {
   selection?: SelectionContext;
-  attachments?: Attachment[];
+  fileMentions?: FileMention[];
 }
 
 function buildPendingPatch(runId: string, originalContent: string, proposedContent: string): PendingCanvasPatch {
@@ -266,7 +266,7 @@ export function useChatRequest() {
     async (prompt: string, options?: ChatRequestOptions) => {
       if (!prompt.trim()) return;
 
-      addMessage('user', prompt, undefined, options?.attachments);
+      addMessage('user', prompt, undefined, options?.fileMentions);
       setIsLoading(true);
       const runId = startAiRun();
       currentRunIdRef.current = runId;
@@ -290,12 +290,10 @@ export function useChatRequest() {
         canvasContent,
         {
           selection: options?.selection,
-          attachments: options?.attachments?.map((a) => ({
+          fileMentions: options?.fileMentions?.map((a) => ({
             id: a.id,
             fileName: a.fileName,
-            mimeType: a.mimeType,
             filePath: a.filePath,
-            base64: a.base64,
           })),
           modelId,
           variant: selectedVariant ?? undefined,

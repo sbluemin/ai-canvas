@@ -482,89 +482,79 @@
   cursor: not-allowed;
 }
 
-/* ─── Attachment Preview Bar ─── */
-
-.attachment-preview-bar {
+.mention-autocomplete {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg-surface), transparent 8%);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  z-index: 50;
+}
+
+.mention-autocomplete-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding: 10px 12px 6px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.attachment-preview-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  color: var(--text-secondary);
-  max-width: 180px;
-}
-
-.attachment-thumbnail {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.attachment-file-badge {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-hover);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.attachment-filename {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.attachment-remove-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background: transparent;
+  width: 100%;
+  padding: 8px 10px;
   border: none;
-  border-radius: var(--radius-full);
-  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 12px;
   cursor: pointer;
-  padding: 0;
-  flex-shrink: 0;
-  transition: all 0.15s;
 }
 
-.attachment-remove-btn:hover {
+.mention-autocomplete-item:hover,
+.mention-autocomplete-item.active {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
 
-/* ─── Message Attachments ─── */
+.mention-autocomplete-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
 
-.message-attachments {
+.mention-autocomplete-name {
+  color: var(--text-muted);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.mention-autocomplete-info {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+/* ─── Message File Mentions ─── */
+
+.message-file-mentions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 8px;
 }
 
-.message-attachment-item {
+.message-file-mention-item {
   display: flex;
   align-items: center;
-  gap: 6px;
   padding: 4px 8px;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -573,27 +563,12 @@
   color: var(--text-muted);
 }
 
-.attachment-thumbnail-msg {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-}
-
-.attachment-file-icon {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-}
-
-.attachment-name-msg {
-  max-width: 120px;
+.file-mention-path {
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: 'SF Mono', 'Fira Code', monospace;
 }
 
 .updating-badge {

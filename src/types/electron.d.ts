@@ -30,12 +30,10 @@ interface AiChatRequest {
     tone: string;
     targetLength: 'short' | 'medium' | 'long';
   };
-  attachments?: {
+  fileMentions?: {
     id: string;
     fileName: string;
-    mimeType: string;
     filePath: string;
-    base64?: string;
   }[];
 }
 
@@ -92,6 +90,7 @@ interface ProjectAPI {
   createDefaultCanvas: (projectPath: string) => Promise<{ success: boolean; fileName?: string; error?: string }>;
   openInExplorer: (projectPath: string) => Promise<{ success: boolean; error?: string }>;
   listCanvasTree: (projectPath: string) => Promise<{ success: boolean; tree?: unknown[]; error?: string }>;
+  listProjectFiles: (projectPath: string) => Promise<{ success: boolean; files?: string[]; error?: string }>;
   createCanvasFolder: (projectPath: string, folderPath: string) => Promise<{ success: boolean; error?: string }>;
   deleteCanvasFolder: (projectPath: string, folderPath: string) => Promise<{ success: boolean; error?: string }>;
   moveCanvasFile: (projectPath: string, oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>;
@@ -106,10 +105,8 @@ interface ElectronAPI {
   platform: NodeJS.Platform;
   showSaveDialog: () => Promise<string | null>;
   showOpenDialog: () => Promise<string | null>;
-  showOpenDialogForAttachments: () => Promise<string[]>;
   writeFile: (filePath: string, content: string) => Promise<boolean>;
   readFile: (filePath: string) => Promise<string>;
-  readFileAsBase64: (filePath: string) => Promise<string>;
   ai: AiAPI;
   project: ProjectAPI;
   window: WindowAPI;

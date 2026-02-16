@@ -1,5 +1,5 @@
 import { truncateToFit } from './canvas';
-import type { WritingGoal, Attachment } from '../ai/types';
+import type { WritingGoal, FileMention } from '../ai/types';
 
 export interface PromptOptions {
   maxCanvasLength?: number;
@@ -9,7 +9,7 @@ export interface PromptOptions {
     after: string;
   };
   writingGoal?: WritingGoal;  // 문서 목표 메타데이터 (옵셔널)
-  attachments?: Attachment[]; // 첨부 파일 목록 (옵셔널)
+  fileMentions?: FileMention[]; // 채팅 파일 멘션 목록 (옵셔널)
 }
 
 export interface ConversationMessage {
@@ -48,11 +48,11 @@ Target Length: ${options.writingGoal.targetLength}
 `
     : '';
 
-  const attachmentsBlock = options?.attachments && options.attachments.length > 0
+  const fileMentionsBlock = options?.fileMentions && options.fileMentions.length > 0
     ? `
-<attachments>
-${options.attachments.map((a) => `- ${a.fileName} (${a.mimeType})`).join('\n')}
-</attachments>
+<file_mentions>
+${options.fileMentions.map((m) => `- [@${m.filePath}](project://${m.filePath})`).join('\n')}
+</file_mentions>
 `
     : '';
 
@@ -72,7 +72,7 @@ ${truncatedCanvas}
 </canvas>
 ${selectionBlock}
 ${writingGoalBlock}
-${attachmentsBlock}
+${fileMentionsBlock}
 ${historyBlock}
 <user_request>
 ${userRequest}

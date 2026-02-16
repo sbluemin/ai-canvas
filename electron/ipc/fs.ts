@@ -11,8 +11,4 @@ export function registerFsHandlers() {
     return await fs.readFile(filePath, 'utf-8');
   });
 
-  handleIpc('fs:readFileAsBase64', async (_event: any, filePath: string) => {
-    const buffer = await fs.readFile(filePath);
-    return buffer.toString('base64');
-  });
 }

@@ -1,35 +1,130 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { useShallow } from 'zustand/react/shallow';
-import { useStore, Message, Attachment } from '../store/useStore';
+import { useStore, Message, FileMention } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import { api } from '../api';
 import { AUTOSAVE_DELAY, generateId } from '../utils';
 import { Logo } from './Logo';
 import './ChatPanel.css';
-import { PlusIcon, MicrophoneIcon, SendIcon, ChevronDownIcon, CloseIcon, PaperclipIcon } from './Icons';
+import { MicrophoneIcon, SendIcon, ChevronDownIcon } from './Icons';
 
 
-const SUPPORTED_MIME_TYPES: Record<string, string> = {
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.pdf': 'application/pdf',
-};
+const FILE_MENTION_REGEX = /(^|\s)@([^\s@]+)/g;
+const ACTIVE_MENTION_REGEX = /(^|\s)@([^\s@]*)$/;
+const MAX_MENTION_SUGGESTIONS = 8;
 
-const SUPPORTED_EXTENSIONS = Object.keys(SUPPORTED_MIME_TYPES);
-
-function getMimeType(filePath: string): string {
-  const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
-  return SUPPORTED_MIME_TYPES[ext] || 'application/octet-stream';
+interface MentionContext {
+  mentionStart: number;
+  cursor: number;
+  query: string;
 }
 
 function getFileName(filePath: string): string {
   return filePath.split(/[/\\]/).pop() || filePath;
+}
+
+function normalizeMentionPath(rawPath: string): string {
+  const trimmed = rawPath.trim().replace(/[.,!?;:]+$/, '');
+  if (trimmed.startsWith('./')) {
+    return trimmed.slice(2);
+  }
+  return trimmed;
+}
+
+function resolveMentionPath(mentionPath: string, projectFiles: string[]): string {
+  if (projectFiles.includes(mentionPath)) {
+    return mentionPath;
+  }
+
+  const byBasename = projectFiles.filter((path) => getFileName(path) === mentionPath);
+  if (byBasename.length === 1) {
+    return byBasename[0];
+  }
+
+  return mentionPath;
+}
+
+function extractFileMentions(input: string, projectFiles: string[]): FileMention[] {
+  const mentions: FileMention[] = [];
+  const seen = new Set<string>();
+  let match: RegExpExecArray | null = FILE_MENTION_REGEX.exec(input);
+
+  while (match) {
+    const rawPath = match[2];
+    const normalizedPath = normalizeMentionPath(rawPath);
+
+    if (normalizedPath) {
+      const resolvedPath = resolveMentionPath(normalizedPath, projectFiles);
+      if (!seen.has(resolvedPath)) {
+        mentions.push({
+          id: generateId('mention'),
+          fileName: getFileName(resolvedPath),
+          filePath: resolvedPath,
+        });
+        seen.add(resolvedPath);
+      }
+    }
+
+    match = FILE_MENTION_REGEX.exec(input);
+  }
+
+  FILE_MENTION_REGEX.lastIndex = 0;
+  return mentions;
+}
+
+function getMentionContext(text: string, cursor: number): MentionContext | null {
+  const beforeCursor = text.slice(0, cursor);
+  const match = ACTIVE_MENTION_REGEX.exec(beforeCursor);
+  if (!match) {
+    return null;
+  }
+
+  const query = normalizeMentionPath(match[2]);
+  const mentionStart = match.index + match[1].length;
+  return { mentionStart, cursor, query };
+}
+
+function buildMentionSuggestions(query: string, projectFiles: string[]): string[] {
+  const normalizedQuery = query.toLowerCase();
+
+  const scored = projectFiles
+    .map((filePath) => {
+      if (!normalizedQuery) {
+        return { filePath, score: 0 };
+      }
+
+      const lowerPath = filePath.toLowerCase();
+      const lowerName = getFileName(filePath).toLowerCase();
+
+      if (lowerPath.startsWith(normalizedQuery)) {
+        return { filePath, score: 0 };
+      }
+
+      if (lowerName.startsWith(normalizedQuery)) {
+        return { filePath, score: 1 };
+      }
+
+      if (lowerPath.includes(normalizedQuery)) {
+        return { filePath, score: 2 };
+      }
+
+      return null;
+    })
+    .filter((item): item is { filePath: string; score: number } => item !== null)
+    .sort((a, b) => {
+      if (a.score !== b.score) {
+        return a.score - b.score;
+      }
+      if (a.filePath.length !== b.filePath.length) {
+        return a.filePath.length - b.filePath.length;
+      }
+      return a.filePath.localeCompare(b.filePath);
+    });
+
+  return scored.slice(0, MAX_MENTION_SUGGESTIONS).map((item) => item.filePath);
 }
 
 const OPENCODE_INFO = {
@@ -46,11 +141,15 @@ function getProviderInfo(provider?: string) {
 
 export function ChatPanel() {
   const [input, setInput] = useState('');
+  const [projectFiles, setProjectFiles] = useState<string[]>([]);
+  const [mentionContext, setMentionContext] = useState<MentionContext | null>(null);
+  const [mentionSuggestions, setMentionSuggestions] = useState<string[]>([]);
+  const [activeMentionIndex, setActiveMentionIndex] = useState(0);
+  const [isMentionLoading, setIsMentionLoading] = useState(false);
   const [isConversationMenuOpen, setIsConversationMenuOpen] = useState(false);
-  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationMenuRef = useRef<HTMLDivElement>(null);
-  const inputAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const {
     messages, isLoading, aiRun, projectPath, conversations, activeConversationId,
@@ -65,90 +164,89 @@ export function ChatPanel() {
     setConversations: state.setConversations,
     setActiveConversationId: state.setActiveConversationId,
     setMessages: state.setMessages,
-  })));
+  }))); 
   const { sendMessage } = useChatRequest();
 
-  const handleAttachFiles = useCallback(async () => {
-    if (!api.isElectron) return;
-    const filePaths = await api.showOpenDialogForAttachments();
-    if (filePaths.length === 0) return;
+  const closeMentionMenu = () => {
+    setMentionContext(null);
+    setMentionSuggestions([]);
+    setActiveMentionIndex(0);
+  };
 
-    const newAttachments: Attachment[] = [];
-    for (const filePath of filePaths) {
-      const mimeType = getMimeType(filePath);
-      const fileName = getFileName(filePath);
-      try {
-        const base64 = await api.readFileAsBase64(filePath);
-        const thumbnailUrl = mimeType.startsWith('image/')
-          ? `data:${mimeType};base64,${base64}`
-          : undefined;
-        newAttachments.push({
-          id: generateId('attach'),
-          fileName,
-          mimeType,
-          filePath,
-          base64,
-          thumbnailUrl,
-        });
-      } catch (error) {
-        console.error(`Failed to read file: ${filePath}`, error);
-      }
+  const refreshMentionSuggestions = (text: string, cursor: number) => {
+    const context = getMentionContext(text, cursor);
+    if (!context) {
+      closeMentionMenu();
+      return;
     }
-    setPendingAttachments((prev) => [...prev, ...newAttachments]);
-  }, []);
 
-  const removeAttachment = useCallback((attachmentId: string) => {
-    setPendingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
-  }, []);
+    const suggestions = buildMentionSuggestions(context.query, projectFiles);
+    setMentionContext(context);
+    setMentionSuggestions(suggestions);
+    setActiveMentionIndex(0);
+  };
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
+  const applyMentionSuggestion = (suggestedPath: string) => {
+    if (!mentionContext) {
+      return;
+    }
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!api.isElectron) return;
+    const beforeMention = input.slice(0, mentionContext.mentionStart);
+    const afterMention = input.slice(mentionContext.cursor);
+    const mentionText = `@${suggestedPath}`;
+    const nextInput = `${beforeMention}${mentionText} ${afterMention}`;
+    const nextCursor = beforeMention.length + mentionText.length + 1;
 
-    const files = Array.from(e.dataTransfer.files || []);
-    const validFiles = files.filter((file) => {
-      const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-      return SUPPORTED_EXTENSIONS.includes(ext);
+    setInput(nextInput);
+    closeMentionMenu();
+
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(nextCursor, nextCursor);
     });
+  };
 
-    if (validFiles.length === 0) return;
-
-    const newAttachments: Attachment[] = [];
-    for (const file of validFiles) {
-      try {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const dataUrl = reader.result as string;
-            resolve(dataUrl.split(',')[1] ?? '');
-          };
-          reader.onerror = () => reject(new Error('File read failed'));
-          reader.readAsDataURL(file);
-        });
-        const mimeType = file.type || getMimeType(file.name);
-        const thumbnailUrl = mimeType.startsWith('image/')
-          ? `data:${mimeType};base64,${base64}`
-          : undefined;
-        newAttachments.push({
-          id: generateId('attach'),
-          fileName: file.name,
-          mimeType,
-          filePath: file.name,
-          base64,
-          thumbnailUrl,
-        });
-      } catch (error) {
-        console.error(`Failed to read dropped file: ${file.name}`, error);
-      }
+  useEffect(() => {
+    if (!projectPath) {
+      setProjectFiles([]);
+      setIsMentionLoading(false);
+      return;
     }
-    setPendingAttachments((prev) => [...prev, ...newAttachments]);
-  }, []);
+
+    let cancelled = false;
+    setIsMentionLoading(true);
+
+    api
+      .listProjectFiles(projectPath)
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+
+        if (result.success && Array.isArray(result.files)) {
+          setProjectFiles(result.files);
+          return;
+        }
+
+        setProjectFiles([]);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
+        console.error('Project file index load failed:', error);
+        setProjectFiles([]);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsMentionLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectPath]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -161,10 +259,6 @@ export function ChatPanel() {
       const serialized = messages.map((msg) => ({
         ...msg,
         timestamp: msg.timestamp.toISOString(),
-        // Strip base64 and thumbnailUrl from attachments to avoid bloating session file
-        ...(msg.attachments ? {
-          attachments: msg.attachments.map(({ base64: _b, thumbnailUrl: _t, ...rest }) => rest),
-        } : {}),
       }));
 
       api.writeChatSession(projectPath, serialized).catch((error: unknown) => {
@@ -213,20 +307,74 @@ export function ChatPanel() {
     setIsConversationMenuOpen(false);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextInput = e.target.value;
+    const cursor = e.target.selectionStart ?? nextInput.length;
+    setInput(nextInput);
+    refreshMentionSuggestions(nextInput, cursor);
+  };
+
+  const handleInputSelect = () => {
+    const element = inputRef.current;
+    if (!element) {
+      return;
+    }
+    const cursor = element.selectionStart ?? element.value.length;
+    refreshMentionSuggestions(element.value, cursor);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (mentionSuggestions.length === 0) {
+      if (e.key === 'Escape') {
+        closeMentionMenu();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveMentionIndex((prev) => (prev + 1) % mentionSuggestions.length);
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveMentionIndex((prev) =>
+        prev === 0 ? mentionSuggestions.length - 1 : prev - 1
+      );
+      return;
+    }
+
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      const selected = mentionSuggestions[activeMentionIndex] ?? mentionSuggestions[0];
+      if (selected) {
+        applyMentionSuggestion(selected);
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeMentionMenu();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && pendingAttachments.length === 0) || isLoading) return;
+    if (!input.trim() || isLoading) return;
 
     const prompt = input.trim();
-    const attachments = pendingAttachments.length > 0 ? [...pendingAttachments] : undefined;
+    const fileMentions = extractFileMentions(prompt, projectFiles);
+    closeMentionMenu();
     setInput('');
-    setPendingAttachments([]);
-    await sendMessage(prompt || 'Please analyze the attached file(s).', { attachments });
+    await sendMessage(prompt, { fileMentions: fileMentions.length > 0 ? fileMentions : undefined });
   };
 
   const isUpdatingCanvas = aiRun?.phase === 'updating';
   const hasFailed = aiRun?.phase === 'failed';
   const hasAssistantTailMessage = messages.length > 0 && messages[messages.length - 1].role === 'assistant';
+  const showMentionMenu = mentionContext !== null && (isMentionLoading || mentionSuggestions.length > 0);
 
   return (
     <div className="chat-panel">
@@ -289,18 +437,11 @@ export function ChatPanel() {
                   </div>
                 )}
                 <div className="message-content">
-                  {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
-                    <div className="message-attachments">
-                      {msg.attachments.map((att) => (
-                        <div key={att.id} className="message-attachment-item">
-                          {att.thumbnailUrl ? (
-                            <img src={att.thumbnailUrl} alt={att.fileName} className="attachment-thumbnail-msg" />
-                          ) : (
-                            <div className="attachment-file-icon">
-                              <PaperclipIcon />
-                            </div>
-                          )}
-                          <span className="attachment-name-msg">{att.fileName}</span>
+                  {msg.role === 'user' && msg.fileMentions && msg.fileMentions.length > 0 && (
+                    <div className="message-file-mentions">
+                      {msg.fileMentions.map((mention) => (
+                        <div key={mention.id} className="message-file-mention-item">
+                          <span className="file-mention-path">@{mention.filePath}</span>
                         </div>
                       ))}
                     </div>
@@ -355,41 +496,17 @@ export function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="input-area" ref={inputAreaRef} onDragOver={handleDragOver} onDrop={handleDrop}>
+      <div className="input-area">
         <div className="input-wrapper">
-          {pendingAttachments.length > 0 && (
-            <div className="attachment-preview-bar">
-              {pendingAttachments.map((att) => (
-                <div key={att.id} className="attachment-preview-item">
-                  {att.thumbnailUrl ? (
-                    <img src={att.thumbnailUrl} alt={att.fileName} className="attachment-thumbnail" />
-                  ) : (
-                    <div className="attachment-file-badge">
-                      <PaperclipIcon />
-                    </div>
-                  )}
-                  <span className="attachment-filename">{att.fileName}</span>
-                  <button
-                    type="button"
-                    className="attachment-remove-btn"
-                    onClick={() => removeAttachment(att.id)}
-                    title="Remove attachment"
-                  >
-                    <CloseIcon />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
           <form className="input-form" onSubmit={handleSubmit}>
-            <button type="button" className="input-action-btn" title="Attach file" onClick={handleAttachFiles} disabled={isLoading}>
-              <PlusIcon />
-            </button>
             <input
+              ref={inputRef}
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type a message..."
+              onChange={handleInputChange}
+              onSelect={handleInputSelect}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Type a message... (use @path/to/file)"
               disabled={isLoading}
             />
             <button type="button" className="input-action-btn mic-btn" title="Voice input">
@@ -398,11 +515,35 @@ export function ChatPanel() {
             <button 
               type="submit" 
               className="send-btn"
-              disabled={isLoading || (!input.trim() && pendingAttachments.length === 0)}
+              disabled={isLoading || !input.trim()}
             >
               <SendIcon />
             </button>
           </form>
+          {showMentionMenu && (
+            <div className="mention-autocomplete" role="listbox" aria-label="File mention suggestions">
+              {isMentionLoading ? (
+                <div className="mention-autocomplete-item mention-autocomplete-info">
+                  Indexing project files...
+                </div>
+              ) : (
+                mentionSuggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    className={`mention-autocomplete-item ${index === activeMentionIndex ? 'active' : ''}`}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      applyMentionSuggestion(suggestion);
+                    }}
+                  >
+                    <span className="mention-autocomplete-path">@{suggestion}</span>
+                    <span className="mention-autocomplete-name">{getFileName(suggestion)}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
