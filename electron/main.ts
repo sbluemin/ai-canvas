@@ -1,11 +1,13 @@
-import { app, BrowserWindow, dialog, Menu, session } from 'electron';
+import { app, BrowserWindow, dialog, Menu, nativeTheme, session } from 'electron';
 import type { Rectangle } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
 import { registerIpcHandlers } from './ipc/index';
+import { readStoredThemeMode } from './ipc/settings';
 import { shutdownOpenCodeRuntime } from './ai-backend';
+import type { ThemeMode } from './ipc/settings';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +24,39 @@ type WindowStoreSchema = {
 };
 
 const windowStore = new Store<WindowStoreSchema>({ name: 'window-state' });
+
+function resolveThemeMode(theme: ThemeMode): 'dark' | 'light' {
+  if (theme === 'system') {
+    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+  }
+  return theme;
+}
+
+function getWin32TitleBarOverlay(theme: ThemeMode) {
+  if (resolveThemeMode(theme) === 'light') {
+    return {
+      color: '#ffffff',
+      symbolColor: '#5f6368',
+      height: 56,
+    };
+  }
+
+  return {
+    color: '#131314',
+    symbolColor: '#9ca3af',
+    height: 56,
+  };
+}
+
+function applyWin32TitleBarOverlay(theme: ThemeMode) {
+  if (process.platform !== 'win32') return;
+
+  const overlay = getWin32TitleBarOverlay(theme);
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (window.isDestroyed()) continue;
+    window.setTitleBarOverlay(overlay);
+  }
+}
 
 function getIconPath(): string {
   if (isDev) {
@@ -128,11 +163,7 @@ function createWindow() {
     },
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     ...(process.platform === 'win32' ? {
-      titleBarOverlay: {
-        color: '#131314',
-        symbolColor: '#9ca3af',
-        height: 56,
-      },
+      titleBarOverlay: getWin32TitleBarOverlay(readStoredThemeMode()),
     } : {}),
   });
 
@@ -201,7 +232,9 @@ function setupAutoUpdater() {
   });
 }
 
-registerIpcHandlers(createWindow);
+registerIpcHandlers(createWindow, (theme) => {
+  applyWin32TitleBarOverlay(theme);
+});
 function getContentSecurityPolicy(): string {
   if (isDev) {
     return [
@@ -267,6 +300,14 @@ app.whenReady().then(() => {
   }
 
   createWindow();
+
+  if (process.platform === 'win32') {
+    nativeTheme.on('updated', () => {
+      if (readStoredThemeMode() === 'system') {
+        applyWin32TitleBarOverlay('system');
+      }
+    });
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

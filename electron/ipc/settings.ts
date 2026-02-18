@@ -1,7 +1,7 @@
 import Store from 'electron-store';
 import { handleIpc } from '../core';
 
-type ThemeMode = 'dark' | 'light' | 'system';
+export type ThemeMode = 'dark' | 'light' | 'system';
 
 type AppSettingsStoreSchema = {
   theme?: ThemeMode;
@@ -13,13 +13,17 @@ function isThemeMode(value: unknown): value is ThemeMode {
   return value === 'dark' || value === 'light' || value === 'system';
 }
 
-export function registerSettingsHandlers() {
+export function readStoredThemeMode(): ThemeMode {
+  const theme = appSettingsStore.get('theme');
+  return isThemeMode(theme) ? theme : 'dark';
+}
+
+export function registerSettingsHandlers(onThemeChanged?: (theme: ThemeMode) => void) {
   handleIpc('settings:read', async () => {
-    const theme = appSettingsStore.get('theme');
     return {
       success: true,
       settings: {
-        theme: isThemeMode(theme) ? theme : 'dark',
+        theme: readStoredThemeMode(),
       },
     };
   });
@@ -30,6 +34,7 @@ export function registerSettingsHandlers() {
     }
 
     appSettingsStore.set('theme', settings.theme);
+    onThemeChanged?.(settings.theme);
     return { success: true };
   });
 }

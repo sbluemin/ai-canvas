@@ -86,7 +86,7 @@
 - **dialog.ts**: 파일/다이얼로그 IPC
 - **fs.ts**: 파일 읽기/쓰기 IPC
 - **project.ts**: 프로젝트/캔버스 관리 IPC (`project:list-project-files` 제공)
-- **settings.ts**: 전역 앱 설정 IPC (`settings:read`, `settings:write`)
+- **settings.ts**: 전역 앱 설정 IPC (`settings:read`, `settings:write`, Windows titleBarOverlay 테마 동기화)
 - **window.ts**: 윈도우 제어 IPC
 
 ### 렌더러 프롬프트 (`src/prompts/`)
@@ -229,7 +229,7 @@ ai-canvas/
 │   │   ├── dialog.ts
 │   │   ├── fs.ts
 │   │   ├── project.ts           # services/project.service 위임
-│   │   ├── settings.ts          # 전역 앱 설정(electron-store) IPC
+│   │   ├── settings.ts          # 전역 앱 설정(electron-store) IPC + Windows titleBarOverlay 테마 동기화
 │   │   └── window.ts
 │   ├── services/                # 비즈니스 로직 서비스
 │   │   ├── index.ts
