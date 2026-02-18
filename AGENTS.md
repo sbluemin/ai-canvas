@@ -48,6 +48,7 @@
   - '+' 버튼: 새 캔버스 파일 생성
   - 탭 우클릭 컨텍스트 메뉴: 이름 변경 / 복제 / 삭제
   - 저장 상태 표시기: 자동 저장 상태 (대기/저장 중/저장됨/오류)
+  - 캔버스 너비 모드: `기본값` / `넓게` / `반응형` 선택
 - **ErrorPopup**: AI 요청 오류 팝업
 - **SettingsModal**: 앱 설정 (테마, 언어 등)
 - **ExportModal**: 내보내기 모달 (HTML/PDF/DOCX)
@@ -154,6 +155,7 @@ interface AppState {
   pendingCanvasPatch: PendingCanvasPatch | null; // Phase 2 후보 변경안
   
   settings: AppSettings;
+  canvasWidthMode: 'default' | 'wide' | 'responsive'; // 캔버스 본문 너비 모드
   isSettingsOpen: boolean;
   isExportModalOpen: boolean;
   toasts: ToastInfo[];

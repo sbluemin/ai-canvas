@@ -8,6 +8,7 @@ export const createUiSlice: StateCreator<AppState, [], [], UiSlice> = (set) => (
   toasts: [],
   isSettingsOpen: false,
   isExportModalOpen: false,
+  canvasWidthMode: 'default',
   settings: {
     theme: 'dark',
   },
@@ -41,4 +42,5 @@ export const createUiSlice: StateCreator<AppState, [], [], UiSlice> = (set) => (
   closeExportModal: () => set({ isExportModalOpen: false }),
 
   setTheme: (theme) => set((state) => ({ settings: { ...state.settings, theme } })),
+  setCanvasWidthMode: (mode) => set({ canvasWidthMode: mode }),
 });

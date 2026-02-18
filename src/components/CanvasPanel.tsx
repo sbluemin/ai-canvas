@@ -6,6 +6,7 @@ import { EditorProvider } from '../context/EditorContext';
 import { DiffPreview } from './DiffPreview';
 import { FileExplorer } from './FileExplorer';
 import { api } from '../api';
+import type { CanvasWidthMode } from '../store/types';
 import './CanvasPanel.css';
 
 interface ContextMenuState {
@@ -31,6 +32,8 @@ export function CanvasPanel() {
     isFileExplorerOpen,
     toggleFileExplorer,
     setCanvasTree,
+    canvasWidthMode,
+    setCanvasWidthMode,
   } = useStore();
   const [showOverlay, setShowOverlay] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -239,9 +242,13 @@ export function CanvasPanel() {
     setDraggingFile(null);
   };
 
+  const handleWidthModeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setCanvasWidthMode(event.target.value as CanvasWidthMode);
+  };
+
   return (
     <EditorProvider>
-      <div className="canvas-panel">
+      <div className={`canvas-panel canvas-width-${canvasWidthMode}`}>
         <div className={`canvas-panel-layout ${isFileExplorerOpen ? 'with-explorer' : ''}`}>
           {isFileExplorerOpen && (
             <FileExplorer
@@ -296,6 +303,18 @@ export function CanvasPanel() {
                 </div>
               </div>
               <div className="header-right">
+                <div className="canvas-width-control">
+                  <label htmlFor="canvas-width-mode">Width</label>
+                  <select
+                    id="canvas-width-mode"
+                    value={canvasWidthMode}
+                    onChange={handleWidthModeChange}
+                  >
+                    <option value="default">기본값</option>
+                    <option value="wide">넓게</option>
+                    <option value="responsive">반응형</option>
+                  </select>
+                </div>
                 {!pendingCanvasPatch && <EditorToolbar />}
                 <div className={`save-status-indicator ${autosaveStatus.state}`}>
                   {autosaveStatus.state === 'saving'

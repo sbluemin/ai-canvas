@@ -9,11 +9,11 @@
 }
 
 .milkdown-wrapper .milkdown {
-  padding: 40px 48px;
+  padding: 40px var(--canvas-editor-padding-x, 48px);
   min-height: 100%;
   outline: none;
   background: var(--bg-primary);
-  max-width: 900px;
+  max-width: var(--canvas-editor-max-width, 900px);
   margin: 0 auto;
 }
 

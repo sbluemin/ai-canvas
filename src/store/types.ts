@@ -60,6 +60,8 @@ export interface AppSettings {
   theme: 'dark' | 'light' | 'system';
 }
 
+export type CanvasWidthMode = 'default' | 'wide' | 'responsive';
+
 export interface ShareBundle {
   version: string;
   createdAt: string;
@@ -102,6 +104,7 @@ export interface UiSlice {
   isSettingsOpen: boolean;
   isExportModalOpen: boolean;
   settings: AppSettings;
+  canvasWidthMode: CanvasWidthMode;
 
   toggleDrawer: () => void;
   closeDrawer: () => void;
@@ -114,6 +117,7 @@ export interface UiSlice {
   toggleExportModal: () => void;
   closeExportModal: () => void;
   setTheme: (theme: AppSettings['theme']) => void;
+  setCanvasWidthMode: (mode: CanvasWidthMode) => void;
 }
 
 export interface ProjectSlice {
