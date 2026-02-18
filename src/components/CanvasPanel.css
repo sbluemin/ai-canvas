@@ -306,7 +306,7 @@
 .canvas-updating-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(19, 19, 20, 0.7);
+  background: var(--canvas-updating-overlay-bg);
   z-index: 10;
   overflow: hidden;
   animation: pageCover 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
