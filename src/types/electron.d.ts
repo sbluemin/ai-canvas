@@ -115,6 +115,43 @@ interface SettingsAPI {
   write: (settings: { theme: ThemeMode }) => Promise<{ success: boolean; error?: string }>;
 }
 
+type RuntimeMode = 'auto' | 'local' | 'global';
+
+interface RuntimeStatus {
+  mode: RuntimeMode;
+  activeRuntime: 'local' | 'global' | 'none';
+  localInstalled: boolean;
+  globalInstalled: boolean;
+  onboardingDone: boolean;
+  localBinaryPath: string;
+  configDir: string;
+}
+
+interface RuntimeInstallProgress {
+  projectPath: string;
+  phase: 'downloading' | 'extracting' | 'finalizing' | 'done' | 'error';
+  percent: number;
+  receivedBytes?: number;
+  totalBytes?: number;
+}
+
+interface RuntimeModelsRefreshedEvent {
+  success: boolean;
+  models?: Record<string, unknown[]>;
+  error?: string;
+}
+
+interface RuntimeAPI {
+  checkStatus: (projectPath: string | null) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
+  setMode: (projectPath: string, mode: RuntimeMode) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
+  installLocal: (projectPath: string) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
+  openAuthTerminal: (projectPath: string | null) => Promise<{ success: boolean; error?: string }>;
+  completeOnboarding: (projectPath: string) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
+  clearContext: () => Promise<{ success: boolean; error?: string }>;
+  onInstallProgress: (callback: (progress: RuntimeInstallProgress) => void) => () => void;
+  onModelsRefreshed: (callback: (event: RuntimeModelsRefreshedEvent) => void) => () => void;
+}
+
 interface ElectronAPI {
   platform: NodeJS.Platform;
   showSaveDialog: () => Promise<string | null>;
@@ -124,6 +161,7 @@ interface ElectronAPI {
   ai: AiAPI;
   project: ProjectAPI;
   settings: SettingsAPI;
+  runtime: RuntimeAPI;
   window: WindowAPI;
 }
 

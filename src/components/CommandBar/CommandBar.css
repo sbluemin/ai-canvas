@@ -6,6 +6,8 @@
   justify-content: space-between;
   padding: 0 16px;
   -webkit-app-region: drag;
+  position: relative;
+  z-index: 40;
 }
 
 /* Windows: titleBarOverlay 영역 확보 */
@@ -38,11 +40,8 @@
   margin-left: auto;
 }
 
-.logo-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+
+
 
 .settings-btn {
   border: none;
@@ -92,4 +91,3 @@
   background: var(--border-subtle);
   margin: 0 4px;
 }
-

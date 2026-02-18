@@ -10,6 +10,7 @@ export {
   chatWithOpenCode,
   fetchOpenCodeModelsVerbose,
   shutdownOpenCodeRuntime,
+  configureOpenCodeRuntime,
 } from './client';
 
 // 타입만 export (외부에서 타입 참조용)
@@ -18,3 +19,4 @@ export type {
   OpenCodeChatChunk,
   OpenCodeChatResult,
 } from './types';
+export type { RuntimeBinaryMode as OpenCodeRuntimeBinaryMode } from './client';

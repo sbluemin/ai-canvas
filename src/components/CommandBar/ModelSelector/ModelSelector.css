@@ -9,6 +9,8 @@
   border-radius: var(--radius-md);
   padding: 2px;
   transition: border-color 0.15s ease;
+  position: relative;
+  z-index: 20;
 }
 
 .opencode-selectors:hover {
@@ -102,7 +104,7 @@
   border-radius: 10px;
   padding: 4px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  z-index: 2000;
   animation: model-dropdown-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -187,4 +189,3 @@
   font-size: 12px;
   flex-shrink: 0;
 }
-

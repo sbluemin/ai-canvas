@@ -8,6 +8,15 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { resolveOpencodeBinary } from './binary-resolver';
 import type { OpenCodeChatRequest, OpenCodeChatChunk, OpenCodeChatResult, OpenCodeJsonEvent } from './types';
+import { getBackendDirPath } from '../core';
+
+let runtimeProjectPath: string | null = null;
+let runtimeBinaryMode: 'auto' | 'local' | 'global' = 'auto';
+
+export function configureRuntimeProjectPath(projectPath: string | null, binaryMode: 'auto' | 'local' | 'global' = 'auto'): void {
+  runtimeProjectPath = projectPath;
+  runtimeBinaryMode = binaryMode;
+}
 
 // ─── 환경 설정 유틸 ───
 
@@ -38,6 +47,15 @@ function createRuntimeEnv(): NodeJS.ProcessEnv {
       delete env[key];
     }
   }
+
+  if (runtimeProjectPath && runtimeBinaryMode === 'local') {
+    env.OPENCODE_CONFIG_DIR = getBackendDirPath(runtimeProjectPath);
+  } else {
+    delete env.OPENCODE_CONFIG_DIR;
+  }
+
+  delete env.OPENCODE_CONFIG;
+
   return env;
 }
 
@@ -101,30 +119,25 @@ export class OpenCodeRuntime {
   /** opencode CLI 자식 프로세스를 생성한다. */
   createChild(args: string[]): ChildProcess {
     const env = createRuntimeEnv();
+    const binaryPath = resolveOpencodeBinary();
     let child: ChildProcess;
 
-    if (process.platform === 'win32') {
-      const binaryPath = resolveOpencodeBinary();
-      if (binaryPath) {
-        child = spawn(binaryPath, args, {
-          stdio: ['ignore', 'pipe', 'pipe'],
-          env,
-          windowsHide: true,
-        });
-      } else {
-        console.warn('[OpenCode] 바이너리를 찾지 못함, opencode 직접 spawn 시도');
-        child = spawn('opencode', args, {
-          stdio: ['ignore', 'pipe', 'pipe'],
-          env,
-          windowsHide: true,
-          shell: false,
-        });
-      }
+    if (binaryPath) {
+      child = spawn(binaryPath, args, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env,
+        windowsHide: true,
+      });
     } else {
+      if (process.platform === 'win32') {
+        console.warn('[OpenCode] 바이너리를 찾지 못함, opencode 직접 spawn 시도');
+      }
+
       child = spawn('opencode', args, {
         stdio: ['ignore', 'pipe', 'pipe'],
         env,
         windowsHide: true,
+        shell: false,
       });
     }
 

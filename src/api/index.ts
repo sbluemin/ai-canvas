@@ -1,5 +1,5 @@
 import type { AiProvider } from '../types';
-import type { FeatureSummary } from '../store/types';
+import type { FeatureSummary, AvailableModels } from '../store/types';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
@@ -14,6 +14,31 @@ type AiChatEvent =
 export type { AiProvider };
 
 type ThemeMode = 'dark' | 'light' | 'system';
+export type RuntimeMode = 'auto' | 'local' | 'global';
+
+export interface RuntimeStatus {
+  mode: RuntimeMode;
+  activeRuntime: 'local' | 'global' | 'none';
+  localInstalled: boolean;
+  globalInstalled: boolean;
+  onboardingDone: boolean;
+  localBinaryPath: string;
+  configDir: string;
+}
+
+export interface RuntimeInstallProgress {
+  projectPath: string;
+  phase: 'downloading' | 'extracting' | 'finalizing' | 'done' | 'error';
+  percent: number;
+  receivedBytes?: number;
+  totalBytes?: number;
+}
+
+export interface RuntimeModelsRefreshedEvent {
+  success: boolean;
+  models?: AvailableModels;
+  error?: string;
+}
 
 export interface ChatRequestOptions {
   selection?: {
@@ -282,6 +307,50 @@ export const api = {
   async writeAppSettings(settings: { theme: ThemeMode }): Promise<{ success: boolean; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.settings.write(settings);
+  },
+
+  async runtimeCheckStatus(projectPath: string | null): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.checkStatus(projectPath);
+  },
+
+  async runtimeSetMode(projectPath: string, mode: RuntimeMode): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.setMode(projectPath, mode);
+  },
+
+  async runtimeInstallLocal(projectPath: string): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.installLocal(projectPath);
+  },
+
+  async runtimeOpenAuthTerminal(projectPath: string | null): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.openAuthTerminal(projectPath);
+  },
+
+  async runtimeCompleteOnboarding(projectPath: string): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.completeOnboarding(projectPath);
+  },
+
+  async runtimeClearContext(): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.clearContext();
+  },
+
+  onRuntimeInstallProgress(callback: (progress: RuntimeInstallProgress) => void): () => void {
+    if (!isElectron) {
+      return () => {};
+    }
+    return window.electronAPI.runtime.onInstallProgress(callback);
+  },
+
+  onRuntimeModelsRefreshed(callback: (event: RuntimeModelsRefreshedEvent) => void): () => void {
+    if (!isElectron) {
+      return () => {};
+    }
+    return window.electronAPI.runtime.onModelsRefreshed((payload) => callback(payload as RuntimeModelsRefreshedEvent));
   },
 
   async createWindow(): Promise<{ success: boolean; error?: string }> {

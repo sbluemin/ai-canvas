@@ -9,6 +9,7 @@ import { ToastContainer } from './components/ToastContainer';
 import { SettingsModal } from './components/SettingsModal';
 import { ExportModal } from './components/ExportModal';
 import { WritingGoalModal } from './components/WritingGoalModal';
+import { OnboardingWizard } from './components/OnboardingWizard';
 import { useStore } from './store/useStore';
 import { api } from './api';
 import { AUTOSAVE_DELAY, logger } from './utils';
@@ -40,6 +41,7 @@ function App() {
     selectedModels,
     selectedVariant,
     activeWritingGoal,
+    setRuntimeStatus,
   } = useStore();
   const isThemeHydratedRef = useRef(false);
 
@@ -57,6 +59,21 @@ function App() {
       .catch((error) => logger.error('Auto-fetch models failed:', error))
       .finally(() => setModelsLoading(false));
   }, [setAvailableModels, setModelsLoading]);
+
+  useEffect(() => {
+    const unsubscribe = api.onRuntimeModelsRefreshed((event) => {
+      if (event.success && event.models) {
+        setAvailableModels(event.models);
+        return;
+      }
+
+      if (event.error) {
+        logger.error('Runtime model refresh failed:', event.error);
+      }
+    });
+
+    return unsubscribe;
+  }, [setAvailableModels]);
 
   useLayoutEffect(() => {
     const root = document.getElementById('root');
@@ -214,6 +231,25 @@ function App() {
   }, [projectPath, activeFeatureId, activeWritingGoal]);
 
   useEffect(() => {
+    if (projectPath) {
+      return;
+    }
+
+    api.runtimeCheckStatus(null)
+      .then((result) => {
+        if (result.success && result.data) {
+          setRuntimeStatus(result.data);
+          return;
+        }
+
+        setRuntimeStatus(null);
+      })
+      .catch(() => {
+        setRuntimeStatus(null);
+      });
+  }, [projectPath, setRuntimeStatus]);
+
+  useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < DESKTOP_BREAKPOINT;
       setIsMobile(mobile);
@@ -249,6 +285,7 @@ function App() {
         <SettingsModal />
         <WritingGoalModal />
         <ExportModal />
+        <OnboardingWizard />
         <ToastContainer />
         <ErrorPopup />
       </div>
@@ -273,6 +310,7 @@ function App() {
       <SettingsModal />
       <WritingGoalModal />
       <ExportModal />
+      <OnboardingWizard />
       <ToastContainer />
       <ErrorPopup />
     </div>

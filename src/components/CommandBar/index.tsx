@@ -2,8 +2,8 @@ import './CommandBar.css';
 import { ProjectSelector } from './ProjectSelector';
 import { ModelSelector } from './ModelSelector';
 import { ModelRefreshButton } from './ModelRefreshButton';
+import { RuntimeStatusBadge } from './RuntimeStatus';
 import { useStore } from '../../store/useStore';
-import { Logo } from '../Logo';
 
 export function CommandBar() {
   const { toggleSettings, toggleExportModal, toggleWritingGoal, activeWritingGoal } = useStore();
@@ -13,11 +13,9 @@ export function CommandBar() {
       <div className="command-bar-left">
         <ModelRefreshButton />
         <ModelSelector />
+        <RuntimeStatusBadge />
       </div>
       <div className="command-bar-content">
-        <div className="logo-container">
-          <Logo />
-        </div>
         <ProjectSelector />
       </div>
       <div className="command-bar-right">

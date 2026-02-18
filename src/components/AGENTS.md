@@ -7,6 +7,7 @@
 | Task | Location | Notes |
 |------|----------|-------|
 | 채팅 UI | `ChatPanel.tsx` | 대화 목록 + 메시지 렌더 + `@파일` 멘션 |
+| 온보딩 | `OnboardingWizard.tsx` | opencode 설치/로그인 안내/글로벌-로컬 선택 |
 | 캔버스 메인 | `CanvasPanel.tsx` | 파일 탭, autosave, overlay, 너비 모드 제어 |
 | Feature 트리 | `FeatureExplorer.tsx` | Feature/캔버스 파일 CRUD + 드래그 정렬 + 트리 렌더 |
 | 에디터 연결 | `MilkdownEditor.tsx` | 콘텐츠 반영 + 이미지 에셋 저장 |
@@ -14,6 +15,7 @@
 | 변경안 미리보기 | `DiffPreview.tsx` | chunk 선택 적용/취소 |
 | 텍스트 선택 AI | `SelectionAiPopup.tsx` | 선택 텍스트 AI 질문 팝업 |
 | 상단 커맨드바 | `CommandBar/index.tsx` | project/model/variant orchestration |
+| 런타임 상태 | `CommandBar/RuntimeStatus/index.tsx` | opencode 연결 상태 배지 |
 | 공유 아이콘 | `Icons.tsx` | 인라인 SVG 아이콘 (Plus, Microphone, Send 등) |
 
 ## CONVENTIONS

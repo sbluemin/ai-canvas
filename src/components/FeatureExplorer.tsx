@@ -128,7 +128,7 @@ function parseWorkspace(rawWorkspace: unknown): WorkspaceData {
 }
 
 function getFeatureNodes(canvasTree: TreeEntry[]): TreeEntry[] {
-  return canvasTree.filter((entry) => entry.type === 'folder');
+  return canvasTree.filter((entry) => entry.type === 'folder' && entry.name !== '.runtime' && entry.path !== '.runtime');
 }
 
 function getFeatureFiles(canvasTree: TreeEntry[], featureId: string): string[] {

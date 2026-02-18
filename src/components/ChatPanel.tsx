@@ -153,6 +153,7 @@ export function ChatPanel() {
   
   const {
     messages, isLoading, aiRun, projectPath, activeFeatureId, conversations, activeConversationId,
+    runtimeStatus, onboardingDismissed, openOnboarding,
     setConversations, setActiveConversationId, setMessages
   } = useStore(useShallow((state) => ({
     messages: state.messages,
@@ -162,6 +163,9 @@ export function ChatPanel() {
     activeFeatureId: state.activeFeatureId,
     conversations: state.conversations,
     activeConversationId: state.activeConversationId,
+    runtimeStatus: state.runtimeStatus,
+    onboardingDismissed: state.onboardingDismissed,
+    openOnboarding: state.openOnboarding,
     setConversations: state.setConversations,
     setActiveConversationId: state.setActiveConversationId,
     setMessages: state.setMessages,
@@ -361,9 +365,12 @@ export function ChatPanel() {
     }
   };
 
+  const isRuntimeReady = !projectPath || !!(runtimeStatus && runtimeStatus.activeRuntime !== 'none');
+  const isChatLocked = projectPath !== null && !isRuntimeReady;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isChatLocked) return;
 
     const prompt = input.trim();
     const fileMentions = extractFileMentions(prompt, projectFiles);
@@ -498,6 +505,12 @@ export function ChatPanel() {
       </div>
 
       <div className="input-area">
+        {isChatLocked && onboardingDismissed && (
+          <div className="chat-lock-banner">
+            <span>AI 채팅을 사용하려면 엔진 설정이 필요합니다.</span>
+            <button type="button" onClick={openOnboarding}>설정 열기</button>
+          </div>
+        )}
         <div className="input-wrapper">
           <form className="input-form" onSubmit={handleSubmit}>
             <input
@@ -508,7 +521,7 @@ export function ChatPanel() {
               onSelect={handleInputSelect}
               onKeyDown={handleInputKeyDown}
               placeholder="Type a message... (use @path/to/file)"
-              disabled={isLoading}
+              disabled={isLoading || isChatLocked}
             />
             <button type="button" className="input-action-btn mic-btn" title="Voice input">
               <MicrophoneIcon />
@@ -516,7 +529,7 @@ export function ChatPanel() {
             <button 
               type="submit" 
               className="send-btn"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || isChatLocked || !input.trim()}
             >
               <SendIcon />
             </button>

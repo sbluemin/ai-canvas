@@ -20,11 +20,13 @@ electron/
 │   ├── fs.ts            # fs:* 채널
 │   ├── project.ts       # project:* 채널 (서비스 위임)
 │   ├── settings.ts      # settings:* 채널 (electron-store, titleBarOverlay 테마 동기화)
+│   ├── runtime.ts       # runtime:* 채널 (opencode 런타임 상태/설치/온보딩)
 │   └── window.ts        # window:* 채널
 │
 ├── services/            # 비즈니스 로직
 │   ├── project.service.ts  # Feature/캔버스 CRUD, 세션, 에셋, 파일 인덱스
 │   └── export.service.ts   # HTML/PDF/DOCX 내보내기
+│   └── runtime.service.ts  # opencode 설치/로그인 안내/모드/상태 관리
 │
 ├── ai/                  # 2-phase AI 워크플로우 엔진
 │   ├── workflow.ts      # phase 전환 + 이벤트 송신
@@ -56,6 +58,7 @@ electron/
 | 프로젝트 비즈니스 로직 | `services/project.service.ts` | Feature/캔버스 CRUD, 세션, 에셋 |
 | 문서 내보내기 | `services/export.service.ts` | HTML/PDF/DOCX |
 | 앱 설정 | `ipc/settings.ts` | electron-store 기반, Windows titleBarOverlay 테마 동기화 |
+| 런타임 설정 | `ipc/runtime.ts`, `services/runtime.service.ts` | 프로젝트 로컬 opencode 설치/로그인 안내/모드 |
 | AI 실행 엔진 | `ai/workflow.ts` | phase 전환 + 이벤트 송신 |
 | OpenCode API | `ai-backend/index.ts` | 런타임 캡슐화 (client → runtime) |
 | 모델 조회 | `ai/models.ts` | ai-backend 경유 모델 목록 |

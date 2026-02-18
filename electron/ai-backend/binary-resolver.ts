@@ -9,9 +9,21 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { getBackendLocalBinaryPath } from '../core';
 
 /** 캐시된 바이너리 경로 */
 let resolvedBinaryPath: string | null | undefined;
+
+type RuntimeBinaryMode = 'auto' | 'local' | 'global';
+
+let runtimeProjectPath: string | null = null;
+let runtimeBinaryMode: RuntimeBinaryMode = 'auto';
+
+export function configureBinaryResolverContext(projectPath: string | null, mode: RuntimeBinaryMode = 'auto'): void {
+  runtimeProjectPath = projectPath;
+  runtimeBinaryMode = mode;
+  resetBinaryCache();
+}
 
 /**
  * opencode 바이너리 경로를 탐색한다.
@@ -19,8 +31,9 @@ let resolvedBinaryPath: string | null | undefined;
  *
  * 탐색 우선순위:
  * 0. OPENCODE_BIN_PATH 환경변수
- * 1. where.exe로 PATH에서 .exe 직접 탐색
- * 2. npm 글로벌 설치 경로에서 Go 바이너리 역추적
+ * 1. 프로젝트 로컬(.ai-canvas/.runtime/opencode[.exe]) 바이너리
+ * 2. where.exe로 PATH에서 .exe 직접 탐색 (Windows)
+ * 3. npm 글로벌 설치 경로에서 Go 바이너리 역추적 (Windows)
  */
 export function resolveOpencodeBinary(): string | null {
   if (resolvedBinaryPath !== undefined) {
@@ -34,7 +47,27 @@ export function resolveOpencodeBinary(): string | null {
     return resolvedBinaryPath;
   }
 
-  // 1순위: where.exe로 PATH에서 opencode.exe를 직접 탐색
+  // 1순위: 프로젝트 로컬 바이너리
+  if (runtimeBinaryMode !== 'global' && runtimeProjectPath) {
+    const localBinaryPath = getBackendLocalBinaryPath(runtimeProjectPath);
+    if (existsSync(localBinaryPath)) {
+      resolvedBinaryPath = localBinaryPath;
+      console.log('[OpenCode] 프로젝트 로컬 바이너리 사용:', resolvedBinaryPath);
+      return resolvedBinaryPath;
+    }
+
+    if (runtimeBinaryMode === 'local') {
+      resolvedBinaryPath = null;
+      return null;
+    }
+  }
+
+  if (process.platform !== 'win32') {
+    resolvedBinaryPath = null;
+    return null;
+  }
+
+  // 2순위: where.exe로 PATH에서 opencode.exe를 직접 탐색
   const exeFromWhere = findExeViaWhere();
   if (exeFromWhere) {
     resolvedBinaryPath = exeFromWhere;
@@ -42,7 +75,7 @@ export function resolveOpencodeBinary(): string | null {
     return resolvedBinaryPath;
   }
 
-  // 2순위: npm 글로벌 설치 경로에서 Go 바이너리를 직접 탐색
+  // 3순위: npm 글로벌 설치 경로에서 Go 바이너리를 직접 탐색
   const exeFromNpm = findExeViaNpmGlobal();
   if (exeFromNpm) {
     resolvedBinaryPath = exeFromNpm;

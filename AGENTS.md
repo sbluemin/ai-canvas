@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 |
-| AI | OpenCode CLI 런타임 관리 (`opencode auth login`으로 인증) |
+| AI | OpenCode CLI 런타임 관리 (`OPENCODE_CONFIG_DIR=.ai-canvas/.runtime` 프로젝트 단위 설정) |
 | State | Zustand (6 slice 합성: `src/store/types.ts` 참조) |
 | Styling | CSS (plain imports, `[data-theme]` / `[data-platform]` 기반 테마) |
 
@@ -41,6 +41,7 @@
 |----------|------|
 | ModelSelector 3종 | Glass Segment Group (단일 반투명 컨테이너, 1px divider) |
 | Goal / Export / Settings | Ghost Button + 인라인 SVG |
+| SettingsModal | Split Layout (Sidebar Nav + Content Area) |
 | Width 컨트롤 | Glass Icon Toggle (3개 아이콘) |
 | Save Status | Pulsing Dot Indicator |
 | ModelRefreshButton | Ghost Square + `scale(0.92)` active |
@@ -64,6 +65,7 @@
 - **App.tsx**: 루트 — Allotment 좌우 분할 (모바일: 단일 캔버스)
 - **CommandBar**: 상단 — ProjectSelector, ModelSelector(Glass Segment), Goal/Export/Settings
 - **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리)
+- **OnboardingWizard**: 프로젝트별 OpenCode 설치/로그인 안내 온보딩 (설치→로그인 안내, 글로벌/로컬 선택)
 - **CanvasPanel**: 우측 에디터 — MilkdownEditor, EditorToolbar, SelectionAiPopup, DiffPreview
 - **FeatureExplorer**: Feature 트리 사이드바 (생성/삭제/이름변경, 아이콘, 드래그 정렬, 컨텍스트 메뉴)
 - **모달**: ErrorPopup, SettingsModal, ExportModal, WritingGoalModal, ToastContainer
@@ -82,13 +84,14 @@
 - `{ runId, type:'error', phase, error }` / `{ runId, type:'done' }`
 
 ### 상태 관리 (Zustand)
-6개 slice 합성 (`src/store/types.ts`에 전체 인터페이스 정의):
+7개 slice 합성 (`src/store/types.ts`에 전체 인터페이스 정의):
 - **ChatSlice**: messages, conversations, aiRun
 - **UiSlice**: drawer, modals, toasts, settings, canvasWidthMode
 - **ProjectSlice**: canvasContent, features, canvasFiles, canvasTree, autosave
 - **ModelSlice**: availableModels, selectedModels, selectedVariant
 - **WritingGoalSlice**: activeWritingGoal, presets
 - **DiffPreviewSlice**: pendingCanvasPatch, chunk 선택/적용
+- **RuntimeSlice**: 런타임 상태(runtimeStatus), 온보딩 모달, 런타임 작업 busy/error
 
 ---
 
@@ -99,8 +102,10 @@ ai-canvas/
 ├── src/                          # 렌더러 (→ src/AGENTS.md)
 │   ├── components/               # UI 컴포넌트 (→ src/components/AGENTS.md)
 │   │   ├── CommandBar/           # 상단 커맨드바 (ProjectSelector/, ModelSelector/, ModelRefreshButton/)
+│   │   │   └── RuntimeStatus/     # OpenCode 런타임 상태 배지
 │   │   ├── ChatPanel.tsx         # AI 채팅
 │   │   ├── CanvasPanel.tsx       # 마크다운 에디터
+│   │   ├── OnboardingWizard.tsx  # OpenCode 온보딩 위저드
 │   │   ├── FeatureExplorer.tsx   # Feature 트리 사이드바
 │   │   ├── MilkdownEditor.tsx    # Milkdown WYSIWYG
 │   │   ├── DiffPreview.tsx       # AI 수정안 diff
@@ -110,7 +115,7 @@ ai-canvas/
 │   ├── store/                    # Zustand 상태 (→ src/store/AGENTS.md)
 │   │   ├── useStore.ts           # slice 합성
 │   │   ├── types.ts              # AppState/도메인 타입
-│   │   └── slices/               # 6개 slice
+│   │   └── slices/               # 7개 slice (RuntimeSlice 추가)
 │   ├── hooks/useChatRequest.ts   # AI 채팅 오케스트레이션 훅
 │   ├── context/EditorContext.tsx  # Milkdown Editor ref 공유 Context
 │   ├── api/index.ts              # Electron IPC 래퍼
@@ -122,9 +127,11 @@ ai-canvas/
 │   ├── preload.ts                # contextBridge API (CJS 빌드)
 │   ├── core/                     # 공유 인프라 (ipc 유틸, 상수, 경로 헬퍼)
 │   ├── ipc/                      # IPC 핸들러 (ai, dialog, fs, project, settings, window)
-│   ├── services/                 # 비즈니스 로직 (project.service, export.service)
+│   │   └── runtime.ts            # runtime:* 채널 (상태조회/설치/온보딩완료/모드전환)
+│   ├── services/                 # 비즈니스 로직 (project.service, export.service, runtime.service)
 │   ├── ai/                       # 2-phase AI 워크플로우 (workflow, parser, providerAdapter, models)
 │   ├── ai-backend/               # OpenCode CLI 런타임 (spawn/stream/kill, API만 외부 노출)
+│   │   ├── runtime context        # 프로젝트 경로 + 바이너리 모드(local/global) 반영
 │   └── prompts/                  # Phase 1/2 프롬프트 빌더 + Zod 스키마
 ├── tests/                        # Playwright E2E 테스트
 ├── .github/workflows/publish.yml # CI/CD (macOS + Windows → GitHub Release)

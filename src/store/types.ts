@@ -211,4 +211,31 @@ export interface DiffPreviewSlice {
   discardPendingPatch: () => void;
 }
 
-export type AppState = ChatSlice & UiSlice & ProjectSlice & ModelSlice & WritingGoalSlice & DiffPreviewSlice;
+export type RuntimeMode = 'auto' | 'local' | 'global';
+
+export interface RuntimeStatus {
+  mode: RuntimeMode;
+  activeRuntime: 'local' | 'global' | 'none';
+  localInstalled: boolean;
+  globalInstalled: boolean;
+  onboardingDone: boolean;
+  localBinaryPath: string;
+  configDir: string;
+}
+
+export interface RuntimeSlice {
+  runtimeStatus: RuntimeStatus | null;
+  runtimeBusy: boolean;
+  runtimeError: string | null;
+  isOnboardingOpen: boolean;
+  onboardingDismissed: boolean;
+
+  setRuntimeStatus: (status: RuntimeStatus | null) => void;
+  setRuntimeBusy: (busy: boolean) => void;
+  setRuntimeError: (error: string | null) => void;
+  openOnboarding: () => void;
+  closeOnboarding: () => void;
+  setOnboardingDismissed: (dismissed: boolean) => void;
+}
+
+export type AppState = ChatSlice & UiSlice & ProjectSlice & ModelSlice & WritingGoalSlice & DiffPreviewSlice & RuntimeSlice;

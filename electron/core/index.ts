@@ -3,6 +3,8 @@ export { handleIpc, type IpcHandler } from './ipc';
 
 export {
   AI_CANVAS_DIR,
+  OPENCODE_RUNTIME_DIR,
+  OPENCODE_CONFIG_FILE,
   DEFAULT_CANVAS_NAME,
   CHAT_SESSION_NAME,
   FEATURE_META_NAME,
@@ -27,5 +29,8 @@ export {
   getWorkspacePath,
   getAutosaveStatusPath,
   getAssetsDirPath,
+  getBackendDirPath,
+  getBackendConfigPath,
+  getBackendLocalBinaryPath,
   markdownToBasicHtml,
 } from './utils';

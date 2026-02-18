@@ -195,6 +195,11 @@ export function ProjectSelector() {
     restoreSelectedModels,
     setSelectedVariant,
     setActiveWritingGoal,
+    setRuntimeStatus,
+    setRuntimeError,
+    openOnboarding,
+    closeOnboarding,
+    setOnboardingDismissed,
   } = useStore();
 
   const loadFeatureContext = async (nextProjectPath: string, featureId: string, workspace: WorkspaceData) => {
@@ -301,6 +306,23 @@ export function ProjectSelector() {
     const treeResult = await api.listCanvasTree(path);
     if (treeResult.success && treeResult.tree) {
       setCanvasTree(treeResult.tree as any);
+    }
+
+    const runtimeResult = await api.runtimeCheckStatus(path);
+    if (runtimeResult.success && runtimeResult.data) {
+      const status = runtimeResult.data;
+      setRuntimeStatus(status);
+      setRuntimeError(null);
+      setOnboardingDismissed(status.onboardingDone);
+
+      if (!status.onboardingDone) {
+        openOnboarding();
+      } else {
+        closeOnboarding();
+      }
+    } else {
+      setRuntimeError(runtimeResult.error ?? '런타임 상태를 확인하지 못했습니다');
+      openOnboarding();
     }
   };
 

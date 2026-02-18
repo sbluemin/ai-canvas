@@ -5,6 +5,7 @@ import { registerProjectHandlers } from './project';
 import { registerAiHandlers } from './ai';
 import { registerWindowHandlers } from './window';
 import { registerSettingsHandlers } from './settings';
+import { registerRuntimeHandlers } from './runtime';
 import type { ThemeMode } from './settings';
 
 export function registerIpcHandlers(
@@ -16,5 +17,6 @@ export function registerIpcHandlers(
   registerProjectHandlers();
   registerAiHandlers();
   registerSettingsHandlers(onThemeChanged);
+  registerRuntimeHandlers();
   registerWindowHandlers(createWindow);
 }
