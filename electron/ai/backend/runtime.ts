@@ -8,7 +8,7 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { resolveOpencodeBinary } from './binary-resolver';
 import type { OpenCodeChatRequest, OpenCodeChatChunk, OpenCodeChatResult, OpenCodeJsonEvent } from './types';
-import { getBackendDirPath } from '../core';
+import { getBackendDirPath } from '../../core';
 
 let runtimeProjectPath: string | null = null;
 let runtimeBinaryMode: 'auto' | 'local' | 'global' = 'auto';
@@ -16,6 +16,10 @@ let runtimeBinaryMode: 'auto' | 'local' | 'global' = 'auto';
 export function configureRuntimeProjectPath(projectPath: string | null, binaryMode: 'auto' | 'local' | 'global' = 'auto'): void {
   runtimeProjectPath = projectPath;
   runtimeBinaryMode = binaryMode;
+}
+
+export function getRuntimeProjectPath(): string | null {
+  return runtimeProjectPath;
 }
 
 // ─── 환경 설정 유틸 ───
@@ -48,7 +52,7 @@ function createRuntimeEnv(): NodeJS.ProcessEnv {
     }
   }
 
-  if (runtimeProjectPath && runtimeBinaryMode === 'local') {
+  if (runtimeProjectPath) {
     env.OPENCODE_CONFIG_DIR = getBackendDirPath(runtimeProjectPath);
   } else {
     delete env.OPENCODE_CONFIG_DIR;
@@ -122,10 +126,13 @@ export class OpenCodeRuntime {
     const binaryPath = resolveOpencodeBinary();
     let child: ChildProcess;
 
+    const cwd = runtimeProjectPath ?? undefined;
+
     if (binaryPath) {
       child = spawn(binaryPath, args, {
         stdio: ['ignore', 'pipe', 'pipe'],
         env,
+        cwd,
         windowsHide: true,
       });
     } else {
@@ -136,6 +143,7 @@ export class OpenCodeRuntime {
       child = spawn('opencode', args, {
         stdio: ['ignore', 'pipe', 'pipe'],
         env,
+        cwd,
         windowsHide: true,
         shell: false,
       });
@@ -153,7 +161,7 @@ export class OpenCodeRuntime {
   /** chat 명령을 실행하고 스트리밍 결과를 반환한다. */
   async chat(request: OpenCodeChatRequest, onChunk?: (chunk: OpenCodeChatChunk) => void): Promise<OpenCodeChatResult> {
     return new Promise((resolve) => {
-      const args = ['run', composePrompt(request.prompt, request.systemInstruction), '--format', 'json'];
+      const args = ['run', composePrompt(request.prompt, request.systemInstruction), '--format', 'json', '--agent', 'plan'];
       if (request.model) {
         args.push('--model', request.model);
       }

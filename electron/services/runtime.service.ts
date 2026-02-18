@@ -9,7 +9,7 @@ import {
   getBackendDirPath,
   getBackendLocalBinaryPath,
 } from '../core';
-import { configureOpenCodeRuntime } from '../ai-backend';
+import { configureOpenCodeRuntime } from '../ai';
 
 const execFileAsync = promisify(execFile);
 

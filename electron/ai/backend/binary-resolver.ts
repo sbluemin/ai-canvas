@@ -9,7 +9,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { getBackendLocalBinaryPath } from '../core';
+import { getBackendLocalBinaryPath } from '../../core';
 
 /** 캐시된 바이너리 경로 */
 let resolvedBinaryPath: string | null | undefined;

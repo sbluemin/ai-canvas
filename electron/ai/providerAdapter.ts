@@ -1,5 +1,5 @@
 import type { IpcMainInvokeEvent } from 'electron';
-import { chatWithOpenCode } from '../ai-backend';
+import { chatWithOpenCode } from './backend';
 
 export async function callProvider(
   _event: IpcMainInvokeEvent,

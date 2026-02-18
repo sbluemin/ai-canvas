@@ -1,4 +1,4 @@
-import { fetchOpenCodeModelsVerbose } from '../ai-backend';
+import { fetchOpenCodeModelsVerbose } from './backend';
 
 interface OpenCodeVerboseModelData {
   name?: string;

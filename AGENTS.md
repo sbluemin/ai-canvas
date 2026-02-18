@@ -39,7 +39,7 @@
 #### 적용 컴포넌트
 | 컴포넌트 | 패턴 |
 |----------|------|
-| ModelSelector 3종 | Glass Segment Group (단일 반투명 컨테이너, 1px divider) |
+| ModelSelector | Status Capsule 트리거 + Split-Pane Glass 드롭다운 (Provider→Model→Variant 계층 선택) |
 | Goal / Export / Settings | Ghost Button + 인라인 SVG |
 | SettingsModal | Split Layout (Sidebar Nav + Content Area) |
 | Width 컨트롤 | Glass Icon Toggle (3개 아이콘) |
@@ -129,9 +129,8 @@ ai-canvas/
 │   ├── ipc/                      # IPC 핸들러 (ai, dialog, fs, project, settings, window)
 │   │   └── runtime.ts            # runtime:* 채널 (상태조회/설치/온보딩완료/모드전환)
 │   ├── services/                 # 비즈니스 로직 (project.service, export.service, runtime.service)
-│   ├── ai/                       # 2-phase AI 워크플로우 (workflow, parser, providerAdapter, models)
-│   ├── ai-backend/               # OpenCode CLI 런타임 (spawn/stream/kill, API만 외부 노출)
-│   │   ├── runtime context        # 프로젝트 경로 + 바이너리 모드(local/global) 반영
+│   ├── ai/                       # 2-phase AI 워크플로우 + OpenCode 런타임
+│   │   ├── backend/              # OpenCode CLI 런타임 (spawn/stream/kill, API만 외부 노출)
 │   └── prompts/                  # Phase 1/2 프롬프트 빌더 + Zod 스키마
 ├── tests/                        # Playwright E2E 테스트
 ├── .github/workflows/publish.yml # CI/CD (macOS + Windows → GitHub Release)

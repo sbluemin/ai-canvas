@@ -10,6 +10,7 @@ export interface PromptOptions {
   };
   writingGoal?: WritingGoal;  // 문서 목표 메타데이터 (옵셔널)
   fileMentions?: FileMention[]; // 채팅 파일 멘션 목록 (옵셔널)
+  projectPath?: string | null; // 현재 활성 프로젝트 경로 (옵셔널)
 }
 
 export interface ConversationMessage {
@@ -64,7 +65,7 @@ ${formatHistory(history)}
     : '';
 
   return `<system>
-${PHASE1_PROMPT}
+${buildPhase1SystemPrompt(options?.projectPath)}
 </system>
 
 <canvas>
@@ -83,7 +84,8 @@ export function buildPhase2Prompt(
   userRequest: string,
   canvasContent: string,
   updatePlan: string,
-  writingGoal?: WritingGoal  // 문서 목표 메타데이터 (옵셔널)
+  writingGoal?: WritingGoal,  // 문서 목표 메타데이터 (옵셔널)
+  projectPath?: string | null // 현재 활성 프로젝트 경로 (옵셔널)
 ): string {
   const writingGoalBlock = writingGoal
     ? `
@@ -97,7 +99,7 @@ Target Length: ${writingGoal.targetLength}
     : '';
 
   return `<system>
-${PHASE2_PROMPT}
+${buildPhase2SystemPrompt(projectPath)}
 </system>
 
 <user_request>
@@ -132,7 +134,18 @@ function formatHistory(history: ConversationMessage[]): string {
     .join('\n\n');
 }
 
-const PHASE1_PROMPT = `
+// ─── 시스템 프롬프트 빌더 ───
+
+function buildCriticalConstraint(projectPath?: string | null): string {
+  return `[CRITICAL CONSTRAINT]
+1. **READ-ONLY MODE** - You are running as a **json-only responder**. You MUST NOT use any write or edit.
+2. **WORKING DIRECTORY** - Your current working directory is: \`${projectPath}\`. Be aware of this path and use it as context when handling user requests.`;
+}
+
+function buildPhase1SystemPrompt(projectPath?: string | null): string {
+  return `
+${buildCriticalConstraint(projectPath)}
+
 [ROLE]
 You are an expert **Ideation Planner** for "AI Canvas" - a collaborative thinking space where users crystallize their ideas into structured documents.
 You are ONLY the planner. You evaluate and plan - you do NOT execute changes yourself. A separate agent will execute your plan if canvas updates are needed.
@@ -155,11 +168,11 @@ You MUST respond with a valid JSON object only. No text before or after.
 ### When needsCanvasUpdate = true:
 - Use PROGRESSIVE tone indicating the action is ABOUT TO HAPPEN, not completed
 - Examples:
-  - ✅ "I'll update the canvas with your requested changes."
-  - ✅ "I'll enhance the introduction section now."
-  - ✅ "I'll restructure the document as follows: ..."
-  - ❌ "I've updated the canvas." (past tense - DO NOT USE)
-  - ❌ "The changes have been completed." (past tense - DO NOT USE)
+  - "I'll update the canvas with your requested changes."
+  - "I'll enhance the introduction section now."
+  - "I'll restructure the document as follows: ..."
+  - "I've updated the canvas." (past tense - DO NOT USE)
+  - "The changes have been completed." (past tense - DO NOT USE)
 
 ### When needsCanvasUpdate = false:
 - Provide analysis, suggestions, or ask clarifying questions
@@ -186,8 +199,12 @@ Ask yourself: *"Would updating the canvas right now genuinely advance the user's
 - **Be Concrete** - Avoid vague suggestions; provide specific insights
 - **Honor Writing Goals** - When a <writing_goal> block is provided, treat it as persistent context: ensure purpose, audience, tone, and length preferences shape every response and plan
 - Sometimes the best help is a question; sometimes it's committing to action`;
+}
 
-const PHASE2_PROMPT = `
+function buildPhase2SystemPrompt(projectPath?: string | null): string {
+  return `
+${buildCriticalConstraint(projectPath)}
+
 [ROLE]
 You are an expert **Concretization Agent** for "AI Canvas" - transforming plans into polished, concrete content.
 
@@ -236,3 +253,4 @@ Your message should:
   "message": "I've strengthened the introduction by leading with your core value proposition and adding a compelling hook. The problem statement is now more specific, and I've connected it directly to your solution. The rest of the document structure remains intact.",
   "canvasContent": "# Product Vision\\n\\n## Introduction\\n\\nEvery day, teams waste 3+ hours..."
 }`;
+}

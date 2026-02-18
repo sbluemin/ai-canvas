@@ -28,20 +28,20 @@ electron/
 │   └── export.service.ts   # HTML/PDF/DOCX 내보내기
 │   └── runtime.service.ts  # opencode 설치/로그인 안내/모드/상태 관리
 │
-├── ai/                  # 2-phase AI 워크플로우 엔진
+├── ai/                  # 2-phase AI 워크플로우 엔진 + OpenCode 런타임
+│   ├── index.ts         # ai/ 모듈 공개 API (워크플로우 + backend re-export)
 │   ├── workflow.ts      # phase 전환 + 이벤트 송신
-│   ├── providerAdapter.ts  # ai-backend chat adapter
+│   ├── providerAdapter.ts  # backend chat adapter
 │   ├── parser.ts        # JSON 추출 + schema/fallback
 │   ├── parser.test.ts   # parser 회귀 테스트
 │   ├── models.ts        # 모델 조회/파싱
-│   └── types.ts         # AiChatRequest, AiChatEvent 등
-│
-├── ai-backend/          # OpenCode 런타임 (API 계층만 노출)
-│   ├── index.ts         # 공개 API surface (chatWithOpenCode, fetchModels, shutdown)
-│   ├── client.ts        # 런타임 싱글톤 + API 함수 (내부)
-│   ├── runtime.ts       # 프로세스 spawn/kill (내부)
-│   ├── binary-resolver.ts  # Windows 바이너리 탐색 (내부)
-│   └── types.ts         # OpenCode 타입
+│   ├── types.ts         # AiChatRequest, AiChatEvent 등
+│   └── backend/         # OpenCode 런타임 (API 계층만 노출)
+│       ├── index.ts     # 공개 API surface (chatWithOpenCode, fetchModels, shutdown)
+│       ├── client.ts    # 런타임 싱글톤 + API 함수 (내부)
+│       ├── runtime.ts   # 프로세스 spawn/kill (내부)
+│       ├── binary-resolver.ts  # Windows 바이너리 탐색 (내부)
+│       └── types.ts     # OpenCode 타입
 │
 └── prompts/             # 프롬프트 빌더/스키마
     ├── system.ts        # Phase1/Phase2 프롬프트 구성
@@ -60,18 +60,18 @@ electron/
 | 앱 설정 | `ipc/settings.ts` | electron-store 기반, Windows titleBarOverlay 테마 동기화 |
 | 런타임 설정 | `ipc/runtime.ts`, `services/runtime.service.ts` | 프로젝트 로컬 opencode 설치/로그인 안내/모드 |
 | AI 실행 엔진 | `ai/workflow.ts` | phase 전환 + 이벤트 송신 |
-| OpenCode API | `ai-backend/index.ts` | 런타임 캡슐화 (client → runtime) |
-| 모델 조회 | `ai/models.ts` | ai-backend 경유 모델 목록 |
+| OpenCode API | `ai/backend/index.ts` | 런타임 캡슐화 (client → runtime) |
+| 모델 조회 | `ai/models.ts` | backend 경유 모델 목록 |
 
 ## CONVENTIONS
 - IPC 채널: prefix 네임스페이스 (`ai:`, `project:`, `fs:`, `dialog:`, `settings:`, `window:`).
 - IPC 핸들러는 라우팅만 담당, 비즈니스 로직은 `services/`에 위임.
-- `ai-backend/`은 `index.ts` 통해서만 외부 API 노출 (client/runtime/binary-resolver는 내부).
+- `ai/backend/`은 `index.ts` 통해서만 외부 API 노출 (client/runtime/binary-resolver는 내부).
 - preload는 CJS 번들만 허용 (`--format=cjs`).
 
 ## ANTI-PATTERNS
 - `nodeIntegration: true` 또는 preload 우회 접근 금지.
 - renderer에 provider 토큰/secret 직접 노출 금지.
 - `dist-electron/` 산출물 직접 편집 금지.
-- `ai-backend/runtime.ts`·`binary-resolver.ts` 외부 직접 import 금지 (index.ts 경유).
+- `ai/backend/runtime.ts`·`binary-resolver.ts` 외부 직접 import 금지 (index.ts 경유).
 - IPC 핸들러에 비즈니스 로직 직접 작성 금지 (서비스 위임).

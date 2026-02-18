@@ -11,6 +11,7 @@ export {
   fetchOpenCodeModelsVerbose,
   shutdownOpenCodeRuntime,
   configureOpenCodeRuntime,
+  getOpenCodeProjectPath,
 } from './client';
 
 // 타입만 export (외부에서 타입 참조용)

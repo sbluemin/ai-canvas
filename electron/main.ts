@@ -6,7 +6,7 @@ import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
 import { registerIpcHandlers } from './ipc/index';
 import { readStoredThemeMode } from './ipc/settings';
-import { shutdownOpenCodeRuntime } from './ai-backend';
+import { shutdownOpenCodeRuntime } from './ai';
 import type { ThemeMode } from './ipc/settings';
 
 const __filename = fileURLToPath(import.meta.url);

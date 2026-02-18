@@ -6,7 +6,7 @@
  * 이것이 ai-backend 모듈의 유일한 비즈니스 로직 진입점이다.
  */
 import { OpenCodeRuntime } from './runtime';
-import { configureRuntimeProjectPath } from './runtime';
+import { configureRuntimeProjectPath, getRuntimeProjectPath } from './runtime';
 import { configureBinaryResolverContext } from './binary-resolver';
 import type { OpenCodeChatRequest, OpenCodeChatChunk, OpenCodeChatResult } from './types';
 
@@ -36,4 +36,8 @@ export type RuntimeBinaryMode = 'auto' | 'local' | 'global';
 export function configureOpenCodeRuntime(projectPath: string | null, binaryMode: RuntimeBinaryMode = 'auto'): void {
   configureRuntimeProjectPath(projectPath, binaryMode);
   configureBinaryResolverContext(projectPath, binaryMode);
+}
+
+export function getOpenCodeProjectPath(): string | null {
+  return getRuntimeProjectPath();
 }

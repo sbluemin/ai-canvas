@@ -3,6 +3,7 @@ import type { AiChatRequest, AiChatEvent } from './types';
 import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
 import { parsePhase1Response, parsePhase2Response } from './parser';
 import { callProvider } from './providerAdapter';
+import { getOpenCodeProjectPath } from './backend';
 
 const PHASE2_STREAM_CHUNK_SIZE = 12;
 const PHASE2_STREAM_TICK_MS = 16;
@@ -136,7 +137,7 @@ export async function executeAiChatWorkflow(
   try {
     sendEvent({ runId, type: 'phase', phase: 'evaluating' });
     
-    const phase1Prompt = buildPhase1Prompt(prompt, canvasContent, history, { selection, writingGoal, fileMentions });
+    const phase1Prompt = buildPhase1Prompt(prompt, canvasContent, history, { selection, writingGoal, fileMentions, projectPath: getOpenCodeProjectPath() });
     
     let phase1RawBuffer = '';
     let lastPhase1Message = '';
@@ -168,7 +169,7 @@ export async function executeAiChatWorkflow(
       currentPhase = 'updating';
       sendEvent({ runId, type: 'phase', phase: 'updating' });
       
-      const phase2Prompt = buildPhase2Prompt(prompt, canvasContent, phase1Result.updatePlan, writingGoal);
+      const phase2Prompt = buildPhase2Prompt(prompt, canvasContent, phase1Result.updatePlan, writingGoal, getOpenCodeProjectPath());
       
       const phase2RawText = await callProvider(event, phase2Prompt, undefined, modelId, variant);
       
