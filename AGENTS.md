@@ -39,12 +39,11 @@
 #### 적용 컴포넌트
 | 컴포넌트 | 패턴 |
 |----------|------|
-| ModelSelector | Status Capsule 트리거 + Split-Pane Glass 드롭다운 (Provider→Model→Variant 계층 선택) |
+| ModelSelector | Intelligent Control Capsule — Runtime dot(global=초록/project=파란/missing=빨간) + Model 선택 + Refresh 통합. Split-Pane Glass 드롭다운 (Provider→Model→Variant 계층 선택) + Footer (런타임 상세/Setup) |
 | Goal / Export / Settings | Ghost Button + 인라인 SVG |
 | SettingsModal | Split Layout (Sidebar Nav + Content Area) |
 | Width 컨트롤 | Glass Icon Toggle (3개 아이콘) |
 | Save Status | Pulsing Dot Indicator |
-| ModelRefreshButton | Ghost Square + `scale(0.92)` active |
 
 #### 테마
 - 다크: `rgba(30,31,32,0.65)` bg, `rgba(60,63,65,0.5)` border
@@ -63,7 +62,7 @@
 
 ### 레이아웃
 - **App.tsx**: 루트 — Allotment 좌우 분할 (모바일: 단일 캔버스)
-- **CommandBar**: 상단 — ProjectSelector, ModelSelector(Glass Segment), Goal/Export/Settings
+- **CommandBar**: 상단 — ProjectSelector, ModelSelector(Intelligent Control Capsule: Runtime+Model+Refresh 통합), Goal/Export/Settings
 - **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리)
 - **OnboardingWizard**: 프로젝트별 OpenCode 설치/로그인 안내 온보딩 (설치→로그인 안내, 글로벌/로컬 선택)
 - **CanvasPanel**: 우측 에디터 — MilkdownEditor, EditorToolbar, SelectionAiPopup, DiffPreview
@@ -101,8 +100,7 @@
 ai-canvas/
 ├── src/                          # 렌더러 (→ src/AGENTS.md)
 │   ├── components/               # UI 컴포넌트 (→ src/components/AGENTS.md)
-│   │   ├── CommandBar/           # 상단 커맨드바 (ProjectSelector/, ModelSelector/, ModelRefreshButton/)
-│   │   │   └── RuntimeStatus/     # OpenCode 런타임 상태 배지
+│   │   ├── CommandBar/           # 상단 커맨드바 (ProjectSelector/, ModelSelector/)
 │   │   ├── ChatPanel.tsx         # AI 채팅
 │   │   ├── CanvasPanel.tsx       # 마크다운 에디터
 │   │   ├── OnboardingWizard.tsx  # OpenCode 온보딩 위저드

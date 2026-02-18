@@ -357,4 +357,9 @@ export const api = {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.window.create();
   },
+
+  async showEmojiPanel(): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.window.showEmojiPanel();
+  },
 };

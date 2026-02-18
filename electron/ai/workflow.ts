@@ -7,6 +7,7 @@ import { getOpenCodeProjectPath } from './backend';
 
 const PHASE2_STREAM_CHUNK_SIZE = 12;
 const PHASE2_STREAM_TICK_MS = 16;
+const PHASE2_TIMEOUT_MS = 120_000; // Phase 2 응답 타임아웃 (2분)
 
 function decodeJsonStringFragment(value: string): string {
   try {
@@ -84,8 +85,12 @@ export async function executeAiChatWorkflow(
   const { runId, prompt, history, canvasContent, selection, modelId, variant, writingGoal, fileMentions } = request;
   
   const sendEvent = (evt: AiChatEvent) => {
-    if (!event.sender.isDestroyed()) {
-      event.sender.send('ai:chat:event', evt);
+    try {
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('ai:chat:event', evt);
+      }
+    } catch {
+      // 윈도우가 isDestroyed()와 send() 사이에 파괴될 수 있음 (TOCTOU)
     }
   };
 
@@ -171,7 +176,12 @@ export async function executeAiChatWorkflow(
       
       const phase2Prompt = buildPhase2Prompt(prompt, canvasContent, phase1Result.updatePlan, writingGoal, getOpenCodeProjectPath());
       
-      const phase2RawText = await callProvider(event, phase2Prompt, undefined, modelId, variant);
+      const phase2RawText = await Promise.race([
+        callProvider(event, phase2Prompt, undefined, modelId, variant),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Phase 2 timed out')), PHASE2_TIMEOUT_MS)
+        ),
+      ]);
       
       const phase2Result = parsePhase2Response(phase2RawText);
       

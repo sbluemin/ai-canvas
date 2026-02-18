@@ -41,5 +41,4 @@ src/
 
 ## ANTI-PATTERNS
 - 컴포넌트에서 IPC channel 문자열 직접 사용 금지 (`api/`에 캡슐화).
-- `pendingCanvasPatch`를 우회해 캔버스를 즉시 mutate 금지.
 - provider/auth 상태를 로컬 컴포넌트 state로 중복 보관 금지 (store 단일 소스).

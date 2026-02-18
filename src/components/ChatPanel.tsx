@@ -27,24 +27,59 @@ function getFileName(filePath: string): string {
 }
 
 function normalizeMentionPath(rawPath: string): string {
-  const trimmed = rawPath.trim().replace(/[.,!?;:]+$/, '');
-  if (trimmed.startsWith('./')) {
+  const trimmed = rawPath
+    .trim()
+    .replace(/^[\[\{\("'`]+/, '')
+    .replace(/[\]\}\)"'`,.!?;:]+$/, '')
+    .replace(/\\+/g, '/')
+    .replace(/\/+/g, '/');
+
+  if (trimmed.startsWith('./') || trimmed.startsWith('.\\')) {
     return trimmed.slice(2);
   }
+
   return trimmed;
 }
 
-function resolveMentionPath(mentionPath: string, projectFiles: string[]): string {
-  if (projectFiles.includes(mentionPath)) {
-    return mentionPath;
+function normalizePathForMatch(filePath: string): string {
+  return filePath
+    .replace(/\\+/g, '/')
+    .replace(/\/+/g, '/')
+    .replace(/^\.\//, '')
+    .toLowerCase();
+}
+
+function resolveMentionPath(mentionPath: string, projectFiles: string[]): string | null {
+  const normalizedMention = normalizePathForMatch(mentionPath);
+  if (!normalizedMention) {
+    return null;
   }
 
-  const byBasename = projectFiles.filter((path) => getFileName(path) === mentionPath);
+  const normalizedProjectFiles = projectFiles.map((filePath) => ({
+    filePath,
+    normalized: normalizePathForMatch(filePath),
+    baseName: getFileName(filePath).toLowerCase(),
+  }));
+
+  const exactMatches = normalizedProjectFiles.filter((item) => item.normalized === normalizedMention);
+  if (exactMatches.length === 1) {
+    return exactMatches[0].filePath;
+  }
+
+  const mentionBaseName = getFileName(normalizedMention).toLowerCase();
+  const byBasename = normalizedProjectFiles.filter((item) => item.baseName === mentionBaseName);
   if (byBasename.length === 1) {
-    return byBasename[0];
+    return byBasename[0].filePath;
   }
 
-  return mentionPath;
+  const suffixMatches = normalizedProjectFiles.filter((item) =>
+    normalizedMention === item.normalized || normalizedMention.endsWith(`/${item.normalized}`)
+  );
+  if (suffixMatches.length === 1) {
+    return suffixMatches[0].filePath;
+  }
+
+  return null;
 }
 
 function extractFileMentions(input: string, projectFiles: string[]): FileMention[] {
@@ -58,7 +93,7 @@ function extractFileMentions(input: string, projectFiles: string[]): FileMention
 
     if (normalizedPath) {
       const resolvedPath = resolveMentionPath(normalizedPath, projectFiles);
-      if (!seen.has(resolvedPath)) {
+      if (resolvedPath && !seen.has(resolvedPath)) {
         mentions.push({
           id: generateId('mention'),
           fileName: getFileName(resolvedPath),
@@ -127,16 +162,13 @@ function buildMentionSuggestions(query: string, projectFiles: string[]): string[
   return scored.slice(0, MAX_MENTION_SUGGESTIONS).map((item) => item.filePath);
 }
 
-const OPENCODE_INFO = {
-  name: 'OpenCode',
-  icon: <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.4 }}>OC</span>,
+const AI_CANVAS_INFO = {
+  name: 'AI Canvas',
+  icon: <Logo />,
 };
 
-function getProviderInfo(provider?: string) {
-  if (provider === 'opencode') {
-    return OPENCODE_INFO;
-  }
-  return { name: 'AI Canvas', icon: <Logo /> };
+function getProviderInfo(_provider?: string) {
+  return AI_CANVAS_INFO;
 }
 
 export function ChatPanel() {
@@ -489,9 +521,9 @@ export function ChatPanel() {
           <div className="message assistant">
             <div className="message-header">
               <div className="ai-avatar">
-                {OPENCODE_INFO.icon}
+              {AI_CANVAS_INFO.icon}
               </div>
-              <span className="ai-name">{OPENCODE_INFO.name}</span>
+              <span className="ai-name">{AI_CANVAS_INFO.name}</span>
             </div>
             <div className="message-content">
               <div className="progress-indicator">

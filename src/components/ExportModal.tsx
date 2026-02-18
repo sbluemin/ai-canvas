@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { useStore, type ShareBundle } from '../store/useStore';
 import { api } from '../api';
+import { CloseIcon, GlobeIcon, FileTextIcon, FilePenIcon, UploadIcon, DownloadIcon } from './Icons';
 import './ExportModal.css';
+
+type ExportFormat = 'html' | 'pdf' | 'docx';
+
+const EXPORT_FORMATS: { id: ExportFormat; label: string; desc: string; icon: React.ReactNode }[] = [
+  { id: 'html', label: 'HTML', desc: 'Web page', icon: <GlobeIcon width={24} height={24} /> },
+  { id: 'pdf',  label: 'PDF',  desc: 'Print-ready', icon: <FileTextIcon width={24} height={24} /> },
+  { id: 'docx', label: 'DOCX', desc: 'Word document', icon: <FilePenIcon width={24} height={24} /> },
+];
 
 export function ExportModal() {
   const { 
@@ -18,10 +27,12 @@ export function ExportModal() {
   } = useStore();
   
   const [processing, setProcessing] = useState(false);
+  const [activeFormat, setActiveFormat] = useState<ExportFormat | null>(null);
 
-  const handleExportDocument = async (format: 'html' | 'pdf' | 'docx') => {
+  const handleExportDocument = async (format: ExportFormat) => {
     if (!projectPath) return;
     setProcessing(true);
+    setActiveFormat(format);
     try {
       const result = await api.exportDocument(projectPath, format, canvasContent);
       if (result.success) {
@@ -34,6 +45,7 @@ export function ExportModal() {
       addToast('error', `Export error: ${String(error)}`);
     } finally {
       setProcessing(false);
+      setActiveFormat(null);
     }
   };
 
@@ -47,7 +59,7 @@ export function ExportModal() {
         conversations,
         activeConversationId,
         canvasFiles,
-        canvasContent, // 현재 캔버스 내용도 포함 (선택적)
+        canvasContent,
         autosaveStatus,
       };
       
@@ -86,63 +98,65 @@ export function ExportModal() {
   if (!isExportModalOpen) return null;
 
   return (
-    <div className="export-modal-overlay" onClick={closeExportModal}>
+    <div className="export-overlay" onClick={closeExportModal}>
       <div className="export-modal" onClick={e => e.stopPropagation()}>
-        <div className="export-header">
-          <h3>Export & Share</h3>
-          <button type="button" onClick={closeExportModal}>Close</button>
-        </div>
-        
-        <div className="export-body">
-          <div className="export-section">
-            <h4>Export Document</h4>
-            <div className="export-grid">
-              <button 
-                className="export-btn" 
-                onClick={() => handleExportDocument('html')}
-                disabled={processing}
-              >
-                <span className="export-icon">🌐</span>
-                <span>HTML</span>
-              </button>
-              <button 
-                className="export-btn" 
-                onClick={() => handleExportDocument('pdf')}
-                disabled={processing}
-              >
-                <span className="export-icon">📄</span>
-                <span>PDF</span>
-              </button>
-              <button 
-                className="export-btn" 
-                onClick={() => handleExportDocument('docx')}
-                disabled={processing}
-              >
-                <span className="export-icon">📝</span>
-                <span>DOCX</span>
-              </button>
-            </div>
-          </div>
+        {/* 헤더 */}
+        <header className="export-header">
+          <h4 className="export-title">Export & Share</h4>
+          <button type="button" className="export-close-btn" onClick={closeExportModal} aria-label="Close export">
+            <CloseIcon />
+          </button>
+        </header>
 
-          <div className="export-section">
-            <h4>Project Share</h4>
-            <div className="share-actions">
-              <button 
-                className="share-btn" 
+        {/* 본문 */}
+        <div className="export-body">
+          {/* 문서 내보내기 섹션 */}
+          <section className="export-section">
+            <span className="export-section-label">Document</span>
+            <div className="export-format-grid">
+              {EXPORT_FORMATS.map(fmt => (
+                <button
+                  key={fmt.id}
+                  type="button"
+                  className={`export-format-card${activeFormat === fmt.id ? ' active' : ''}`}
+                  onClick={() => handleExportDocument(fmt.id)}
+                  disabled={processing}
+                >
+                  <span className="format-icon">{fmt.icon}</span>
+                  <span className="format-label">{fmt.label}</span>
+                  <span className="format-desc">{fmt.desc}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* 구분선 */}
+          <div className="export-divider" />
+
+          {/* 프로젝트 공유 섹션 */}
+          <section className="export-section">
+            <span className="export-section-label">Project Bundle</span>
+            <div className="export-share-row">
+              <button
+                type="button"
+                className="export-share-btn"
                 onClick={handleExportBundle}
                 disabled={processing}
               >
-                📤 Export Bundle
+                <UploadIcon width={16} height={16} />
+                <span>Export</span>
               </button>
-              <button 
-                className="share-btn" 
+              <button
+                type="button"
+                className="export-share-btn"
                 onClick={handleImportBundle}
                 disabled={processing}
               >
-                📥 Import Bundle
+                <DownloadIcon width={16} height={16} />
+                <span>Import</span>
               </button>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>

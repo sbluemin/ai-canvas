@@ -1,9 +1,14 @@
-import { BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { handleIpc } from '../core';
 
 export function registerWindowHandlers(createWindow: () => BrowserWindow) {
   handleIpc('window:create', async () => {
     createWindow();
+    return { success: true };
+  });
+
+  handleIpc('window:show-emoji-panel', async () => {
+    app.showEmojiPanel();
     return { success: true };
   });
 }

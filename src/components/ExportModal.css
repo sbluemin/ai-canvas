@@ -1,136 +1,219 @@
-.export-modal-overlay {
+/* ── Overlay ── */
+.export-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1100;
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
+/* ── Modal Container (Glass Surface) ── */
 .export-modal {
-  background-color: var(--bg-secondary);
+  width: min(420px, 92vw);
+  background: var(--bg-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  width: 500px;
-  max-width: 90vw;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
+/* ── Header ── */
 .export-header {
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border-color);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.export-header h3 {
+.export-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.export-header button {
-  background: none;
+.export-close-btn {
+  background: transparent;
   border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.875rem;
-  padding: 4px 8px;
-  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
-.export-header button:hover {
-  background-color: var(--bg-hover);
+.export-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
+[data-theme='light'] .export-close-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ── Body ── */
 .export-body {
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
-.export-section h4 {
-  margin: 0 0 12px 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+/* ── Section ── */
+.export-section-label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
 
-.export-grid {
+/* ── Document Format Cards ── */
+.export-format-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
-.export-btn {
+.export-format-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  gap: 6px;
+  padding: 18px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-secondary);
+}
+
+[data-theme='light'] .export-format-card {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.export-format-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='light'] .export-format-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.export-format-card.active {
+  background: var(--accent-blue-dim);
+  border-color: var(--accent-blue);
   color: var(--text-primary);
 }
 
-.export-btn:hover {
-  border-color: var(--accent-color);
-  background-color: var(--bg-hover);
-  transform: translateY(-2px);
-}
-
-.export-btn:disabled {
-  opacity: 0.5;
+.export-format-card:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
-.export-icon {
-  font-size: 24px;
+.format-icon {
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
 }
 
-.share-actions {
+.export-format-card:hover .format-icon {
+  color: var(--accent-blue);
+}
+
+.format-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.format-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.export-format-card:hover .format-desc {
+  color: var(--text-secondary);
+}
+
+/* ── Divider ── */
+.export-divider {
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* ── Share Buttons ── */
+.export-share-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
-.share-btn {
+.export-share-btn {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
-  color: var(--text-primary);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-secondary);
+  font-size: 13px;
   font-weight: 500;
 }
 
-.share-btn:hover {
-  border-color: var(--accent-color);
-  background-color: var(--bg-hover);
+.export-share-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
-.share-btn:disabled {
-  opacity: 0.5;
+[data-theme='light'] .export-share-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.export-share-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .export-modal {
+    width: 95vw;
+  }
+
+  .export-format-grid {
+    gap: 8px;
+  }
+
+  .export-format-card {
+    padding: 14px 8px;
+  }
 }

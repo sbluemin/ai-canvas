@@ -1,8 +1,6 @@
 import './CommandBar.css';
 import { ProjectSelector } from './ProjectSelector';
 import { ModelSelector } from './ModelSelector';
-import { ModelRefreshButton } from './ModelRefreshButton';
-import { RuntimeStatusBadge } from './RuntimeStatus';
 import { useStore } from '../../store/useStore';
 
 export function CommandBar() {
@@ -11,9 +9,7 @@ export function CommandBar() {
   return (
     <div className="command-bar">
       <div className="command-bar-left">
-        <ModelRefreshButton />
         <ModelSelector />
-        <RuntimeStatusBadge />
       </div>
       <div className="command-bar-content">
         <ProjectSelector />

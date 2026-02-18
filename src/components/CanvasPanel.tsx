@@ -3,7 +3,6 @@ import { useStore } from '../store/useStore';
 import { MilkdownEditor } from './MilkdownEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorProvider } from '../context/EditorContext';
-import { DiffPreview } from './DiffPreview';
 import { FeatureExplorer } from './FeatureExplorer';
 import { api } from '../api';
 import './CanvasPanel.css';
@@ -20,7 +19,6 @@ export function CanvasPanel() {
     setActiveCanvasFile,
     setAutosaveStatus,
     autosaveStatus,
-    pendingCanvasPatch,
     isFileExplorerOpen,
     toggleFileExplorer,
     setCanvasTree,
@@ -42,19 +40,18 @@ export function CanvasPanel() {
       const timer = setTimeout(() => {
         setShowOverlay(false);
         setIsClosing(false);
-      }, 500);
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [isUpdating, showOverlay]);
 
   useEffect(() => {
-    if (!projectPath || !activeCanvasFile || useStore.getState().pendingCanvasPatch) return;
+    if (!projectPath || !activeCanvasFile) return;
     if (autosaveTimerRef.current) {
       window.clearTimeout(autosaveTimerRef.current);
     }
     setAutosaveStatus({ state: 'idle' });
     autosaveTimerRef.current = window.setTimeout(async () => {
-      if (useStore.getState().pendingCanvasPatch) return;
       setAutosaveStatus({ state: 'saving', updatedAt: Date.now() });
       const result = await api.writeCanvasFile(projectPath, activeCanvasFile, canvasContent);
       if (result.success) {
@@ -155,7 +152,7 @@ export function CanvasPanel() {
                     </svg>
                   </button>
                 </div>
-                {!pendingCanvasPatch && <EditorToolbar />}
+                <EditorToolbar />
                 <div className={`save-status-indicator ${autosaveStatus.state}`}>
                   {autosaveStatus.state === 'saving'
                     ? 'Saving...'
@@ -168,22 +165,26 @@ export function CanvasPanel() {
               </div>
             </div>
             <div className="canvas-content">
-              {pendingCanvasPatch ? (
-                <DiffPreview />
-              ) : (
-                <MilkdownEditor />
-              )}
+              <MilkdownEditor />
               {showOverlay && (
                 <div className={`canvas-updating-overlay ${isClosing ? 'closing' : ''}`}>
-                  {!isClosing && <div className="pulse-indicator" />}
+                  {!isClosing && (
+                    <div className="overlay-content">
+                      <div className="pulse-indicator">
+                        <div className="pulse-orbit" />
+                        <div className="pulse-orbit-secondary" />
+                        <div className="pulse-core" />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
+                        </svg>
+                      </div>
+                      <span className="updating-text">Updating</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-            {projectPath && activeCanvasFile && (
-              <div className="canvas-footer">
-                <span className="file-path">{projectPath}/.ai-canvas/{activeCanvasFile}</span>
-              </div>
-            )}
+
           </div>
         </div>
       </div>

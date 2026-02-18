@@ -193,5 +193,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   window: {
     create: (): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('window:create'),
+    showEmojiPanel: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('window:show-emoji-panel'),
   },
 });

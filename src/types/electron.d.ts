@@ -106,6 +106,7 @@ interface ProjectAPI {
 
 interface WindowAPI {
   create: () => Promise<{ success: boolean; error?: string }>;
+  showEmojiPanel: () => Promise<{ success: boolean; error?: string }>;
 }
 
 type ThemeMode = 'dark' | 'light' | 'system';

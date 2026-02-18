@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '../store/useStore';
 import { TreeEntry, FeatureSummary, Conversation, Message, WritingGoal } from '../store/types';
 import { api } from '../api';
@@ -22,13 +23,12 @@ interface WorkspaceData {
 }
 
 interface InputDialogState {
-  mode: 'create-feature' | 'rename-feature' | 'new-file' | 'set-icon';
+  mode: 'create-feature' | 'rename-feature' | 'new-file';
   title: string;
   placeholder: string;
   submitLabel: string;
   featureId?: string;
   initialValue: string;
-  allowEmpty?: boolean;
 }
 
 function normalizeFeatureId(input: string): string {
@@ -257,14 +257,18 @@ function TreeNode({
           onContextMenu={(e) => onContextMenu(e, entry)}
         >
           <span className={`tree-chevron ${isExpanded ? 'expanded' : ''}`}>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-              <path d="M3 2l4 3-4 3V2z" />
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3.5 2L6.5 5L3.5 8" />
             </svg>
           </span>
-          <svg className="tree-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M1.5 1h5l1 1H14.5a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-12A.5.5 0 0 1 1.5 1z"/>
-          </svg>
-          <span className="tree-label">{`${feature?.icon ? `${feature.icon} ` : ''}${feature?.name ?? entry.name}`}</span>
+          {feature?.icon ? (
+            <span className="tree-icon tree-icon-emoji" aria-hidden="true">{feature.icon}</span>
+          ) : (
+            <svg className="tree-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2 4.5V12.5C2 13.05 2.45 13.5 3 13.5H13C13.55 13.5 14 13.05 14 12.5V5.5C14 4.95 13.55 4.5 13 4.5H8L6.5 3H3C2.45 3 2 3.45 2 4V4.5Z" />
+            </svg>
+          )}
+          <span className="tree-label">{feature?.name ?? entry.name}</span>
           {isActiveFeature && <span className={`feature-active-dot ${isActiveFeatureBusy ? 'pulse' : ''}`} aria-hidden="true" />}
         </button>
         {isExpanded && entry.children && (
@@ -306,8 +310,9 @@ function TreeNode({
       onContextMenu={(e) => onContextMenu(e, entry)}
       title={entry.path}
     >
-      <svg className="tree-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0H4zM9 1v3.5A1.5 1.5 0 0 0 10.5 6H13v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5z"/>
+      <svg className="tree-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M9.5 1.5H4C3.45 1.5 3 1.95 3 2.5V13.5C3 14.05 3.45 14.5 4 14.5H12C12.55 14.5 13 14.05 13 13.5V5L9.5 1.5Z" />
+        <path d="M9.5 1.5V5H13" />
       </svg>
       <span className="tree-label">{entry.name.replace(/\.md$/, '')}</span>
     </button>
@@ -345,6 +350,8 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
   const [inputDialog, setInputDialog] = useState<InputDialogState | null>(null);
   const [inputValue, setInputValue] = useState('');
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const emojiInputRef = useRef<HTMLInputElement>(null);
+  const emojiTargetFeatureIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     onRefreshTree();
@@ -690,23 +697,19 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
   };
 
   const openSetFeatureIconDialog = (featureId: string) => {
-    const feature = findFeature(featureId, features);
-    openInputDialog({
-      mode: 'set-icon',
-      title: `Set icon for ${featureId}`,
-      placeholder: 'emoji or text (empty to clear)',
-      submitLabel: 'Apply',
-      featureId,
-      initialValue: feature?.icon ?? '',
-      allowEmpty: true,
-    });
+    emojiTargetFeatureIdRef.current = featureId;
+    if (emojiInputRef.current) {
+      emojiInputRef.current.value = '';
+      emojiInputRef.current.focus();
+    }
+    api.showEmojiPanel();
   };
 
   const handleSubmitInputDialog = async () => {
     if (!inputDialog) return;
 
     const normalizedValue = inputValue.trim();
-    if (!inputDialog.allowEmpty && !normalizedValue) {
+    if (!normalizedValue) {
       addToast('error', 'Input is required.');
       return;
     }
@@ -724,11 +727,6 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
       case 'rename-feature':
         if (inputDialog.featureId) {
           success = await handleRenameFeature(inputDialog.featureId, normalizedValue);
-        }
-        break;
-      case 'set-icon':
-        if (inputDialog.featureId) {
-          success = await handleSetFeatureIcon(inputDialog.featureId, inputValue);
         }
         break;
       default:
@@ -779,6 +777,23 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
 
   return (
     <div className="feature-explorer">
+      {/* OS 이모지 패널에서 선택된 이모지를 캡처하기 위한 숨겨진 input */}
+      <input
+        ref={emojiInputRef}
+        aria-hidden="true"
+        tabIndex={-1}
+        style={{ position: 'absolute', opacity: 0, width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}
+        onInput={(e) => {
+          const target = e.target as HTMLInputElement;
+          const emoji = target.value;
+          const featureId = emojiTargetFeatureIdRef.current;
+          if (emoji && featureId) {
+            handleSetFeatureIcon(featureId, emoji);
+          }
+          target.value = '';
+          emojiTargetFeatureIdRef.current = null;
+        }}
+      />
       <div className="feature-explorer-header">
         <span className="feature-explorer-title">Features</span>
         <div className="feature-explorer-actions">
@@ -788,8 +803,8 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
             onClick={openCreateFeatureDialog}
             title="New feature"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M1.5 1h5l1 1H14.5a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-12A.5.5 0 0 1 1.5 1z"/>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2 4.5V12.5C2 13.05 2.45 13.5 3 13.5H13C13.55 13.5 14 13.05 14 12.5V5.5C14 4.95 13.55 4.5 13 4.5H8L6.5 3H3C2.45 3 2 3.45 2 4V4.5Z" />
             </svg>
             <span>+</span>
           </button>
@@ -799,9 +814,9 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
             onClick={onRefreshTree}
             title="Refresh"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
-              <path d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A5.501 5.501 0 0 1 13.5 8a.5.5 0 0 1-1 0 4.5 4.5 0 0 0-4.5-4.5zM2.5 8a.5.5 0 0 1 1 0 4.5 4.5 0 0 0 8.357 2.318.5.5 0 1 1 .771.636A5.501 5.501 0 0 1 2.5 8z"/>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M1.5 6.5C2.5 3.5 5 1.5 8 1.5C11.5 1.5 14.5 4.5 14.5 8C14.5 11.5 11.5 14.5 8 14.5C5 14.5 2.5 12.5 1.5 9.5" />
+              <path d="M1.5 2.5V6.5H5.5" />
             </svg>
           </button>
         </div>
@@ -835,11 +850,25 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
       </div>
 
       {inputDialog && (
-        <div className="feature-explorer-input-overlay" onClick={closeInputDialog}>
-          <div className="feature-explorer-input-modal" onClick={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          className="feature-explorer-input-overlay"
+          onClick={closeInputDialog}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') closeInputDialog();
+          }}
+          aria-label="Close dialog"
+        >
+          <div
+            className="feature-explorer-input-modal"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
             <h4>{inputDialog.title}</h4>
             <input
-              autoFocus
+              ref={(el) => el?.focus()}
               type="text"
               value={inputValue}
               placeholder={inputDialog.placeholder}
@@ -860,10 +889,10 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
               <button type="button" className="primary" onClick={handleSubmitInputDialog}>{inputDialog.submitLabel}</button>
             </div>
           </div>
-        </div>
+        </button>
       )}
 
-      {contextMenu && (
+      {contextMenu && createPortal(
         <div
           ref={contextMenuRef}
           className="tab-context-menu"
@@ -920,7 +949,8 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
               Open
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

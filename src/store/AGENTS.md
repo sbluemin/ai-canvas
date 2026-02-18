@@ -1,14 +1,14 @@
 # STORE KNOWLEDGE BASE
 
 ## OVERVIEW
-`src/store/`는 단일 Zustand store에 7개 slice를 합성해 앱 전역 상태를 관리한다.
+`src/store/`는 단일 Zustand store에 6개 slice를 합성해 앱 전역 상태를 관리한다.
 
 ## STRUCTURE
 ```text
 src/store/
 ├── useStore.ts           # slice 합성 + store export
 ├── useStore.test.ts      # store 통합 테스트
-├── types.ts              # AppState = 7 slice intersection 타입
+├── types.ts              # AppState = 6 slice intersection 타입
 ├── utils.ts              # store 유틸리티
 └── slices/
     ├── chatSlice.ts        # messages, conversations, aiRun
@@ -16,7 +16,6 @@ src/store/
     ├── projectSlice.ts     # canvasContent, features, canvasFiles, canvasTree, autosave
     ├── modelSlice.ts       # availableModels, selectedModels, selectedVariant
     ├── writingGoalSlice.ts # activeWritingGoal, presets
-    └── diffPreviewSlice.ts # pendingCanvasPatch, chunk 선택/적용
     └── runtimeSlice.ts     # runtimeStatus, onboarding, runtime busy/error
 ```
 
@@ -27,7 +26,6 @@ src/store/
 | 대화/실행 상태 | `slices/chatSlice.ts` | aiRun, messages, conversations |
 | 프로젝트/캔버스 상태 | `slices/projectSlice.ts` | Feature, canvas 파일/트리, autosave |
 | 모델/Variant 상태 | `slices/modelSlice.ts` | opencode model + variant 선택 |
-| diff 선택 적용 | `slices/diffPreviewSlice.ts` | chunk 선택/적용 로직 |
 | store 테스트 | `useStore.test.ts` | getState()/setState() 기반 |
 
 ## CONVENTIONS
@@ -37,4 +35,3 @@ src/store/
 
 ## ANTI-PATTERNS
 - 기존 액션 시그니처를 변경해 렌더러 전역 영향 발생시키는 변경 금지.
-- `pendingCanvasPatch`를 project slice로 흡수 금지 (diff 도메인 분리 유지).

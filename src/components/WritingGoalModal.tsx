@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useStore, WritingGoal, WritingGoalPreset } from '../store/useStore';
+import { CloseIcon, PlusIcon, TrashIcon } from './Icons';
 import './WritingGoalModal.css';
 
 export function WritingGoalModal() {
@@ -92,91 +93,106 @@ export function WritingGoalModal() {
   return (
     <div className="writing-goal-overlay" onClick={closeWritingGoal}>
       <div className="writing-goal-modal" onClick={(e) => e.stopPropagation()}>
+        {/* 헤더 */}
         <div className="writing-goal-header">
-          <h3>문서 작성 목표 설정</h3>
-          <button type="button" onClick={closeWritingGoal} aria-label="닫기">
-            닫기
+          <div className="header-title-group">
+            <h3>문서 작성 목표</h3>
+            {activeWritingGoal && <div className="state-dot active" />}
+          </div>
+          <button type="button" className="wg-close-button" onClick={closeWritingGoal} aria-label="닫기">
+            <CloseIcon />
           </button>
         </div>
 
-        {/* 프리셋 선택 영역 */}
-        <div className="writing-goal-presets">
-          <label>프리셋</label>
-          <div className="preset-chips">
-            {writingGoalPresets.map((preset) => (
-              <div
-                key={preset.id}
-                className={`preset-chip ${selectedPresetId === preset.id ? 'active' : ''}`}
-                onClick={() => handlePresetClick(preset)}
-              >
-                <span>{preset.name}</span>
-                <button
-                  type="button"
-                  className="preset-delete"
-                  onClick={(e) => handleDeletePreset(preset.id, e)}
-                  aria-label="프리셋 삭제"
+        {/* 스크롤 가능한 콘텐츠 영역 */}
+        <div className="writing-goal-content">
+          {/* 프리셋 섹션 */}
+          <section className="writing-goal-section">
+            <div className="section-header">
+              <label>프리셋</label>
+              <button type="button" className="btn-ghost-sm" onClick={handleSavePreset}>
+                <PlusIcon width={14} height={14} /> <span>저장</span>
+              </button>
+            </div>
+            <div className="preset-chips">
+              {writingGoalPresets.map((preset) => (
+                <div
+                  key={preset.id}
+                  className={`preset-chip ${selectedPresetId === preset.id ? 'active' : ''}`}
+                  onClick={() => handlePresetClick(preset)}
                 >
-                  ×
-                </button>
+                  <span className="preset-name">{preset.name}</span>
+                  <button
+                    type="button"
+                    className="preset-delete"
+                    onClick={(e) => handleDeletePreset(preset.id, e)}
+                    aria-label="프리셋 삭제"
+                  >
+                    <TrashIcon width={12} height={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 커스텀 입력 폼 */}
+          <div className="writing-goal-form">
+            <div className="form-group">
+              <label htmlFor="purpose-input">문서 목적</label>
+              <textarea
+                id="purpose-input"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                placeholder="예: 회의 내용 정리 및 결정사항 기록"
+                rows={3}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="audience-input">대상 독자</label>
+                <input
+                  id="audience-input"
+                  type="text"
+                  value={audience}
+                  onChange={(e) => setAudience(e.target.value)}
+                  placeholder="예: 팀원, 경영진"
+                />
               </div>
-            ))}
+              <div className="form-group">
+                <label htmlFor="tone-input">어조</label>
+                <input
+                  id="tone-input"
+                  type="text"
+                  value={tone}
+                  onChange={(e) => setTone(e.target.value)}
+                  placeholder="예: 격식체, 친근한"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>목표 길이</label>
+              <div className="segment-control">
+                {(['short', 'medium', 'long'] as const).map((len) => (
+                  <button
+                    key={len}
+                    type="button"
+                    className={`segment-item ${targetLength === len ? 'active' : ''}`}
+                    onClick={() => setTargetLength(len)}
+                  >
+                    {len === 'short' ? '짧게' : len === 'medium' ? '중간' : '길게'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 커스텀 입력 영역 */}
-        <div className="writing-goal-form">
-          <label htmlFor="purpose-input">문서 목적</label>
-          <textarea
-            id="purpose-input"
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            placeholder="예: 회의 내용 정리 및 결정사항 기록"
-            rows={3}
-          />
-
-          <label htmlFor="audience-input">대상 독자</label>
-          <input
-            id="audience-input"
-            type="text"
-            value={audience}
-            onChange={(e) => setAudience(e.target.value)}
-            placeholder="예: 팀원, 경영진, 일반 독자"
-          />
-
-          <label htmlFor="tone-input">어조</label>
-          <input
-            id="tone-input"
-            type="text"
-            value={tone}
-            onChange={(e) => setTone(e.target.value)}
-            placeholder="예: 간결하고 명확한, 격식체, 친근한"
-          />
-
-          <label htmlFor="length-select">목표 길이</label>
-          <select
-            id="length-select"
-            value={targetLength}
-            onChange={(e) => setTargetLength(e.target.value as 'short' | 'medium' | 'long')}
-          >
-            <option value="short">짧게 (1-2 페이지)</option>
-            <option value="medium">중간 (3-5 페이지)</option>
-            <option value="long">길게 (5+ 페이지)</option>
-          </select>
-        </div>
-
-        {/* 하단 버튼 그룹 */}
+        {/* 하단 액션 버튼 */}
         <div className="writing-goal-actions">
-          <button type="button" onClick={handleSavePreset} className="btn-secondary">
-            프리셋 저장
-          </button>
-          <div className="action-buttons-right">
-            <button type="button" onClick={handleReset} className="btn-reset">
-              초기화
-            </button>
-            <button type="button" onClick={handleApply} className="btn-primary">
-              적용
-            </button>
-          </div>
+          <button type="button" onClick={handleReset} className="btn-ghost">초기화</button>
+          <button type="button" onClick={handleApply} className="wg-btn-primary">목표 적용하기</button>
         </div>
       </div>
     </div>

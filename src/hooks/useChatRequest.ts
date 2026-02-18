@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useStore, ErrorInfo, FileMention, DiffChunk, PendingCanvasPatch } from '../store/useStore';
+import { useStore, ErrorInfo, FileMention } from '../store/useStore';
 import { api } from '../api';
-import { diffLines } from 'diff';
 
 export interface SelectionContext {
   text: string;
@@ -12,27 +11,6 @@ export interface SelectionContext {
 export interface ChatRequestOptions {
   selection?: SelectionContext;
   fileMentions?: FileMention[];
-}
-
-function buildPendingPatch(runId: string, originalContent: string, proposedContent: string): PendingCanvasPatch {
-  const changes = diffLines(originalContent, proposedContent);
-  let chunkIndex = 0;
-  const chunks: DiffChunk[] = changes.map((change) => {
-    const chunk: DiffChunk = {
-      id: `chunk-${chunkIndex++}`,
-      type: change.added ? 'add' : change.removed ? 'remove' : 'equal',
-      value: change.value,
-      selected: true,  // 기본값: 전체 선택
-    };
-    return chunk;
-  });
-
-  return {
-    runId,
-    originalContent,
-    proposedContent,
-    chunks,
-  };
 }
 
 const ERROR_TYPE_MESSAGES: Record<string, { title: string; message: string }> = {
@@ -125,7 +103,6 @@ export function useChatRequest() {
     selectedVariant,
     showError,
     activeWritingGoal,
-    setPendingCanvasPatch,
   } = useStore();
 
   const currentRunIdRef = useRef<string | null>(null);
@@ -194,36 +171,36 @@ export function useChatRequest() {
             phase2FinalMessageRef.current = event.message;
             streamedPhase2MessageRef.current = '';
             hasPhase2StreamEventRef.current = false;
-            // 즉시 반영 대신 pending patch로 저장
-            {
-              const currentCanvasContent = useStore.getState().canvasContent;
-              const patch = buildPendingPatch(event.runId, currentCanvasContent, event.canvasContent);
-              setPendingCanvasPatch(patch);
-            }
+            // 캔버스에 즉시 반영
+            setCanvasContent(event.canvasContent);
             if (streamedPhase1MessageRef.current) {
               setLastMessageContent(streamedPhase1MessageRef.current);
             }
             break;
 
-          case 'error':
-          if (event.phase === 'evaluating') {
-            removeLastUserMessage();
-          } else {
-            removeLastAssistantMessage();
-            removeLastUserMessage();
-          }
-          showError(parseApiError(event.error));
-          setAiRunResult({ error: { phase: event.phase, message: event.error } });
-          setAiPhase('failed');
-          setIsLoading(false);
-            clearAiRun();
+          case 'error': {
+            // runId를 먼저 null로 설정하여, 이후 도착하는 done 이벤트가
+            // runId guard에서 무시되도록 함 — done에서 중복 cleanup 방지
             currentRunIdRef.current = null;
             hasStreamingAssistantRef.current = false;
             streamedPhase1MessageRef.current = '';
             streamedPhase2MessageRef.current = '';
             phase2FinalMessageRef.current = '';
             hasPhase2StreamEventRef.current = false;
+
+            if (event.phase === 'evaluating') {
+              removeLastUserMessage();
+            } else {
+              removeLastAssistantMessage();
+              removeLastUserMessage();
+            }
+            showError(parseApiError(event.error));
+            setAiRunResult({ error: { phase: event.phase, message: event.error } });
+            setAiPhase('failed');
+            setIsLoading(false);
+            clearAiRun();
             break;
+          }
 
           case 'done':
             if (phase2FinalMessageRef.current) {
@@ -259,7 +236,6 @@ export function useChatRequest() {
     showError,
     removeLastUserMessage,
     removeLastAssistantMessage,
-    setPendingCanvasPatch,
   ]);
 
   const sendMessage = useCallback(

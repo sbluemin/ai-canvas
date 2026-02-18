@@ -12,7 +12,6 @@
 | Feature 트리 | `FeatureExplorer.tsx` | Feature/캔버스 파일 CRUD + 드래그 정렬 + 트리 렌더 |
 | 에디터 연결 | `MilkdownEditor.tsx` | 콘텐츠 반영 + 이미지 에셋 저장 |
 | 에디터 도구 | `EditorToolbar.tsx` | 서식 도구모음 |
-| 변경안 미리보기 | `DiffPreview.tsx` | chunk 선택 적용/취소 |
 | 텍스트 선택 AI | `SelectionAiPopup.tsx` | 선택 텍스트 AI 질문 팝업 |
 | 상단 커맨드바 | `CommandBar/index.tsx` | project/model/variant orchestration |
 | 런타임 상태 | `CommandBar/RuntimeStatus/index.tsx` | opencode 연결 상태 배지 |
@@ -21,7 +20,7 @@
 ## CONVENTIONS
 - CommandBar 하위 컨트롤은 도메인별 서브디렉터리(`*/index.tsx`)로 분리.
 - 모델 선택은 `opencode models --verbose` 결과 기준.
-- 캔버스 적용 UX: `phase2_result → pendingCanvasPatch → DiffPreview`.
+- 캔버스 적용 UX: `phase2_result → setCanvasContent` (즉시 반영).
 - 새 아이콘 추가 시 `Icons.tsx`에 정의 (외부 라이브러리 금지, stroke 기반 SVG).
 
 ## INTERACTION BOUNDARIES
