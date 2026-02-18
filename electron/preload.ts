@@ -76,6 +76,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:init-canvas-dir', projectPath),
     listCanvasFiles: (projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> =>
       ipcRenderer.invoke('project:list-canvas-files', projectPath),
+    listFeatures: (projectPath: string): Promise<{ success: boolean; features?: unknown[]; error?: string }> =>
+      ipcRenderer.invoke('project:list-features', projectPath),
+    createFeature: (projectPath: string, featureId: string, name: string): Promise<{ success: boolean; feature?: unknown; error?: string }> =>
+      ipcRenderer.invoke('project:create-feature', projectPath, featureId, name),
+    renameFeature: (projectPath: string, oldFeatureId: string, newFeatureId: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:rename-feature', projectPath, oldFeatureId, newFeatureId),
+    deleteFeature: (projectPath: string, featureId: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:delete-feature', projectPath, featureId),
+    readFeatureMeta: (projectPath: string, featureId: string): Promise<{ success: boolean; meta?: unknown; error?: string }> =>
+      ipcRenderer.invoke('project:read-feature-meta', projectPath, featureId),
+    writeFeatureMeta: (projectPath: string, featureId: string, meta: unknown): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:write-feature-meta', projectPath, featureId, meta),
+    listFeatureCanvasFiles: (projectPath: string, featureId: string): Promise<{ success: boolean; files?: string[]; error?: string }> =>
+      ipcRenderer.invoke('project:list-feature-canvas-files', projectPath, featureId),
     readWorkspace: (projectPath: string): Promise<{ success: boolean; workspace?: unknown; error?: string }> =>
       ipcRenderer.invoke('project:read-workspace', projectPath),
     writeWorkspace: (projectPath: string, workspace: unknown): Promise<{ success: boolean; error?: string }> =>
@@ -92,10 +106,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:rename-canvas-file', projectPath, oldFileName, newFileName),
     deleteCanvasFile: (projectPath: string, fileName: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('project:delete-canvas-file', projectPath, fileName),
-    readChatSession: (projectPath: string): Promise<{ success: boolean; messages?: unknown[]; error?: string }> =>
-      ipcRenderer.invoke('project:read-chat-session', projectPath),
-    writeChatSession: (projectPath: string, messages: unknown[]): Promise<{ success: boolean; error?: string }> =>
-      ipcRenderer.invoke('project:write-chat-session', projectPath, messages),
+    readChatSession: (projectPath: string, featureId: string): Promise<{ success: boolean; messages?: unknown[]; error?: string }> =>
+      ipcRenderer.invoke('project:read-chat-session', projectPath, featureId),
+    writeChatSession: (projectPath: string, featureId: string, messages: unknown[]): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('project:write-chat-session', projectPath, featureId, messages),
     saveImageAsset: (projectPath: string, base64: string, mimeType: string): Promise<{ success: boolean; relativePath?: string; absolutePath?: string; error?: string }> =>
       ipcRenderer.invoke('project:save-image-asset', projectPath, base64, mimeType),
     exportDocument: (projectPath: string, format: 'html' | 'pdf' | 'docx', markdownContent: string): Promise<{ success: boolean; filePath?: string; error?: string }> =>

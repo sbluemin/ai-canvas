@@ -1,4 +1,4 @@
-import { expect, test, describe, beforeEach } from 'bun:test';
+import { expect, test, describe, beforeEach } from 'vitest';
 import { useStore } from './useStore';
 import type { Message, Conversation } from './useStore';
 import type { AiProvider } from '../types/chat';

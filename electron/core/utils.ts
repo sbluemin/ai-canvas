@@ -2,6 +2,7 @@ import path from 'node:path';
 import {
   AI_CANVAS_DIR,
   CHAT_SESSION_NAME,
+  FEATURE_META_NAME,
   WORKSPACE_NAME,
   AUTOSAVE_STATUS_NAME,
   ASSET_DIR_NAME,
@@ -56,8 +57,20 @@ export function getCanvasFilePath(projectPath: string, fileName: string): string
   return path.join(projectPath, AI_CANVAS_DIR, fileName);
 }
 
+export function getFeatureDirPath(projectPath: string, featureId: string): string {
+  return path.join(projectPath, AI_CANVAS_DIR, featureId);
+}
+
+export function getFeatureMetaPath(projectPath: string, featureId: string): string {
+  return path.join(getFeatureDirPath(projectPath, featureId), FEATURE_META_NAME);
+}
+
 export function getChatSessionPath(projectPath: string): string {
   return path.join(projectPath, AI_CANVAS_DIR, CHAT_SESSION_NAME);
+}
+
+export function getFeatureChatSessionPath(projectPath: string, featureId: string): string {
+  return path.join(getFeatureDirPath(projectPath, featureId), CHAT_SESSION_NAME);
 }
 
 export function getWorkspacePath(projectPath: string): string {

@@ -41,6 +41,42 @@ export function registerProjectHandlers() {
     return { success: true, files: result.data!.files };
   });
 
+  handleIpc('project:list-features', async (_event: any, projectPath: string) => {
+    const result = await projectService.listFeatures(projectPath);
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, features: result.data!.features };
+  });
+
+  handleIpc('project:create-feature', async (_event: any, projectPath: string, featureId: string, name: string) => {
+    const result = await projectService.createFeature(projectPath, featureId, name);
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, feature: result.data!.feature };
+  });
+
+  handleIpc('project:rename-feature', async (_event: any, projectPath: string, oldFeatureId: string, newFeatureId: string) => {
+    return projectService.renameFeature(projectPath, oldFeatureId, newFeatureId);
+  });
+
+  handleIpc('project:delete-feature', async (_event: any, projectPath: string, featureId: string) => {
+    return projectService.deleteFeature(projectPath, featureId);
+  });
+
+  handleIpc('project:read-feature-meta', async (_event: any, projectPath: string, featureId: string) => {
+    const result = await projectService.readFeatureMeta(projectPath, featureId);
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, meta: result.data!.meta };
+  });
+
+  handleIpc('project:write-feature-meta', async (_event: any, projectPath: string, featureId: string, meta: unknown) => {
+    return projectService.writeFeatureMeta(projectPath, featureId, meta as projectService.FeatureMeta);
+  });
+
+  handleIpc('project:list-feature-canvas-files', async (_event: any, projectPath: string, featureId: string) => {
+    const result = await projectService.listFeatureCanvasFiles(projectPath, featureId);
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, files: result.data!.files };
+  });
+
   handleIpc('project:list-canvas-tree', async (_event: any, projectPath: string) => {
     const result = await projectService.listCanvasTree(projectPath);
     if (!result.success) return { success: false, error: result.error };
@@ -99,14 +135,14 @@ export function registerProjectHandlers() {
 
   // ─── 세션/워크스페이스/자동저장 ───
 
-  handleIpc('project:read-chat-session', async (_event: any, projectPath: string) => {
-    const result = await projectService.readChatSession(projectPath);
+  handleIpc('project:read-chat-session', async (_event: any, projectPath: string, featureId: string) => {
+    const result = await projectService.readChatSession(projectPath, featureId);
     if (!result.success) return { success: false, error: result.error };
     return { success: true, messages: result.data!.messages };
   });
 
-  handleIpc('project:write-chat-session', async (_event: any, projectPath: string, messages: unknown[]) => {
-    return projectService.writeChatSession(projectPath, messages);
+  handleIpc('project:write-chat-session', async (_event: any, projectPath: string, featureId: string, messages: unknown[]) => {
+    return projectService.writeChatSession(projectPath, featureId, messages);
   });
 
   handleIpc('project:read-workspace', async (_event: any, projectPath: string) => {

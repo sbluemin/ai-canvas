@@ -29,6 +29,8 @@ function App() {
     toggleSettings,
     addToast,
     projectPath,
+    features,
+    activeFeatureId,
     activeCanvasFile,
     canvasContent,
     conversations,
@@ -37,6 +39,7 @@ function App() {
     autosaveStatus,
     selectedModels,
     selectedVariant,
+    activeWritingGoal,
   } = useStore();
   const isThemeHydratedRef = useRef(false);
 
@@ -143,28 +146,72 @@ function App() {
 
   useEffect(() => {
     if (!projectPath) return;
-    const timer = window.setTimeout(() => {
+    const timer = window.setTimeout(async () => {
+      const workspaceResult = await api.readWorkspace(projectPath);
+      const baseWorkspace = workspaceResult.success && workspaceResult.workspace && typeof workspaceResult.workspace === 'object'
+        ? workspaceResult.workspace as Record<string, unknown>
+        : {};
+
       const workspace = {
-        conversations: conversations.map((conv) => ({
-          ...conv,
-          messages: conv.messages.map((msg) => ({
-            ...msg,
-            timestamp: msg.timestamp.toISOString(),
-          })),
-        })),
-        activeConversationId,
+        ...baseWorkspace,
+        featureOrder: features.map((feature) => feature.id),
+        activeFeatureId,
+        featureConversations: {
+          ...(baseWorkspace.featureConversations && typeof baseWorkspace.featureConversations === 'object'
+            ? baseWorkspace.featureConversations as Record<string, unknown>
+            : {}),
+          ...(activeFeatureId
+            ? {
+                [activeFeatureId]: conversations.map((conv) => ({
+                  ...conv,
+                  messages: conv.messages.map((msg) => ({
+                    ...msg,
+                    timestamp: msg.timestamp.toISOString(),
+                  })),
+                })),
+              }
+            : {}),
+        },
+        featureActiveConversationIds: {
+          ...(baseWorkspace.featureActiveConversationIds && typeof baseWorkspace.featureActiveConversationIds === 'object'
+            ? baseWorkspace.featureActiveConversationIds as Record<string, unknown>
+            : {}),
+          ...(activeFeatureId ? { [activeFeatureId]: activeConversationId } : {}),
+        },
         canvasOrder: canvasFiles,
         autosaveStatus,
         selectedModels,
         selectedVariant,
       };
+
       api.writeWorkspace(projectPath, workspace).catch((error: unknown) => {
         logger.error('Workspace save failed:', error);
       });
     }, AUTOSAVE_DELAY);
 
     return () => window.clearTimeout(timer);
-  }, [projectPath, conversations, activeConversationId, canvasFiles, autosaveStatus, selectedModels, selectedVariant]);
+  }, [projectPath, features, activeFeatureId, conversations, activeConversationId, canvasFiles, autosaveStatus, selectedModels, selectedVariant]);
+
+  useEffect(() => {
+    if (!projectPath || !activeFeatureId) return;
+
+    const timer = window.setTimeout(async () => {
+      const metaResult = await api.readFeatureMeta(projectPath, activeFeatureId);
+      const baseMeta = metaResult.success && metaResult.meta && typeof metaResult.meta === 'object'
+        ? metaResult.meta as Record<string, unknown>
+        : {};
+      const nextMeta = {
+        ...baseMeta,
+        writingGoal: activeWritingGoal,
+        updatedAt: new Date().toISOString(),
+      };
+      api.writeFeatureMeta(projectPath, activeFeatureId, nextMeta).catch((error: unknown) => {
+        logger.error('Feature meta save failed:', error);
+      });
+    }, AUTOSAVE_DELAY);
+
+    return () => window.clearTimeout(timer);
+  }, [projectPath, activeFeatureId, activeWritingGoal]);
 
   useEffect(() => {
     const handleResize = () => {

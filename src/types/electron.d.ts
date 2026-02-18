@@ -73,6 +73,13 @@ interface ProjectAPI {
   openDirectory: () => Promise<string | null>;
   initCanvasDir: (projectPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
   listCanvasFiles: (projectPath: string) => Promise<{ success: boolean; files?: string[]; error?: string }>;
+  listFeatures: (projectPath: string) => Promise<{ success: boolean; features?: unknown[]; error?: string }>;
+  createFeature: (projectPath: string, featureId: string, name: string) => Promise<{ success: boolean; feature?: unknown; error?: string }>;
+  renameFeature: (projectPath: string, oldFeatureId: string, newFeatureId: string) => Promise<{ success: boolean; error?: string }>;
+  deleteFeature: (projectPath: string, featureId: string) => Promise<{ success: boolean; error?: string }>;
+  readFeatureMeta: (projectPath: string, featureId: string) => Promise<{ success: boolean; meta?: unknown; error?: string }>;
+  writeFeatureMeta: (projectPath: string, featureId: string, meta: unknown) => Promise<{ success: boolean; error?: string }>;
+  listFeatureCanvasFiles: (projectPath: string, featureId: string) => Promise<{ success: boolean; files?: string[]; error?: string }>;
   readWorkspace: (projectPath: string) => Promise<{ success: boolean; workspace?: unknown; error?: string }>;
   writeWorkspace: (projectPath: string, workspace: unknown) => Promise<{ success: boolean; error?: string }>;
   readAutosaveStatus: (projectPath: string) => Promise<{ success: boolean; status?: unknown; error?: string }>;
@@ -81,8 +88,8 @@ interface ProjectAPI {
   writeCanvasFile: (projectPath: string, fileName: string, content: string) => Promise<{ success: boolean; error?: string }>;
   renameCanvasFile: (projectPath: string, oldFileName: string, newFileName: string) => Promise<{ success: boolean; error?: string }>;
   deleteCanvasFile: (projectPath: string, fileName: string) => Promise<{ success: boolean; error?: string }>;
-  readChatSession: (projectPath: string) => Promise<{ success: boolean; messages?: unknown[]; error?: string }>;
-  writeChatSession: (projectPath: string, messages: unknown[]) => Promise<{ success: boolean; error?: string }>;
+  readChatSession: (projectPath: string, featureId: string) => Promise<{ success: boolean; messages?: unknown[]; error?: string }>;
+  writeChatSession: (projectPath: string, featureId: string, messages: unknown[]) => Promise<{ success: boolean; error?: string }>;
   saveImageAsset: (projectPath: string, base64: string, mimeType: string) => Promise<{ success: boolean; relativePath?: string; absolutePath?: string; error?: string }>;
   exportDocument: (projectPath: string, format: 'html' | 'pdf' | 'docx', markdownContent: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
   exportShareBundle: (projectPath: string, bundle: unknown) => Promise<{ success: boolean; filePath?: string; error?: string }>;

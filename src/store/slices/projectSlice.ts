@@ -6,6 +6,8 @@ export const createProjectSlice: StateCreator<AppState, [], [], ProjectSlice> = 
   canvasContent: DEFAULT_CANVAS_CONTENT,
   currentFilePath: null,
   projectPath: null,
+  features: [],
+  activeFeatureId: null,
   canvasFiles: [],
   activeCanvasFile: null,
   autosaveStatus: {
@@ -17,6 +19,8 @@ export const createProjectSlice: StateCreator<AppState, [], [], ProjectSlice> = 
   setCanvasContent: (content) => set({ canvasContent: content }),
   setCurrentFilePath: (path) => set({ currentFilePath: path }),
   setProjectPath: (projectPath) => set({ projectPath }),
+  setFeatures: (features) => set({ features }),
+  setActiveFeatureId: (activeFeatureId) => set({ activeFeatureId }),
   setCanvasFiles: (canvasFiles) => set({ canvasFiles }),
   setActiveCanvasFile: (activeCanvasFile) => set({ activeCanvasFile }),
   setAutosaveStatus: (autosaveStatus) => set({ autosaveStatus }),

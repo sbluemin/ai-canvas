@@ -11,13 +11,18 @@ import { Buffer } from 'node:buffer';
 import {
   AI_CANVAS_DIR,
   DEFAULT_CANVAS_NAME,
+  DEFAULT_FEATURE_ID,
+  DEFAULT_FEATURE_NAME,
   DEFAULT_CANVAS_CONTENT,
   ASSET_DIR_NAME,
   getCanvasFilePath,
   getCanvasFolderPath,
+  getFeatureDirPath,
+  getFeatureMetaPath,
   isValidCanvasFileName,
+  isValidCanvasFolderName,
   isValidCanvasFolderPath,
-  getChatSessionPath,
+  getFeatureChatSessionPath,
   getWorkspacePath,
   getAutosaveStatusPath,
   getAssetsDirPath,
@@ -57,9 +62,23 @@ export async function listCanvasFiles(projectPath: string): Promise<ServiceResul
   const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
   try {
     const entries = await fs.readdir(canvasDir, { withFileTypes: true });
-    const mdFiles = entries
-      .filter((e) => e.isFile() && e.name.endsWith('.md'))
-      .map((e) => e.name);
+    const mdFiles: string[] = [];
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === ASSET_DIR_NAME) {
+        continue;
+      }
+
+      const featureDir = path.join(canvasDir, entry.name);
+      const featureEntries = await fs.readdir(featureDir, { withFileTypes: true });
+      for (const featureEntry of featureEntries) {
+        if (featureEntry.isFile() && featureEntry.name.endsWith('.md')) {
+          mdFiles.push(`${entry.name}/${featureEntry.name}`);
+        }
+      }
+    }
+
+    mdFiles.sort((a, b) => a.localeCompare(b));
     return ok({ files: mdFiles });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -76,6 +95,179 @@ interface TreeEntry {
   type: 'file' | 'folder';
   path: string;
   children?: TreeEntry[];
+}
+
+export async function listFeatures(projectPath: string): Promise<ServiceResult<{ features: FeatureSummary[] }>> {
+  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  try {
+    const entries = await fs.readdir(canvasDir, { withFileTypes: true });
+    const directories = entries.filter((entry) => entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== ASSET_DIR_NAME);
+
+    const features: FeatureSummary[] = [];
+    for (let i = 0; i < directories.length; i += 1) {
+      const featureId = directories[i].name;
+      const meta = await readFeatureMetaInternal(projectPath, featureId);
+      features.push(toFeatureSummary(featureId, meta, i));
+    }
+
+    features.sort((a, b) => {
+      if (a.order !== b.order) {
+        return a.order - b.order;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    return ok({ features });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return ok({ features: [] });
+    }
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function createFeature(projectPath: string, featureId: string, name: string): Promise<ServiceResult<{ feature: FeatureSummary }>> {
+  void name;
+  if (!isValidCanvasFolderName(featureId)) {
+    return fail('Invalid feature id.');
+  }
+
+  const now = new Date().toISOString();
+  const featureDir = getFeatureDirPath(projectPath, featureId);
+  const featuresResult = await listFeatures(projectPath);
+  const nextOrder = featuresResult.success
+    ? (featuresResult.data?.features.reduce((maxOrder, feature) => Math.max(maxOrder, feature.order), -1) ?? -1) + 1
+    : 0;
+
+  try {
+    await fs.mkdir(featureDir, { recursive: false });
+    const meta: FeatureMeta = {
+      name: featureId,
+      description: '',
+      icon: '',
+      order: nextOrder,
+      createdAt: now,
+      updatedAt: now,
+      writingGoal: null,
+    };
+    await writeFeatureMetaInternal(projectPath, featureId, meta);
+    return ok({ feature: toFeatureSummary(featureId, meta, 0) });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      return fail('Feature already exists.');
+    }
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function renameFeature(projectPath: string, oldFeatureId: string, newFeatureId: string): Promise<ServiceResult> {
+  if (!isValidCanvasFolderName(oldFeatureId) || !isValidCanvasFolderName(newFeatureId)) {
+    return fail('Invalid feature id.');
+  }
+
+  const oldPath = getFeatureDirPath(projectPath, oldFeatureId);
+  const newPath = getFeatureDirPath(projectPath, newFeatureId);
+
+  try {
+    await fs.rename(oldPath, newPath);
+    const meta = await readFeatureMetaInternal(projectPath, newFeatureId);
+    const now = new Date().toISOString();
+    await writeFeatureMetaInternal(projectPath, newFeatureId, {
+      ...(meta ?? {}),
+      name: newFeatureId,
+      updatedAt: now,
+    });
+    return ok();
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function deleteFeature(projectPath: string, featureId: string): Promise<ServiceResult> {
+  if (!isValidCanvasFolderName(featureId)) {
+    return fail('Invalid feature id.');
+  }
+
+  const featureDir = getFeatureDirPath(projectPath, featureId);
+  try {
+    await fs.rm(featureDir, { recursive: true, force: true });
+    return ok();
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function readFeatureMeta(projectPath: string, featureId: string): Promise<ServiceResult<{ meta: FeatureMeta | null }>> {
+  if (!isValidCanvasFolderName(featureId)) {
+    return fail('Invalid feature id.');
+  }
+
+  try {
+    const meta = await readFeatureMetaInternal(projectPath, featureId);
+    return ok({ meta });
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function writeFeatureMeta(projectPath: string, featureId: string, meta: FeatureMeta): Promise<ServiceResult> {
+  if (!isValidCanvasFolderName(featureId)) {
+    return fail('Invalid feature id.');
+  }
+
+  try {
+    await writeFeatureMetaInternal(projectPath, featureId, meta);
+    return ok();
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function listFeatureCanvasFiles(projectPath: string, featureId: string): Promise<ServiceResult<{ files: string[] }>> {
+  if (!isValidCanvasFolderName(featureId)) {
+    return fail('Invalid feature id.');
+  }
+
+  const featureDir = getFeatureDirPath(projectPath, featureId);
+  try {
+    const entries = await fs.readdir(featureDir, { withFileTypes: true });
+    const files = entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+      .map((entry) => `${featureId}/${entry.name}`)
+      .sort((a, b) => a.localeCompare(b));
+    return ok({ files });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return ok({ files: [] });
+    }
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export interface FeatureMeta {
+  name: string;
+  description?: string;
+  icon?: string;
+  order?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  writingGoal?: {
+    purpose: string;
+    audience: string;
+    tone: string;
+    targetLength: 'short' | 'medium' | 'long';
+  } | null;
+}
+
+export interface FeatureSummary {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
+  writingGoal?: FeatureMeta['writingGoal'];
 }
 
 const PROJECT_FILE_IGNORE_DIRS = new Set([
@@ -122,6 +314,43 @@ async function readDirRecursive(dirPath: string, relativePath: string): Promise<
   });
 
   return result;
+}
+
+function toFeatureSummary(featureId: string, meta: FeatureMeta | null, fallbackOrder: number): FeatureSummary {
+  return {
+    id: featureId,
+    name: featureId,
+    description: meta?.description,
+    icon: meta?.icon,
+    order: typeof meta?.order === 'number' ? meta.order : fallbackOrder,
+    createdAt: meta?.createdAt,
+    updatedAt: meta?.updatedAt,
+    writingGoal: meta?.writingGoal,
+  };
+}
+
+async function readFeatureMetaInternal(projectPath: string, featureId: string): Promise<FeatureMeta | null> {
+  const metaPath = getFeatureMetaPath(projectPath, featureId);
+  try {
+    const raw = await fs.readFile(metaPath, 'utf-8');
+    const parsed = JSON.parse(raw) as FeatureMeta;
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+    return parsed;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    return null;
+  }
+}
+
+async function writeFeatureMetaInternal(projectPath: string, featureId: string, meta: FeatureMeta): Promise<void> {
+  const featureDir = getFeatureDirPath(projectPath, featureId);
+  const metaPath = getFeatureMetaPath(projectPath, featureId);
+  await fs.mkdir(featureDir, { recursive: true });
+  await fs.writeFile(metaPath, JSON.stringify(meta), 'utf-8');
 }
 
 async function collectProjectFilesRecursive(baseDir: string, currentDir: string, files: string[]): Promise<void> {
@@ -300,11 +529,22 @@ export async function moveCanvasFile(projectPath: string, oldFilePath: string, n
 
 export async function createDefaultCanvas(projectPath: string): Promise<ServiceResult<{ fileName: string }>> {
   const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
-  const filePath = path.join(canvasDir, DEFAULT_CANVAS_NAME);
+  const featureDir = path.join(canvasDir, DEFAULT_FEATURE_ID);
+  const filePath = path.join(featureDir, DEFAULT_CANVAS_NAME);
   try {
-    await fs.mkdir(canvasDir, { recursive: true });
+    await fs.mkdir(featureDir, { recursive: true });
+    const now = new Date().toISOString();
+    await writeFeatureMetaInternal(projectPath, DEFAULT_FEATURE_ID, {
+      name: DEFAULT_FEATURE_NAME,
+      description: '',
+      icon: '',
+      order: 0,
+      createdAt: now,
+      updatedAt: now,
+      writingGoal: null,
+    });
     await fs.writeFile(filePath, DEFAULT_CANVAS_CONTENT, 'utf-8');
-    return ok({ fileName: DEFAULT_CANVAS_NAME });
+    return ok({ fileName: `${DEFAULT_FEATURE_ID}/${DEFAULT_CANVAS_NAME}` });
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error));
   }
@@ -312,8 +552,11 @@ export async function createDefaultCanvas(projectPath: string): Promise<ServiceR
 
 // ─── 영속화 데이터 (session, workspace, autosave) ───
 
-export async function readChatSession(projectPath: string): Promise<ServiceResult<{ messages: unknown[] }>> {
-  const filePath = getChatSessionPath(projectPath);
+export async function readChatSession(projectPath: string, featureId: string): Promise<ServiceResult<{ messages: unknown[] }>> {
+  if (!isValidCanvasFolderName(featureId)) {
+    return fail('Invalid feature id.');
+  }
+  const filePath = getFeatureChatSessionPath(projectPath, featureId);
   try {
     const raw = await fs.readFile(filePath, 'utf-8');
     const parsed = JSON.parse(raw) as unknown;
@@ -329,11 +572,14 @@ export async function readChatSession(projectPath: string): Promise<ServiceResul
   }
 }
 
-export async function writeChatSession(projectPath: string, messages: unknown[]): Promise<ServiceResult> {
-  const filePath = getChatSessionPath(projectPath);
+export async function writeChatSession(projectPath: string, featureId: string, messages: unknown[]): Promise<ServiceResult> {
+  if (!isValidCanvasFolderName(featureId)) {
+    return fail('Invalid feature id.');
+  }
+  const filePath = getFeatureChatSessionPath(projectPath, featureId);
   try {
-    const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
-    await fs.mkdir(canvasDir, { recursive: true });
+    const featureDir = getFeatureDirPath(projectPath, featureId);
+    await fs.mkdir(featureDir, { recursive: true });
     await fs.writeFile(filePath, JSON.stringify(messages), 'utf-8');
     return ok();
   } catch (error) {

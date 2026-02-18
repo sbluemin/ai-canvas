@@ -9,6 +9,17 @@ export interface TreeEntry {
   children?: TreeEntry[];
 }
 
+export interface FeatureSummary {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
+  writingGoal?: WritingGoal | null;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -124,6 +135,8 @@ export interface ProjectSlice {
   canvasContent: string;
   currentFilePath: string | null;
   projectPath: string | null;
+  features: FeatureSummary[];
+  activeFeatureId: string | null;
   canvasFiles: string[];
   activeCanvasFile: string | null;
   autosaveStatus: AutosaveStatus;
@@ -133,6 +146,8 @@ export interface ProjectSlice {
   setCanvasContent: (content: string) => void;
   setCurrentFilePath: (path: string | null) => void;
   setProjectPath: (path: string | null) => void;
+  setFeatures: (features: FeatureSummary[]) => void;
+  setActiveFeatureId: (featureId: string | null) => void;
   setCanvasFiles: (files: string[]) => void;
   setActiveCanvasFile: (fileName: string | null) => void;
   setAutosaveStatus: (status: AutosaveStatus) => void;

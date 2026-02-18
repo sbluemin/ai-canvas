@@ -1,4 +1,5 @@
 import type { AiProvider } from '../types';
+import type { FeatureSummary } from '../store/types';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
 
@@ -128,6 +129,41 @@ export const api = {
     return window.electronAPI.project.listCanvasFiles(projectPath);
   },
 
+  async listFeatures(projectPath: string): Promise<{ success: boolean; features?: FeatureSummary[]; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.listFeatures(projectPath) as Promise<{ success: boolean; features?: FeatureSummary[]; error?: string }>;
+  },
+
+  async createFeature(projectPath: string, featureId: string, name: string): Promise<{ success: boolean; feature?: FeatureSummary; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.createFeature(projectPath, featureId, name) as Promise<{ success: boolean; feature?: FeatureSummary; error?: string }>;
+  },
+
+  async renameFeature(projectPath: string, oldFeatureId: string, newFeatureId: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.renameFeature(projectPath, oldFeatureId, newFeatureId);
+  },
+
+  async deleteFeature(projectPath: string, featureId: string): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.deleteFeature(projectPath, featureId);
+  },
+
+  async readFeatureMeta(projectPath: string, featureId: string): Promise<{ success: boolean; meta?: unknown; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.readFeatureMeta(projectPath, featureId);
+  },
+
+  async writeFeatureMeta(projectPath: string, featureId: string, meta: unknown): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.writeFeatureMeta(projectPath, featureId, meta);
+  },
+
+  async listFeatureCanvasFiles(projectPath: string, featureId: string): Promise<{ success: boolean; files?: string[]; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.project.listFeatureCanvasFiles(projectPath, featureId);
+  },
+
   async readWorkspace(projectPath: string): Promise<{ success: boolean; workspace?: unknown; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.readWorkspace(projectPath);
@@ -168,14 +204,14 @@ export const api = {
     return window.electronAPI.project.deleteCanvasFile(projectPath, fileName);
   },
 
-  async readChatSession(projectPath: string): Promise<{ success: boolean; messages?: unknown[]; error?: string }> {
+  async readChatSession(projectPath: string, featureId: string): Promise<{ success: boolean; messages?: unknown[]; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
-    return window.electronAPI.project.readChatSession(projectPath);
+    return window.electronAPI.project.readChatSession(projectPath, featureId);
   },
 
-  async writeChatSession(projectPath: string, messages: unknown[]): Promise<{ success: boolean; error?: string }> {
+  async writeChatSession(projectPath: string, featureId: string, messages: unknown[]): Promise<{ success: boolean; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
-    return window.electronAPI.project.writeChatSession(projectPath, messages);
+    return window.electronAPI.project.writeChatSession(projectPath, featureId, messages);
   },
 
   async saveImageAsset(projectPath: string, base64: string, mimeType: string): Promise<{ success: boolean; relativePath?: string; absolutePath?: string; error?: string }> {

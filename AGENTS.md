@@ -35,18 +35,19 @@
 - **ChatPanel**: 좌측 AI 채팅 패널 (SSE 스트리밍)
   - `@파일경로` 멘션 파싱 후 파일 참조 메타데이터 전달 (파일 본문/바이너리 직접 첨부 없음)
   - 프로젝트 루트 파일 인덱스 기반 `@` 자동완성 (IntelliSense 유사 키보드 탐색/선택)
+  - 활성 Feature 기준으로 채팅 세션 분리 저장 (`.ai-canvas/<feature>/chat-session.json`)
 - **CanvasPanel**: 우측 마크다운 에디터 패널
   - **MilkdownEditor**: 마크다운 WYSIWYG
   - **EditorToolbar**: 서식 도구
   - **SelectionAiPopup**: 텍스트 선택 시 AI 질문 팝업
   - **DiffPreview**: AI 수정안 diff 미리보기 (블록 선택 적용/취소)
-  - **FileExplorer**: 폴더 기반 트리 뷰 사이드바 (토글 가능)
-    - 폴더/파일 생성, 삭제, 이름 변경
-    - 폴더 펼침/접기, 우클릭 컨텍스트 메뉴
-    - 서브디렉토리 구조 지원 (예: `auth/login-flow.md`)
-  - 캔버스 파일 탭: `.ai-canvas/**/*.md` 파일 간 전환 (활성 탭 클릭 시 이름 변경)
-  - '+' 버튼: 새 캔버스 파일 생성
-  - 탭 우클릭 컨텍스트 메뉴: 이름 변경 / 복제 / 삭제
+- **FeatureExplorer**: Feature 트리 사이드바 (토글 가능)
+    - Feature 생성/삭제/이름 변경
+    - Feature 아이콘 설정, 드래그 정렬(order 저장)
+    - Feature 노드 펼침/접기, 우클릭 컨텍스트 메뉴
+    - Feature 하위 캔버스 파일 생성/열기
+  - 캔버스 헤더: **활성 Feature 이름** 표시 (버튼/탭 동작 없음)
+  - 캔버스 파일 열기/생성/관리: FeatureExplorer에서 수행
   - 저장 상태 표시기: 자동 저장 상태 (대기/저장 중/저장됨/오류)
   - 캔버스 너비 모드: `기본값` / `넓게` / `반응형` 선택
 - **ErrorPopup**: AI 요청 오류 팝업
@@ -87,6 +88,7 @@
 - **dialog.ts**: 파일/다이얼로그 IPC
 - **fs.ts**: 파일 읽기/쓰기 IPC
 - **project.ts**: 프로젝트/캔버스 관리 IPC (`project:list-project-files` 제공)
+  - feature 관련 IPC: `project:list-features`, `project:create-feature`, `project:rename-feature`, `project:delete-feature`, `project:read/write-feature-meta`, `project:list-feature-canvas-files`
 - **settings.ts**: 전역 앱 설정 IPC (`settings:read`, `settings:write`, Windows titleBarOverlay 테마 동기화)
 - **window.ts**: 윈도우 제어 IPC
 
@@ -135,7 +137,9 @@ interface AppState {
   
   // 프로젝트/캔버스 파일 관리
   projectPath: string | null;    // 선택된 프로젝트 경로
-  canvasFiles: string[];         // .ai-canvas 내 .md 파일 목록 (서브디렉토리 포함)
+  features: FeatureSummary[];    // Feature 목록 (id/name/order/meta)
+  activeFeatureId: string | null; // 현재 활성 Feature ID
+  canvasFiles: string[];         // 활성 Feature 내 .md 파일 목록
   activeCanvasFile: string | null; // 현재 열린 캔버스 파일명 (예: "auth/login.md")
   canvasTree: TreeEntry[];       // 재귀적 폴더/파일 트리 구조
   isFileExplorerOpen: boolean;   // 파일 탐색기 사이드바 열림 상태
@@ -235,7 +239,7 @@ ai-canvas/
 │   │   └── window.ts
 │   ├── services/                # 비즈니스 로직 서비스
 │   │   ├── index.ts
-│   │   ├── project.service.ts   # 캔버스 CRUD, 세션, 에셋, 프로젝트 루트 파일 인덱스
+│   │   ├── project.service.ts   # Feature/캔버스 CRUD, Feature 메타, Feature 채팅 세션, 프로젝트 루트 파일 인덱스
 │   │   └── export.service.ts    # HTML/PDF/DOCX 내보내기
 │   ├── ai/                      # AI 오케스트레이션 레이어
 │   │   ├── workflow.ts          # Phase 1/2 실행 흐름
@@ -281,7 +285,8 @@ ai-canvas/
 npm run dev          # Electron 개발 모드
 
 # 테스트
-npm test             # Playwright 테스트
+npm run test:vitest  # 단위 테스트
+npm run test:e2e     # Playwright E2E 테스트
 # 빌드
 npm run build        # Electron 앱 프로덕션 빌드
 ```

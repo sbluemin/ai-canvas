@@ -1,5 +1,4 @@
-// @ts-ignore bun:test 모듈은 런타임에서 제공됨
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from 'vitest';
 import { parsePhase1Response, parsePhase2Response } from "./parser";
 
 describe("parsePhase1Response", () => {

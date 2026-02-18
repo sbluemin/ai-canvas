@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
@@ -48,5 +48,16 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    include: [
+      'src/**/*.test.ts',
+      'electron/**/*.test.ts',
+      'tests/parser.test.ts',
+    ],
+    exclude: [
+      'tests/canvas-aware.test.ts',
+      'tests/canvas-update.test.ts',
+      'tests/electron-chat.test.ts',
+      'tests/selection-popup.test.ts',
+    ],
   },
 });

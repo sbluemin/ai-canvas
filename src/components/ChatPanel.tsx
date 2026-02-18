@@ -152,13 +152,14 @@ export function ChatPanel() {
   const inputRef = useRef<HTMLInputElement>(null);
   
   const {
-    messages, isLoading, aiRun, projectPath, conversations, activeConversationId,
+    messages, isLoading, aiRun, projectPath, activeFeatureId, conversations, activeConversationId,
     setConversations, setActiveConversationId, setMessages
   } = useStore(useShallow((state) => ({
     messages: state.messages,
     isLoading: state.isLoading,
     aiRun: state.aiRun,
     projectPath: state.projectPath,
+    activeFeatureId: state.activeFeatureId,
     conversations: state.conversations,
     activeConversationId: state.activeConversationId,
     setConversations: state.setConversations,
@@ -253,7 +254,7 @@ export function ChatPanel() {
   }, [messages]);
 
   useEffect(() => {
-    if (!projectPath) return;
+    if (!projectPath || !activeFeatureId) return;
 
     const timer = window.setTimeout(() => {
       const serialized = messages.map((msg) => ({
@@ -261,13 +262,13 @@ export function ChatPanel() {
         timestamp: msg.timestamp.toISOString(),
       }));
 
-      api.writeChatSession(projectPath, serialized).catch((error: unknown) => {
+      api.writeChatSession(projectPath, activeFeatureId, serialized).catch((error: unknown) => {
         console.error('Chat session save failed:', error);
       });
     }, AUTOSAVE_DELAY);
 
     return () => window.clearTimeout(timer);
-  }, [messages, projectPath]);
+  }, [messages, projectPath, activeFeatureId]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
