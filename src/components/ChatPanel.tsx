@@ -9,7 +9,7 @@ import { api } from '../api';
 import { AUTOSAVE_DELAY, generateId } from '../utils';
 import { Logo } from './Logo';
 import './ChatPanel.css';
-import { MicrophoneIcon, SendIcon, ChevronDownIcon } from './Icons';
+import { PlusIcon, MicrophoneIcon, SendIcon, ChevronDownIcon } from './Icons';
 
 
 const FILE_MENTION_REGEX = /(^|\s)@([^\s@]+)/g;
@@ -169,6 +169,16 @@ const AI_CANVAS_INFO = {
 
 function getProviderInfo(_provider?: string) {
   return AI_CANVAS_INFO;
+}
+
+function TypingDots() {
+  return (
+    <span className="typing-indicator">
+      <span className="dot" />
+      <span className="dot" />
+      <span className="dot" />
+    </span>
+  );
 }
 
 export function ChatPanel() {
@@ -430,9 +440,7 @@ export function ChatPanel() {
           </button>
           {isConversationMenuOpen && (
             <div className="conversation-menu">
-              <button type="button" className="conversation-action" onClick={handleNewConversation}>
-                New Chat
-              </button>
+              <div className="conversation-menu-label">History</div>
               {conversations.map((conversation) => (
                 <button
                   key={conversation.id}
@@ -447,6 +455,9 @@ export function ChatPanel() {
             </div>
           )}
         </div>
+        <button type="button" className="new-chat-btn" title="New Chat" onClick={handleNewConversation}>
+          <PlusIcon width={18} height={18} />
+        </button>
       </div>
       <div className="messages-container">
         {messages.length === 0 ? (
@@ -492,7 +503,7 @@ export function ChatPanel() {
                         <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.content}</Markdown>
                         {showInlineProgress && (
                           <div className="progress-indicator inline-progress">
-                            <span className="typing-indicator">●●●</span>
+                            <TypingDots />
                             <span className="progress-text">Updating canvas...</span>
                           </div>
                         )}
@@ -504,11 +515,11 @@ export function ChatPanel() {
                     msg.role === 'assistant' &&
                     (showInlineProgress ? (
                       <div className="progress-indicator inline-progress">
-                        <span className="typing-indicator">●●●</span>
+                        <TypingDots />
                         <span className="progress-text">Updating canvas...</span>
                       </div>
                     ) : (
-                      isLoading && <span className="typing-indicator">●●●</span>
+                      isLoading && <TypingDots />
                     ))
                   )}
                 </div>
@@ -527,7 +538,7 @@ export function ChatPanel() {
             </div>
             <div className="message-content">
               <div className="progress-indicator">
-                <span className="typing-indicator">●●●</span>
+                <TypingDots />
                 <span className="progress-text">Generating response...</span>
               </div>
             </div>

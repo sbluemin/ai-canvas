@@ -172,6 +172,11 @@
   animation: refresh-spin 1s linear infinite;
 }
 
+@keyframes refresh-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .model-selector-provider-label {
   color: var(--text-muted);
   font-size: 11px;

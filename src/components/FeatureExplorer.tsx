@@ -23,11 +23,12 @@ interface WorkspaceData {
 }
 
 interface InputDialogState {
-  mode: 'create-feature' | 'rename-feature' | 'new-file';
+  mode: 'create-feature' | 'rename-feature' | 'new-file' | 'rename-file';
   title: string;
   placeholder: string;
   submitLabel: string;
   featureId?: string;
+  filePath?: string;
   initialValue: string;
 }
 
@@ -627,6 +628,76 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
     return true;
   };
 
+  const handleRenameFile = async (oldFilePath: string, newBaseName: string): Promise<boolean> => {
+    if (!projectPath) return false;
+
+    // .md 확장자 자동 붙이기
+    const normalizedName = newBaseName.endsWith('.md') ? newBaseName : `${newBaseName}.md`;
+    // featureId 추출: "my-feature/doc.md" -> "my-feature"
+    const featureId = oldFilePath.split('/')[0];
+    const newFilePath = `${featureId}/${normalizedName}`;
+
+    // 동일 이름이면 아무 작업 안 함
+    if (newFilePath === oldFilePath) return true;
+
+    const result = await api.renameCanvasFile(projectPath, oldFilePath, newFilePath);
+    if (!result.success) {
+      addToast('error', `Failed: ${result.error}`);
+      return false;
+    }
+
+    await onRefreshTree();
+
+    // 현재 feature의 파일 목록 새로고침
+    const filesResult = await api.listFeatureCanvasFiles(projectPath, featureId);
+    if (filesResult.success && filesResult.files) {
+      setCanvasFiles(filesResult.files);
+    }
+
+    // 활성 파일이 rename된 파일이면 새 경로로 전환
+    if (activeCanvasFile === oldFilePath) {
+      onSelectFile(newFilePath);
+    }
+
+    addToast('success', `Renamed: ${normalizedName}`);
+    return true;
+  };
+
+  const handleDeleteFile = async (filePath: string): Promise<void> => {
+    if (!projectPath) return;
+
+    const fileName = filePath.split('/').pop() ?? filePath;
+    const confirmed = confirm(`Delete "${fileName}"?`);
+    if (!confirmed) return;
+
+    const result = await api.deleteCanvasFile(projectPath, filePath);
+    if (!result.success) {
+      addToast('error', `Failed: ${result.error}`);
+      return;
+    }
+
+    const featureId = filePath.split('/')[0];
+    await onRefreshTree();
+
+    // 파일 목록 새로고침
+    const filesResult = await api.listFeatureCanvasFiles(projectPath, featureId);
+    if (filesResult.success && filesResult.files) {
+      setCanvasFiles(filesResult.files);
+
+      // 활성 파일이 삭제된 파일이면 다음 파일로 전환
+      if (activeCanvasFile === filePath) {
+        if (filesResult.files.length > 0) {
+          onSelectFile(filesResult.files[0]);
+        } else {
+          setActiveCanvasFile(null);
+          setCanvasContent('');
+        }
+      }
+    }
+
+    addToast('success', `Deleted: ${fileName}`);
+  };
+
   const handleSetFeatureIcon = async (featureId: string, iconInput: string): Promise<boolean> => {
     if (!projectPath) return false;
     const icon = iconInput.trim();
@@ -696,6 +767,17 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
     });
   };
 
+  const openRenameFileDialog = (filePath: string, currentName: string) => {
+    openInputDialog({
+      mode: 'rename-file',
+      title: 'Rename file',
+      placeholder: 'file name',
+      submitLabel: 'Rename',
+      filePath,
+      initialValue: currentName.replace(/\.md$/, ''),
+    });
+  };
+
   const openSetFeatureIconDialog = (featureId: string) => {
     emojiTargetFeatureIdRef.current = featureId;
     if (emojiInputRef.current) {
@@ -727,6 +809,11 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
       case 'rename-feature':
         if (inputDialog.featureId) {
           success = await handleRenameFeature(inputDialog.featureId, normalizedValue);
+        }
+        break;
+      case 'rename-file':
+        if (inputDialog.filePath) {
+          success = await handleRenameFile(inputDialog.filePath, normalizedValue);
         }
         break;
       default:
@@ -850,19 +937,18 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
       </div>
 
       {inputDialog && (
-        <button
-          type="button"
-          className="feature-explorer-input-overlay"
-          onClick={closeInputDialog}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') closeInputDialog();
-          }}
-          aria-label="Close dialog"
-        >
+        <div className="feature-explorer-input-overlay">
+          <button
+            type="button"
+            className="feature-explorer-input-backdrop"
+            onClick={closeInputDialog}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') closeInputDialog();
+            }}
+            aria-label="Close dialog"
+          />
           <div
             className="feature-explorer-input-modal"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
@@ -889,7 +975,7 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
               <button type="button" className="primary" onClick={handleSubmitInputDialog}>{inputDialog.submitLabel}</button>
             </div>
           </div>
-        </button>
+        </div>
       )}
 
       {contextMenu && createPortal(
@@ -939,15 +1025,36 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                onSelectFile(contextMenu.entry.path);
-                setContextMenu(null);
-              }}
-            >
-              Open
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectFile(contextMenu.entry.path);
+                  setContextMenu(null);
+                }}
+              >
+                Open
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  openRenameFileDialog(contextMenu.entry.path, contextMenu.entry.name);
+                  setContextMenu(null);
+                }}
+              >
+                Rename
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={() => {
+                  handleDeleteFile(contextMenu.entry.path);
+                  setContextMenu(null);
+                }}
+              >
+                Delete
+              </button>
+            </>
           )}
         </div>,
         document.body,
