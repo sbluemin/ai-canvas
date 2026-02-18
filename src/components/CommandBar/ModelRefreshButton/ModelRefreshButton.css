@@ -2,33 +2,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: none;
-  border-radius: 50%;
-  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  background: transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  color: var(--text-muted);
 }
 
 .model-refresh-button:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-  transform: scale(1.05);
 }
 
 .model-refresh-button:active {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 .model-refresh-button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .model-refresh-button.loading {
-  background: var(--bg-secondary);
+  color: var(--accent-blue);
 }
 
 .refresh-icon {
@@ -43,3 +42,4 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+

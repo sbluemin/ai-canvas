@@ -234,47 +234,110 @@
 .canvas-width-control {
   display: flex;
   align-items: center;
-  gap: 8px;
+  background: rgba(30, 31, 32, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(60, 63, 65, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 0;
   flex-shrink: 0;
 }
 
-.canvas-width-control label {
-  font-size: 12px;
-  color: var(--text-muted);
+[data-theme='light'] .canvas-width-control {
+  background: rgba(241, 243, 244, 0.6);
+  border-color: rgba(218, 220, 224, 0.5);
 }
 
-.canvas-width-control select {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 12px;
+.canvas-width-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
   cursor: pointer;
+  border-radius: calc(var(--radius-sm) - 2px);
+  transition: all 0.15s ease;
+}
+
+.canvas-width-btn:hover {
+  color: var(--text-primary);
+}
+
+.canvas-width-btn.active {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='light'] .canvas-width-btn.active {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .save-status-indicator {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
   color: var(--text-muted);
   padding: 4px 10px;
   border-radius: var(--radius-full);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: none;
   flex-shrink: 0;
+  transition: color 0.3s ease;
+}
+
+.save-status-indicator::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-hint);
+  flex-shrink: 0;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .save-status-indicator.saved {
   color: var(--accent-blue);
 }
 
+.save-status-indicator.saved::before {
+  background: var(--accent-blue);
+  box-shadow: 0 0 6px rgba(138, 180, 248, 0.5);
+}
+
+[data-theme='light'] .save-status-indicator.saved::before {
+  box-shadow: 0 0 6px rgba(26, 115, 232, 0.4);
+}
+
 .save-status-indicator.saving {
-  color: var(--accent-cyan);
+  color: var(--accent-blue);
+}
+
+.save-status-indicator.saving::before {
+  background: var(--accent-blue);
+  animation: status-pulse 1.2s ease-in-out infinite;
 }
 
 .save-status-indicator.error {
   color: #f87171;
 }
+
+.save-status-indicator.error::before {
+  background: #f87171;
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
 
 .export-actions button {
   border: 1px solid var(--border-color);

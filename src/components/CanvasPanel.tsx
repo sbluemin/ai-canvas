@@ -6,7 +6,6 @@ import { EditorProvider } from '../context/EditorContext';
 import { DiffPreview } from './DiffPreview';
 import { FeatureExplorer } from './FeatureExplorer';
 import { api } from '../api';
-import type { CanvasWidthMode } from '../store/types';
 import './CanvasPanel.css';
 
 export function CanvasPanel() {
@@ -90,10 +89,6 @@ export function CanvasPanel() {
     }
   };
 
-  const handleWidthModeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setCanvasWidthMode(event.target.value as CanvasWidthMode);
-  };
-
   const activeFeatureName = activeFeatureId
     ? (features.find((feature) => feature.id === activeFeatureId)?.name ?? activeFeatureId)
     : 'No feature selected';
@@ -129,16 +124,36 @@ export function CanvasPanel() {
               </div>
               <div className="header-right">
                 <div className="canvas-width-control">
-                  <label htmlFor="canvas-width-mode">Width</label>
-                  <select
-                    id="canvas-width-mode"
-                    value={canvasWidthMode}
-                    onChange={handleWidthModeChange}
+                  <button
+                    type="button"
+                    className={`canvas-width-btn ${canvasWidthMode === 'default' ? 'active' : ''}`}
+                    onClick={() => setCanvasWidthMode('default')}
+                    title="기본값"
                   >
-                    <option value="default">기본값</option>
-                    <option value="wide">넓게</option>
-                    <option value="responsive">반응형</option>
-                  </select>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="6" y="3" width="12" height="18" rx="2" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className={`canvas-width-btn ${canvasWidthMode === 'wide' ? 'active' : ''}`}
+                    onClick={() => setCanvasWidthMode('wide')}
+                    title="넓게"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className={`canvas-width-btn ${canvasWidthMode === 'responsive' ? 'active' : ''}`}
+                    onClick={() => setCanvasWidthMode('responsive')}
+                    title="반응형"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m15 3 6 6-6 6" /><path d="m9 21-6-6 6-6" />
+                    </svg>
+                  </button>
                 </div>
                 {!pendingCanvasPatch && <EditorToolbar />}
                 <div className={`save-status-indicator ${autosaveStatus.state}`}>
