@@ -312,6 +312,16 @@
   filter: brightness(1.1);
 }
 
+.feature-explorer-input-actions button.danger {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.feature-explorer-input-actions button.danger:hover {
+  filter: brightness(1.1);
+}
+
 /* 컨텍스트 메뉴 (우클릭) */
 .tab-context-menu {
   position: fixed;

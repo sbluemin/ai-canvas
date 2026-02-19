@@ -23,7 +23,7 @@ interface WorkspaceData {
 }
 
 interface InputDialogState {
-  mode: 'create-feature' | 'rename-feature' | 'new-file' | 'rename-file';
+  mode: 'create-feature' | 'rename-feature' | 'new-file' | 'rename-file' | 'delete-feature' | 'delete-file';
   title: string;
   placeholder: string;
   submitLabel: string;
@@ -351,12 +351,26 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
   const [inputDialog, setInputDialog] = useState<InputDialogState | null>(null);
   const [inputValue, setInputValue] = useState('');
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const inputFieldRef = useRef<HTMLInputElement>(null);
   const emojiInputRef = useRef<HTMLInputElement>(null);
   const emojiTargetFeatureIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     onRefreshTree();
   }, [onRefreshTree]);
+
+  // inputDialog가 열릴 때 input에 포커스 — confirm() 후 window 포커스 복원 지연 대응
+  useEffect(() => {
+    if (!inputDialog) return;
+    const tryFocus = () => inputFieldRef.current?.focus();
+    tryFocus();
+    const rafId = requestAnimationFrame(tryFocus);
+    const timerId = setTimeout(tryFocus, 100);
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
+    };
+  }, [inputDialog]);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -663,28 +677,22 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
     return true;
   };
 
-  const handleDeleteFile = async (filePath: string): Promise<void> => {
-    if (!projectPath) return;
-
-    const fileName = filePath.split('/').pop() ?? filePath;
-    const confirmed = confirm(`Delete "${fileName}"?`);
-    if (!confirmed) return;
+  const handleDeleteFile = async (filePath: string): Promise<boolean> => {
+    if (!projectPath) return false;
 
     const result = await api.deleteCanvasFile(projectPath, filePath);
     if (!result.success) {
       addToast('error', `Failed: ${result.error}`);
-      return;
+      return false;
     }
 
     const featureId = filePath.split('/')[0];
     await onRefreshTree();
 
-    // 파일 목록 새로고침
     const filesResult = await api.listFeatureCanvasFiles(projectPath, featureId);
     if (filesResult.success && filesResult.files) {
       setCanvasFiles(filesResult.files);
 
-      // 활성 파일이 삭제된 파일이면 다음 파일로 전환
       if (activeCanvasFile === filePath) {
         if (filesResult.files.length > 0) {
           onSelectFile(filesResult.files[0]);
@@ -695,7 +703,9 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
       }
     }
 
-    addToast('success', `Deleted: ${fileName}`);
+    const deletedName = filePath.split('/').pop() ?? filePath;
+    addToast('success', `Deleted: ${deletedName}`);
+    return true;
   };
 
   const handleSetFeatureIcon = async (featureId: string, iconInput: string): Promise<boolean> => {
@@ -790,6 +800,18 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
   const handleSubmitInputDialog = async () => {
     if (!inputDialog) return;
 
+    // delete 모드는 입력값 불필요 — 즉시 실행
+    if (inputDialog.mode === 'delete-feature' && inputDialog.featureId) {
+      const success = await handleDeleteFeature(inputDialog.featureId);
+      if (success) closeInputDialog();
+      return;
+    }
+    if (inputDialog.mode === 'delete-file' && inputDialog.filePath) {
+      const success = await handleDeleteFile(inputDialog.filePath);
+      if (success) closeInputDialog();
+      return;
+    }
+
     const normalizedValue = inputValue.trim();
     if (!normalizedValue) {
       addToast('error', 'Input is required.');
@@ -825,16 +847,13 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
     }
   };
 
-  const handleDeleteFeature = async (featureId: string) => {
-    if (!projectPath) return;
-    const feature = findFeature(featureId, features);
-    const confirmed = confirm(`Delete feature "${feature?.name ?? featureId}" and all its files?`);
-    if (!confirmed) return;
+  const handleDeleteFeature = async (featureId: string): Promise<boolean> => {
+    if (!projectPath) return false;
 
     const result = await api.deleteFeature(projectPath, featureId);
     if (!result.success) {
       addToast('error', `Failed: ${result.error}`);
-      return;
+      return false;
     }
 
     const remainingFeatures = features.filter((item) => item.id !== featureId);
@@ -857,7 +876,8 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
       }
     }
 
-    addToast('success', `Deleted feature: ${feature?.name ?? featureId}`);
+    addToast('success', `Deleted feature: ${featureId}`);
+    return true;
   };
 
   const featureNodes = getFeatureNodes(canvasTree);
@@ -953,26 +973,34 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
             aria-modal="true"
           >
             <h4>{inputDialog.title}</h4>
-            <input
-              ref={(el) => el?.focus()}
-              type="text"
-              value={inputValue}
-              placeholder={inputDialog.placeholder}
-              onChange={(event) => setInputValue(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  handleSubmitInputDialog();
-                }
-                if (event.key === 'Escape') {
-                  event.preventDefault();
-                  closeInputDialog();
-                }
-              }}
-            />
+            {inputDialog.mode !== 'delete-feature' && inputDialog.mode !== 'delete-file' && (
+              <input
+                ref={inputFieldRef}
+                type="text"
+                value={inputValue}
+                placeholder={inputDialog.placeholder}
+                onChange={(event) => setInputValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleSubmitInputDialog();
+                  }
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeInputDialog();
+                  }
+                }}
+              />
+            )}
             <div className="feature-explorer-input-actions">
               <button type="button" onClick={closeInputDialog}>Cancel</button>
-              <button type="button" className="primary" onClick={handleSubmitInputDialog}>{inputDialog.submitLabel}</button>
+              <button
+                type="button"
+                className={inputDialog.mode === 'delete-feature' || inputDialog.mode === 'delete-file' ? 'danger' : 'primary'}
+                onClick={handleSubmitInputDialog}
+              >
+                {inputDialog.submitLabel}
+              </button>
             </div>
           </div>
         </div>
@@ -1017,7 +1045,16 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
                 type="button"
                 className="danger"
                 onClick={() => {
-                  handleDeleteFeature(contextMenu.entry.path);
+                  const featureId = contextMenu.entry.path;
+                  const feature = findFeature(featureId, features);
+                  openInputDialog({
+                    mode: 'delete-feature',
+                    title: `Delete "${feature?.name ?? featureId}" and all its files?`,
+                    placeholder: '',
+                    submitLabel: 'Delete',
+                    featureId,
+                    initialValue: '',
+                  });
                   setContextMenu(null);
                 }}
               >
@@ -1048,7 +1085,14 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
                 type="button"
                 className="danger"
                 onClick={() => {
-                  handleDeleteFile(contextMenu.entry.path);
+                  openInputDialog({
+                    mode: 'delete-file',
+                    title: `Delete "${contextMenu.entry.name}"?`,
+                    placeholder: '',
+                    submitLabel: 'Delete',
+                    filePath: contextMenu.entry.path,
+                    initialValue: '',
+                  });
                   setContextMenu(null);
                 }}
               >

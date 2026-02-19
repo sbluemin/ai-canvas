@@ -283,19 +283,43 @@ function MilkdownEditorInner() {
     }
   }, [canvasContent, get]);
 
+  // 에디터→store 동기화: 폴링 대신 input/blur 이벤트 기반
   useEffect(() => {
-    const interval = setInterval(() => {
-      const editor = get();
-      if (editor) {
-        const markdown = editor.action(getMarkdown());
-        if (markdown !== canvasContent) {
-          setCanvasContent(markdown);
-        }
-      }
-    }, 1000);
+    if (!editorView) return;
 
-    return () => clearInterval(interval);
-  }, [get, setCanvasContent, canvasContent]);
+    let debounceTimer: number | null = null;
+
+    const syncToStore = () => {
+      const editor = get();
+      if (!editor) return;
+      const markdown = editor.action(getMarkdown());
+      if (markdown !== canvasContentRef.current) {
+        canvasContentRef.current = markdown;
+        setCanvasContent(markdown);
+      }
+    };
+
+    // blur 시 즉시 동기화 → CanvasPanel onBlur에서 최신 내용으로 저장 가능
+    const handleBlur = () => {
+      if (debounceTimer !== null) window.clearTimeout(debounceTimer);
+      syncToStore();
+    };
+
+    // 입력 시 500ms 디바운스 동기화
+    const handleInput = () => {
+      if (debounceTimer !== null) window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(syncToStore, 500);
+    };
+
+    editorView.dom.addEventListener('blur', handleBlur, true);
+    editorView.dom.addEventListener('input', handleInput);
+
+    return () => {
+      editorView.dom.removeEventListener('blur', handleBlur, true);
+      editorView.dom.removeEventListener('input', handleInput);
+      if (debounceTimer !== null) window.clearTimeout(debounceTimer);
+    };
+  }, [editorView, get, setCanvasContent]);
 
   const insertMarkdown = useCallback((markdown: string) => {
     const editor = editorRef.current;

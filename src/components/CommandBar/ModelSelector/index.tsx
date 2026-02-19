@@ -200,11 +200,19 @@ export function ModelSelector() {
 
                   return (
                     <div key={model.id} className="model-item-wrapper">
-                      <button
-                        type="button"
+                      {/* div로 감싸고 variant가 없을 때만 클릭 가능 — button 중첩 방지 */}
+                      <div
+                        role={hasVariants ? undefined : 'button'}
+                        tabIndex={hasVariants ? undefined : 0}
                         className={`model-selector-item model-item ${isSelected ? 'selected' : ''}`}
                         onClick={() => {
                           if (!hasVariants) {
+                            handleModelSelect(model.id);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (!hasVariants && (e.key === 'Enter' || e.key === ' ')) {
+                            e.preventDefault();
                             handleModelSelect(model.id);
                           }
                         }}
@@ -237,7 +245,7 @@ export function ModelSelector() {
                             </div>
                           )}
                         </div>
-                      </button>
+                      </div>
                     </div>
                   );
                 })}

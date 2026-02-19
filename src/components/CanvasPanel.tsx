@@ -27,7 +27,8 @@ export function CanvasPanel() {
   } = useStore();
   const [showOverlay, setShowOverlay] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const autosaveTimerRef = useRef<number | null>(null);
+  const latestContentRef = useRef(canvasContent);
+  const isDirtyRef = useRef(false);
 
   const isUpdating = aiRun?.phase === 'updating';
 
@@ -45,29 +46,44 @@ export function CanvasPanel() {
     }
   }, [isUpdating, showOverlay]);
 
+  // canvasContent 변경 시 dirty 플래그만 갱신 (파일 저장은 blur 시 수행)
   useEffect(() => {
-    if (!projectPath || !activeCanvasFile) return;
-    if (autosaveTimerRef.current) {
-      window.clearTimeout(autosaveTimerRef.current);
+    latestContentRef.current = canvasContent;
+    isDirtyRef.current = true;
+  }, [canvasContent]);
+
+  // 실제 저장 로직 — blur, 파일 전환, beforeunload 시 호출
+  // Zustand getState()로 최신 콘텐츠를 동기적으로 읽어 blur 타이밍 이슈 방지
+  const saveNow = useCallback(async () => {
+    const path = projectPath;
+    const file = activeCanvasFile;
+    if (!path || !file || !isDirtyRef.current) return;
+    isDirtyRef.current = false;
+    const content = useStore.getState().canvasContent;
+    setAutosaveStatus({ state: 'saving', updatedAt: Date.now() });
+    const result = await api.writeCanvasFile(path, file, content);
+    if (result.success) {
+      const status = { state: 'saved' as const, updatedAt: Date.now() };
+      setAutosaveStatus(status);
+      api.writeAutosaveStatus(path, status).catch(() => undefined);
+    } else {
+      setAutosaveStatus({ state: 'error' as const, updatedAt: Date.now(), message: result.error ?? 'Save failed' });
     }
-    setAutosaveStatus({ state: 'idle' });
-    autosaveTimerRef.current = window.setTimeout(async () => {
-      setAutosaveStatus({ state: 'saving', updatedAt: Date.now() });
-      const result = await api.writeCanvasFile(projectPath, activeCanvasFile, canvasContent);
-      if (result.success) {
-        const status = { state: 'saved' as const, updatedAt: Date.now() };
-        setAutosaveStatus(status);
-        api.writeAutosaveStatus(projectPath, status).catch(() => undefined);
-      } else {
-        setAutosaveStatus({ state: 'error' as const, updatedAt: Date.now(), message: result.error ?? 'Save failed' });
-      }
-    }, 1000);
-    return () => {
-      if (autosaveTimerRef.current) {
-        window.clearTimeout(autosaveTimerRef.current);
-      }
-    };
-  }, [canvasContent, projectPath, activeCanvasFile, setAutosaveStatus]);
+  }, [projectPath, activeCanvasFile, setAutosaveStatus]);
+
+  // 캔버스 패널이 포커스를 잃었을 때 저장
+  const handlePanelBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+    // 패널 내부 요소로 포커스가 이동하는 경우 무시
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    void saveNow();
+  }, [saveNow]);
+
+  // 앱 종료/새로고침 시 미저장 콘텐츠 보호
+  useEffect(() => {
+    const handleBeforeUnload = () => { void saveNow(); };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [saveNow]);
 
   const refreshTree = useCallback(async () => {
     if (!projectPath) return;
@@ -79,6 +95,8 @@ export function CanvasPanel() {
 
   const handleSelectCanvasFile = async (fileName: string) => {
     if (!projectPath) return;
+    // 파일 전환 전 현재 파일 저장
+    await saveNow();
     const result = await api.readCanvasFile(projectPath, fileName);
     if (result.success && result.content !== undefined) {
       setActiveCanvasFile(fileName);
@@ -92,7 +110,7 @@ export function CanvasPanel() {
 
   return (
     <EditorProvider>
-      <div className={`canvas-panel canvas-width-${canvasWidthMode}`}>
+      <div className={`canvas-panel canvas-width-${canvasWidthMode}`} onBlur={handlePanelBlur}>
         <div className={`canvas-panel-layout ${isFileExplorerOpen ? 'with-explorer' : ''}`}>
           {isFileExplorerOpen && (
             <FeatureExplorer
