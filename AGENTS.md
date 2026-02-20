@@ -63,7 +63,7 @@
 ### 레이아웃
 - **App.tsx**: 루트 — Allotment 좌우 분할 (모바일: 단일 캔버스)
 - **CommandBar**: 상단 — ProjectSelector, ModelSelector(Intelligent Control Capsule: Runtime+Model+Refresh 통합), Goal/Export/Settings
-- **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리)
+- **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리, 입력창 `Shift+Enter` 개행 + 자동 높이 확장)
 - **OnboardingWizard**: 프로젝트별 OpenCode 설치/로그인 안내 온보딩 (설치→로그인 안내, 글로벌/로컬 선택)
 - **CanvasPanel**: 우측 에디터 — MilkdownEditor, EditorToolbar, SelectionAiPopup, DiffPreview
 - **FeatureExplorer**: Feature 트리 사이드바 (생성/삭제/이름변경, 아이콘, 드래그 정렬, 컨텍스트 메뉴)

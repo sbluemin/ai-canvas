@@ -514,14 +514,16 @@
 
 .input-form {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 6px;
-  padding: 6px 6px 6px 16px;
-  background: var(--bg-input);
+  padding: 8px 8px 8px 14px;
+  background: color-mix(in srgb, var(--bg-input), transparent 10%);
   border: 1px solid var(--border-color);
-  border-radius: 22px;
+  border-radius: 20px;
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .input-form:focus-within {
@@ -543,6 +545,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  margin-bottom: 1px;
 }
 
 .input-action-btn:hover {
@@ -550,19 +553,37 @@
   color: var(--text-secondary);
 }
 
-.input-form input {
+.input-form textarea {
   flex: 1;
+  display: block;
   background: transparent;
   border: none;
   color: var(--text-primary);
   font-size: 14px;
+  line-height: 1.45;
+  font-family: inherit;
   outline: none;
-  padding: 8px 0;
+  padding: 7px 0;
   min-width: 0;
+  min-height: 20px;
+  max-height: 160px;
+  resize: none;
+  overflow-y: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.input-form input::placeholder {
+.input-form textarea::placeholder {
   color: var(--text-hint);
+}
+
+.input-form textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.input-form textarea::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--border-color), transparent 25%);
+  border-radius: var(--radius-full);
 }
 
 .send-btn {

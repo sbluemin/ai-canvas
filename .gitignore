@@ -97,4 +97,4 @@ tmp/
 temp/
 *.tmp
 .sisyphus/
-.ai-canvas/
+.ai-canvas/*

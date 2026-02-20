@@ -7,7 +7,7 @@ import { getOpenCodeProjectPath } from './backend';
 
 const PHASE2_STREAM_CHUNK_SIZE = 12;
 const PHASE2_STREAM_TICK_MS = 16;
-const PHASE2_TIMEOUT_MS = 120_000; // Phase 2 응답 타임아웃 (2분)
+const PHASE2_TIMEOUT_MS = 600_000; // Phase 2 응답 타임아웃 (10분)
 
 function decodeJsonStringFragment(value: string): string {
   try {

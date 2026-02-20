@@ -15,6 +15,7 @@ import { PlusIcon, MicrophoneIcon, SendIcon, ChevronDownIcon } from './Icons';
 const FILE_MENTION_REGEX = /(^|\s)@([^\s@]+)/g;
 const ACTIVE_MENTION_REGEX = /(^|\s)@([^\s@]*)$/;
 const MAX_MENTION_SUGGESTIONS = 8;
+const CHAT_INPUT_MAX_HEIGHT = 160;
 
 interface MentionContext {
   mentionStart: number;
@@ -191,7 +192,7 @@ export function ChatPanel() {
   const [isConversationMenuOpen, setIsConversationMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationMenuRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   
   const {
     messages, isLoading, aiRun, projectPath, activeFeatureId, conversations, activeConversationId,
@@ -248,9 +249,22 @@ export function ChatPanel() {
     closeMentionMenu();
 
     window.requestAnimationFrame(() => {
+      syncInputHeight();
       inputRef.current?.focus();
       inputRef.current?.setSelectionRange(nextCursor, nextCursor);
     });
+  };
+
+  const syncInputHeight = (element?: HTMLTextAreaElement | null) => {
+    const target = element ?? inputRef.current;
+    if (!target) {
+      return;
+    }
+
+    target.style.height = 'auto';
+    const nextHeight = Math.min(target.scrollHeight, CHAT_INPUT_MAX_HEIGHT);
+    target.style.height = `${nextHeight}px`;
+    target.style.overflowY = target.scrollHeight > CHAT_INPUT_MAX_HEIGHT ? 'auto' : 'hidden';
   };
 
   useEffect(() => {
@@ -298,6 +312,10 @@ export function ChatPanel() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    syncInputHeight();
+  }, [input]);
 
   useEffect(() => {
     if (!projectPath || !activeFeatureId) return;
@@ -354,11 +372,12 @@ export function ChatPanel() {
     setIsConversationMenuOpen(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const nextInput = e.target.value;
     const cursor = e.target.selectionStart ?? nextInput.length;
     setInput(nextInput);
     refreshMentionSuggestions(nextInput, cursor);
+    syncInputHeight(e.target);
   };
 
   const handleInputSelect = () => {
@@ -370,8 +389,24 @@ export function ChatPanel() {
     refreshMentionSuggestions(element.value, cursor);
   };
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const submitInput = async () => {
+    if (!input.trim() || isLoading || isChatLocked) return;
+
+    const prompt = input.trim();
+    const fileMentions = extractFileMentions(prompt, projectFiles);
+    closeMentionMenu();
+    setInput('');
+    await sendMessage(prompt, { fileMentions: fileMentions.length > 0 ? fileMentions : undefined });
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (mentionSuggestions.length === 0) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+        e.preventDefault();
+        void submitInput();
+        return;
+      }
+
       if (e.key === 'Escape') {
         closeMentionMenu();
       }
@@ -392,7 +427,7 @@ export function ChatPanel() {
       return;
     }
 
-    if (e.key === 'Enter' || e.key === 'Tab') {
+    if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
       e.preventDefault();
       const selected = mentionSuggestions[activeMentionIndex] ?? mentionSuggestions[0];
       if (selected) {
@@ -412,13 +447,7 @@ export function ChatPanel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || isChatLocked) return;
-
-    const prompt = input.trim();
-    const fileMentions = extractFileMentions(prompt, projectFiles);
-    closeMentionMenu();
-    setInput('');
-    await sendMessage(prompt, { fileMentions: fileMentions.length > 0 ? fileMentions : undefined });
+    await submitInput();
   };
 
   const isUpdatingCanvas = aiRun?.phase === 'updating';
@@ -556,15 +585,15 @@ export function ChatPanel() {
         )}
         <div className="input-wrapper">
           <form className="input-form" onSubmit={handleSubmit}>
-            <input
+            <textarea
               ref={inputRef}
-              type="text"
               value={input}
               onChange={handleInputChange}
               onSelect={handleInputSelect}
               onKeyDown={handleInputKeyDown}
               placeholder="Type a message... (use @path/to/file)"
               disabled={isLoading || isChatLocked}
+              rows={1}
             />
             <button type="button" className="input-action-btn mic-btn" title="Voice input">
               <MicrophoneIcon />
