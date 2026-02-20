@@ -23,7 +23,6 @@
   "exclude": ["src/**/*.test.ts"],
   "include": ["src"],
   "references": [
-    { "path": "./tsconfig.node.json" },
-    { "path": "./tsconfig.electron.json" }
+    { "path": "./tsconfig.node.json" }
   ]
 }

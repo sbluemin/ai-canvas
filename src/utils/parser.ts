@@ -1,5 +1,19 @@
-import type { AIResponse } from '../prompts/types';
-import { AIResponseSchema, validateAIResponse } from '../prompts/types';
+import { z } from 'zod';
+
+export type AIResponse = {
+  message: string;
+  canvasContent?: string;
+};
+
+export const AIResponseSchema = z.object({
+  message: z.string(),
+  canvasContent: z.string().optional(),
+});
+
+export function validateAIResponse(data: unknown): AIResponse | null {
+  const result = AIResponseSchema.safeParse(data);
+  return result.success ? result.data : null;
+}
 
 export interface ParseResult {
   success: boolean;
@@ -32,19 +46,19 @@ function buildFallback(rawText: string, error?: string): ParseResult {
 function extractJSONObject(text: string): string | null {
   let depth = 0;
   let inString = false;
-  let escape = false;
+  let isEscaped = false;
   let startIndex = -1;
 
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
 
     if (inString) {
-      if (escape) {
-        escape = false;
+      if (isEscaped) {
+        isEscaped = false;
         continue;
       }
       if (char === '\\') {
-        escape = true;
+        isEscaped = true;
         continue;
       }
       if (char === '"') {

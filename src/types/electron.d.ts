@@ -72,7 +72,6 @@ interface AiAPI {
 interface ProjectAPI {
   openDirectory: () => Promise<string | null>;
   initCanvasDir: (projectPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
-  listCanvasFiles: (projectPath: string) => Promise<{ success: boolean; files?: string[]; error?: string }>;
   listFeatures: (projectPath: string) => Promise<{ success: boolean; features?: unknown[]; error?: string }>;
   createFeature: (projectPath: string, featureId: string, name: string) => Promise<{ success: boolean; feature?: unknown; error?: string }>;
   renameFeature: (projectPath: string, oldFeatureId: string, newFeatureId: string) => Promise<{ success: boolean; error?: string }>;
@@ -105,7 +104,6 @@ interface ProjectAPI {
 }
 
 interface WindowAPI {
-  create: () => Promise<{ success: boolean; error?: string }>;
   showEmojiPanel: () => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -155,10 +153,6 @@ interface RuntimeAPI {
 
 interface ElectronAPI {
   platform: NodeJS.Platform;
-  showSaveDialog: () => Promise<string | null>;
-  showOpenDialog: () => Promise<string | null>;
-  writeFile: (filePath: string, content: string) => Promise<boolean>;
-  readFile: (filePath: string) => Promise<string>;
   ai: AiAPI;
   project: ProjectAPI;
   settings: SettingsAPI;

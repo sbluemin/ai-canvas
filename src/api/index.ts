@@ -64,44 +64,6 @@ export interface ChatRequestOptions {
 export const api = {
   isElectron,
 
-  async showSaveDialog(): Promise<string | null> {
-    if (isElectron) {
-      return window.electronAPI.showSaveDialog();
-    }
-    const filename = prompt('저장할 파일명을 입력하세요 (예: document.md)');
-    return filename ? filename : null;
-  },
-
-  async showOpenDialog(): Promise<string | null> {
-    if (isElectron) {
-      return window.electronAPI.showOpenDialog();
-    }
-    const filename = prompt('열 파일명을 입력하세요 (예: document.md)');
-    return filename ? filename : null;
-  },
-
-  async readFile(filePath: string): Promise<string> {
-    if (isElectron) {
-      return window.electronAPI.readFile(filePath);
-    }
-    const response = await fetch(`/api/files?path=${encodeURIComponent(filePath)}`);
-    if (!response.ok) throw new Error('File read failed');
-    return response.text();
-  },
-
-  async writeFile(filePath: string, content: string): Promise<boolean> {
-    if (isElectron) {
-      return window.electronAPI.writeFile(filePath, content);
-    }
-    const response = await fetch('/api/files', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, content }),
-    });
-    if (!response.ok) throw new Error('File write failed');
-    return true;
-  },
-
   /**
    * AI 채팅 요청 (통합 IPC)
    */
@@ -147,11 +109,6 @@ export const api = {
   async initCanvasDir(projectPath: string): Promise<{ success: boolean; path?: string; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.project.initCanvasDir(projectPath);
-  },
-
-  async listCanvasFiles(projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> {
-    if (!isElectron) return { success: false, error: 'Electron only' };
-    return window.electronAPI.project.listCanvasFiles(projectPath);
   },
 
   async listFeatures(projectPath: string): Promise<{ success: boolean; features?: FeatureSummary[]; error?: string }> {
@@ -351,11 +308,6 @@ export const api = {
       return () => {};
     }
     return window.electronAPI.runtime.onModelsRefreshed((payload) => callback(payload as RuntimeModelsRefreshedEvent));
-  },
-
-  async createWindow(): Promise<{ success: boolean; error?: string }> {
-    if (!isElectron) return { success: false, error: 'Electron only' };
-    return window.electronAPI.window.create();
   },
 
   async showEmojiPanel(): Promise<{ success: boolean; error?: string }> {

@@ -7,13 +7,15 @@
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { resolveOpencodeBinary } from './binary-resolver';
-import type { OpenCodeChatRequest, OpenCodeChatChunk, OpenCodeChatResult, OpenCodeJsonEvent } from './types';
-import { getBackendDirPath } from '../../core';
+import { configureBinaryResolverContext } from './binary-resolver';
+import type { OpenCodeChatRequest, OpenCodeChatChunk, OpenCodeChatResult, OpenCodeJsonEvent, OpenCodeRuntimeBinaryMode } from '../ai-types';
+import { getBackendDirPath } from '../utils';
+import { buildRuntimeConfigJson } from '../ai-prompts';
 
 let runtimeProjectPath: string | null = null;
-let runtimeBinaryMode: 'auto' | 'local' | 'global' = 'auto';
+let runtimeBinaryMode: OpenCodeRuntimeBinaryMode = 'auto';
 
-export function configureRuntimeProjectPath(projectPath: string | null, binaryMode: 'auto' | 'local' | 'global' = 'auto'): void {
+export function configureRuntimeProjectPath(projectPath: string | null, binaryMode: OpenCodeRuntimeBinaryMode = 'auto'): void {
   runtimeProjectPath = projectPath;
   runtimeBinaryMode = binaryMode;
 }
@@ -58,6 +60,8 @@ function createRuntimeEnv(): NodeJS.ProcessEnv {
     delete env.OPENCODE_CONFIG_DIR;
   }
 
+  env.OPENCODE_CONFIG_CONTENT = buildRuntimeConfigJson();
+
   delete env.OPENCODE_CONFIG;
 
   return env;
@@ -68,7 +72,7 @@ function createRuntimeEnv(): NodeJS.ProcessEnv {
 /** ANSI 이스케이프 코드를 제거 */
 function stripAnsi(text: string): string {
   // eslint-disable-next-line no-control-regex
-  return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+  return text.replace(new RegExp('\\u001b\\[[0-9;]*[a-zA-Z]', 'g'), '');
 }
 
 const NOISE_PATTERNS = [
@@ -161,7 +165,8 @@ export class OpenCodeRuntime {
   /** chat 명령을 실행하고 스트리밍 결과를 반환한다. */
   async chat(request: OpenCodeChatRequest, onChunk?: (chunk: OpenCodeChatChunk) => void): Promise<OpenCodeChatResult> {
     return new Promise((resolve) => {
-      const args = ['run', composePrompt(request.prompt, request.systemInstruction), '--format', 'json', '--agent', 'plan'];
+      const agentName = request.agent ?? 'plan';
+      const args = ['run', composePrompt(request.prompt, request.systemInstruction), '--format', 'json', '--agent', agentName];
       if (request.model) {
         args.push('--model', request.model);
       }
@@ -307,4 +312,30 @@ export class OpenCodeRuntime {
     }
     this.activeChildren.clear();
   }
+}
+
+const runtime = new OpenCodeRuntime();
+
+export async function chatWithOpenCode(
+  request: OpenCodeChatRequest,
+  onChunk?: (chunk: OpenCodeChatChunk) => void
+): Promise<OpenCodeChatResult> {
+  return runtime.chat(request, onChunk);
+}
+
+export async function fetchOpenCodeModelsVerbose(): Promise<string> {
+  return runtime.runModelsVerbose();
+}
+
+export function shutdownOpenCodeRuntime(): void {
+  runtime.shutdown();
+}
+
+export function configureOpenCodeRuntime(projectPath: string | null, binaryMode: OpenCodeRuntimeBinaryMode = 'auto'): void {
+  configureRuntimeProjectPath(projectPath, binaryMode);
+  configureBinaryResolverContext(projectPath, binaryMode);
+}
+
+export function getOpenCodeProjectPath(): string | null {
+  return getRuntimeProjectPath();
 }

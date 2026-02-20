@@ -1,44 +1,48 @@
-/**
- * project IPC 핸들러 — 얇은 라우팅 레이어
- *
- * 비즈니스 로직은 services/project.service.ts에 위임하고,
- * 이 파일은 IPC 채널 등록과 Electron API(dialog, shell) 호출만 담당한다.
- */
-import { dialog, shell } from 'electron';
-import path from 'node:path';
+import { app, BrowserWindow, dialog, type IpcMainInvokeEvent, shell } from 'electron';
+import Store from 'electron-store';
 import fs from 'node:fs/promises';
-import { handleIpc, AI_CANVAS_DIR } from '../core';
-import { exportDocument } from '../services/export.service';
-import * as projectService from '../services/project.service';
+import path from 'node:path';
+import { AI_CANVAS_DIR, handleIpc } from './utils';
+import { executeAiChatWorkflow } from './ai-workflow';
+import type { AiChatRequest } from './ai-types';
+import { fetchModelsFromApi } from './ai-models';
+import { exportDocument } from './export.service';
+import * as projectService from './project.service';
+import * as runtimeService from './runtime.service';
 
-export function registerProjectHandlers() {
-  // ─── 디렉토리 선택 (Electron dialog API) ───
+export type ThemeMode = 'dark' | 'light' | 'system';
 
+type AppSettingsStoreSchema = {
+  theme?: ThemeMode;
+};
+
+const appSettingsStore = new Store<AppSettingsStoreSchema>({ name: 'app-settings' });
+
+function isThemeMode(value: unknown): value is ThemeMode {
+  return value === 'dark' || value === 'light' || value === 'system';
+}
+
+export function readStoredThemeMode(): ThemeMode {
+  const theme = appSettingsStore.get('theme');
+  return isThemeMode(theme) ? theme : 'dark';
+}
+
+export function registerIpcHandlers(
+  createWindow: () => BrowserWindow,
+  onThemeChanged?: (theme: ThemeMode) => void,
+) {
   handleIpc('project:open-directory', async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openDirectory'],
-      title: 'Select Project Folder',
-    });
+    const result = await dialog.showOpenDialog({ properties: ['openDirectory'], title: 'Select Project Folder' });
     if (result.canceled || result.filePaths.length === 0) {
       return null;
     }
     return result.filePaths[0];
   });
 
-  // ─── 캔버스 디렉토리 초기화 ───
-
   handleIpc('project:init-canvas-dir', async (_event: any, projectPath: string) => {
     const result = await projectService.initCanvasDir(projectPath);
     if (!result.success) return { success: false, error: result.error };
     return { success: true, path: result.data!.path };
-  });
-
-  // ─── 파일 목록 ───
-
-  handleIpc('project:list-canvas-files', async (_event: any, projectPath: string) => {
-    const result = await projectService.listCanvasFiles(projectPath);
-    if (!result.success) return { success: false, error: result.error };
-    return { success: true, files: result.data!.files };
   });
 
   handleIpc('project:list-features', async (_event: any, projectPath: string) => {
@@ -89,8 +93,6 @@ export function registerProjectHandlers() {
     return { success: true, files: result.data!.files };
   });
 
-  // ─── 폴더 CRUD ───
-
   handleIpc('project:create-canvas-folder', async (_event: any, projectPath: string, folderPath: string) => {
     return projectService.createCanvasFolder(projectPath, folderPath);
   });
@@ -102,8 +104,6 @@ export function registerProjectHandlers() {
   handleIpc('project:rename-canvas-folder', async (_event: any, projectPath: string, oldFolderPath: string, newFolderPath: string) => {
     return projectService.renameCanvasFolder(projectPath, oldFolderPath, newFolderPath);
   });
-
-  // ─── 파일 CRUD ───
 
   handleIpc('project:read-canvas-file', async (_event: any, projectPath: string, fileName: string) => {
     const result = await projectService.readCanvasFile(projectPath, fileName);
@@ -132,8 +132,6 @@ export function registerProjectHandlers() {
     if (!result.success) return { success: false, error: result.error };
     return { success: true, fileName: result.data!.fileName };
   });
-
-  // ─── 세션/워크스페이스/자동저장 ───
 
   handleIpc('project:read-chat-session', async (_event: any, projectPath: string, featureId: string) => {
     const result = await projectService.readChatSession(projectPath, featureId);
@@ -165,15 +163,11 @@ export function registerProjectHandlers() {
     return projectService.writeAutosaveStatus(projectPath, status);
   });
 
-  // ─── 이미지 에셋 ───
-
   handleIpc('project:save-image-asset', async (_event: any, projectPath: string, base64: string, mimeType: string) => {
     const result = await projectService.saveImageAsset(projectPath, base64, mimeType);
     if (!result.success) return { success: false, error: result.error };
     return { success: true, relativePath: result.data!.relativePath, absolutePath: result.data!.absolutePath };
   });
-
-  // ─── Export (dialog + 서비스 조합) ───
 
   handleIpc('project:export-document', async (_event: any, projectPath: string, format: 'html' | 'pdf' | 'docx', markdownContent: string) => {
     const defaultName = `canvas-export-${Date.now()}`;
@@ -191,8 +185,6 @@ export function registerProjectHandlers() {
 
     return exportDocument(dialogResult.filePath, format, markdownContent);
   });
-
-  // ─── Share Bundle (Electron dialog + 파일 I/O) ───
 
   handleIpc('project:export-share-bundle', async (_event: any, projectPath: string, bundle: unknown) => {
     const result = await dialog.showSaveDialog({
@@ -213,7 +205,7 @@ export function registerProjectHandlers() {
     }
   });
 
-  handleIpc('project:import-share-bundle', async (_event) => {
+  handleIpc('project:import-share-bundle', async (_event: IpcMainInvokeEvent) => {
     const result = await dialog.showOpenDialog({
       title: 'Import Share Bundle',
       properties: ['openFile'],
@@ -233,8 +225,6 @@ export function registerProjectHandlers() {
     }
   });
 
-  // ─── 탐색기 열기 ───
-
   handleIpc('project:open-in-explorer', async (_event: any, projectPath: string) => {
     try {
       await shell.openPath(projectPath);
@@ -242,5 +232,82 @@ export function registerProjectHandlers() {
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
+  });
+
+  handleIpc('ai:chat', async (event: any, request: AiChatRequest) => {
+    await executeAiChatWorkflow(event, request);
+    return { success: true };
+  });
+
+  handleIpc('ai:fetch-models', async () => {
+    const models = await fetchModelsFromApi();
+    return { success: true, models };
+  });
+
+  handleIpc('settings:read', async () => {
+    return {
+      success: true,
+      settings: {
+        theme: readStoredThemeMode(),
+      },
+    };
+  });
+
+  handleIpc('settings:write', async (_event: unknown, settings: { theme?: unknown }) => {
+    if (!isThemeMode(settings?.theme)) {
+      return { success: false, error: 'Invalid theme value' };
+    }
+
+    appSettingsStore.set('theme', settings.theme);
+    onThemeChanged?.(settings.theme);
+    return { success: true };
+  });
+
+  handleIpc('runtime:check-status', async (_event: unknown, projectPath: string | null) => {
+    return runtimeService.checkRuntimeStatus(projectPath);
+  });
+
+  handleIpc('runtime:set-mode', async (_event: unknown, projectPath: string, mode: 'auto' | 'local' | 'global') => {
+    return runtimeService.setRuntimeMode(projectPath, mode);
+  });
+
+  handleIpc('runtime:install-local', async (event, projectPath: string) => {
+    return runtimeService.installLocalRuntime(projectPath, (progress) => {
+      event.sender.send('runtime:install-progress', progress);
+    });
+  });
+
+  handleIpc('runtime:open-auth-terminal', async (event, projectPath: string | null) => {
+    return runtimeService.openAuthTerminal(projectPath, async (result) => {
+      if (!result.success) {
+        event.sender.send('runtime:models-refreshed', { success: false, error: result.error });
+        return;
+      }
+
+      try {
+        await runtimeService.checkRuntimeStatus(projectPath);
+        const models = await fetchModelsFromApi();
+        event.sender.send('runtime:models-refreshed', { success: true, models });
+      } catch (error) {
+        event.sender.send('runtime:models-refreshed', {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+  });
+
+  handleIpc('runtime:complete-onboarding', async (_event: unknown, projectPath: string) => {
+    return runtimeService.completeRuntimeOnboarding(projectPath);
+  });
+
+  handleIpc('runtime:clear-context', async () => {
+    runtimeService.clearRuntimeContext();
+    return { success: true };
+  });
+
+  handleIpc('window:show-emoji-panel', async () => {
+    app.showEmojiPanel();
+    return { success: true };
   });
 }

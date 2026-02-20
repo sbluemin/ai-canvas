@@ -1,13 +1,12 @@
 import type { IpcMainInvokeEvent } from 'electron';
-import type { AiChatRequest, AiChatEvent } from './types';
-import { buildPhase1Prompt, buildPhase2Prompt } from '../prompts';
-import { parsePhase1Response, parsePhase2Response } from './parser';
-import { callProvider } from './providerAdapter';
-import { getOpenCodeProjectPath } from './backend';
+import type { AiChatRequest, AiChatEvent } from './ai-types';
+import { buildPhase1Prompt, buildPhase2Prompt } from './ai-prompts';
+import { parsePhase1Response, parsePhase2Response } from './ai-parser';
+import { chatWithOpenCode, getOpenCodeProjectPath, shutdownOpenCodeRuntime } from './opencode-runtime/runtime';
 
 const PHASE2_STREAM_CHUNK_SIZE = 12;
 const PHASE2_STREAM_TICK_MS = 16;
-const PHASE2_TIMEOUT_MS = 600_000; // Phase 2 응답 타임아웃 (10분)
+const PHASE2_TIMEOUT_MS = 600_000;
 
 function decodeJsonStringFragment(value: string): string {
   try {
@@ -54,6 +53,38 @@ function extractMessageField(rawText: string): string | null {
   return decodeJsonStringFragment(value);
 }
 
+async function callProvider(
+  prompt: string,
+  modelId?: string,
+  variant?: string,
+  onChunk?: (chunk: string) => void,
+  agent?: string
+): Promise<string> {
+  let capturedError: string | undefined;
+
+  const result = await chatWithOpenCode(
+    { prompt, model: modelId, variant, agent },
+    (chunk) => {
+      if (chunk.error) {
+        capturedError = chunk.error;
+      }
+      if (chunk.text) {
+        onChunk?.(chunk.text);
+      }
+    }
+  );
+
+  if (!result.success) {
+    throw new Error(result.error || capturedError || 'OpenCode chat failed');
+  }
+
+  if (capturedError) {
+    throw new Error(capturedError);
+  }
+
+  return result.text ?? '';
+}
+
 async function streamPhaseMessageAfterResult(
   sendEvent: (evt: AiChatEvent) => void,
   runId: string,
@@ -78,75 +109,34 @@ async function streamPhaseMessageAfterResult(
   }
 }
 
-export async function executeAiChatWorkflow(
-  event: IpcMainInvokeEvent,
-  request: AiChatRequest
-): Promise<void> {
+export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: AiChatRequest): Promise<void> {
   const { runId, prompt, history, canvasContent, selection, modelId, variant, writingGoal, fileMentions } = request;
-  
+
   const sendEvent = (evt: AiChatEvent) => {
     try {
       if (!event.sender.isDestroyed()) {
         event.sender.send('ai:chat:event', evt);
       }
     } catch {
-      // 윈도우가 isDestroyed()와 send() 사이에 파괴될 수 있음 (TOCTOU)
+      // no-op
     }
   };
 
-  if (process.env.MOCK_AI === 'true') {
-    sendEvent({ runId, type: 'phase', phase: 'evaluating' });
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const mockMessage = "Sure, I'll update the canvas for you.";
-    for (let i = 0; i < mockMessage.length; i += 5) {
-      sendEvent({
-        runId,
-        type: 'phase_message_stream',
-        phase: 'evaluating',
-        message: mockMessage.slice(0, i + 5),
-      });
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-
-    const needsUpdate = prompt.includes('update') || prompt.includes('add') || prompt.includes('change');
-    sendEvent({
-      runId,
-      type: 'phase1_result',
-      message: mockMessage,
-      needsCanvasUpdate: needsUpdate,
-      updatePlan: needsUpdate ? "Update canvas content" : undefined,
-    });
-
-    if (needsUpdate) {
-      sendEvent({ runId, type: 'phase', phase: 'updating' });
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      const newContent = canvasContent + "\n\n## E2E Test Section\n\nTest content for E2E.";
-      sendEvent({
-        runId,
-        type: 'phase2_result',
-        message: "Canvas has been updated.",
-        canvasContent: newContent,
-      });
-      
-      await streamPhaseMessageAfterResult(sendEvent, runId, 'updating', "Canvas has been updated.");
-    }
-
-    sendEvent({ runId, type: 'done' });
-    return;
-  }
-  
   let currentPhase: 'evaluating' | 'updating' = 'evaluating';
-  
+
   try {
     sendEvent({ runId, type: 'phase', phase: 'evaluating' });
-    
-    const phase1Prompt = buildPhase1Prompt(prompt, canvasContent, history, { selection, writingGoal, fileMentions, projectPath: getOpenCodeProjectPath() });
-    
+
+    const phase1Prompt = buildPhase1Prompt(prompt, canvasContent, history, {
+      selection,
+      writingGoal,
+      fileMentions,
+      projectPath: getOpenCodeProjectPath(),
+    });
+
     let phase1RawBuffer = '';
     let lastPhase1Message = '';
-    const phase1RawText = await callProvider(event, phase1Prompt, undefined, modelId, variant, (chunk) => {
+    const phase1RawText = await callProvider(phase1Prompt, modelId, variant, (chunk) => {
       phase1RawBuffer += chunk;
       const message = extractMessageField(phase1RawBuffer);
       if (message !== null && message !== lastPhase1Message) {
@@ -158,10 +148,10 @@ export async function executeAiChatWorkflow(
           message,
         });
       }
-    });
-    
+    }, 'canvas-planner');
+
     const phase1Result = parsePhase1Response(phase1RawText);
-    
+
     sendEvent({
       runId,
       type: 'phase1_result',
@@ -169,32 +159,24 @@ export async function executeAiChatWorkflow(
       needsCanvasUpdate: phase1Result.needsCanvasUpdate,
       updatePlan: phase1Result.updatePlan,
     });
-    
+
     if (phase1Result.needsCanvasUpdate && phase1Result.updatePlan) {
       currentPhase = 'updating';
       sendEvent({ runId, type: 'phase', phase: 'updating' });
-      
+
       const phase2Prompt = buildPhase2Prompt(prompt, canvasContent, phase1Result.updatePlan, writingGoal, getOpenCodeProjectPath());
-      
       const phase2RawText = await Promise.race([
-        callProvider(event, phase2Prompt, undefined, modelId, variant),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Phase 2 timed out')), PHASE2_TIMEOUT_MS)
-        ),
+        callProvider(phase2Prompt, modelId, variant, undefined, 'canvas-writer'),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Phase 2 timed out')), PHASE2_TIMEOUT_MS)),
       ]);
-      
+
       const phase2Result = parsePhase2Response(phase2RawText);
-      
+
       if (!phase2Result) {
-        sendEvent({
-          runId,
-          type: 'error',
-          phase: 'updating',
-          error: 'Failed to parse Phase 2 response',
-        });
+        sendEvent({ runId, type: 'error', phase: 'updating', error: 'Failed to parse Phase 2 response' });
         return;
       }
-      
+
       sendEvent({
         runId,
         type: 'phase2_result',
@@ -206,13 +188,10 @@ export async function executeAiChatWorkflow(
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    sendEvent({
-      runId,
-      type: 'error',
-      phase: currentPhase,
-      error: errorMessage,
-    });
+    sendEvent({ runId, type: 'error', phase: currentPhase, error: errorMessage });
   } finally {
     sendEvent({ runId, type: 'done' });
   }
 }
+
+export { shutdownOpenCodeRuntime };

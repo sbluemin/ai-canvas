@@ -26,23 +26,10 @@ import {
   getWorkspacePath,
   getAutosaveStatusPath,
   getAssetsDirPath,
-} from '../core';
-
-// ─── 결과 타입 ───
-
-export interface ServiceResult<T = void> {
-  success: boolean;
-  error?: string;
-  data?: T;
-}
-
-function ok<T>(data?: T): ServiceResult<T> {
-  return { success: true, data };
-}
-
-function fail<T = void>(error: string): ServiceResult<T> {
-  return { success: false, error };
-}
+  type ServiceResult,
+  ok,
+  fail,
+} from './utils';
 
 // ─── 캔버스 디렉토리 ───
 

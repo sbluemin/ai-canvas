@@ -71,9 +71,11 @@
 
 ### AI 채팅 흐름
 1. 렌더러 → `ai:chat` IPC (runId, prompt, history, canvasContent, selection, modelId?, variant?, writingGoal?, fileMentions?)
-2. Phase 1: 의도 평가 → `phase_message_stream` → `phase1_result`
-3. Phase 2 (needsCanvasUpdate=true): 캔버스 변경 → `phase2_result` → `pendingCanvasPatch` → DiffPreview
+2. Phase 1: `canvas-planner` 에이전트 → 의도 평가 → `phase_message_stream` → `phase1_result`
+3. Phase 2 (needsCanvasUpdate=true): `canvas-writer` 에이전트 → 캔버스 변경 → `phase2_result` → `pendingCanvasPatch` → DiffPreview
 4. 완료 → `done`
+
+> 에이전트 프롬프트/런타임 설정 단일 소스: `electron/ai-prompts.ts` (`CANVAS_PLANNER_PROMPT`, `CANVAS_WRITER_PROMPT`, `buildRuntimeConfigJson`). 실행 시 이를 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다. (`.ai-canvas/.runtime`은 컨텍스트/인증 데이터 경로로 유지)
 
 ### 이벤트 타입
 - `{ runId, type:'phase', phase:'evaluating'|'updating' }`
@@ -119,17 +121,22 @@ ai-canvas/
 │   ├── api/index.ts              # Electron IPC 래퍼
 │   ├── utils/                    # 유틸리티 (logger, id, parser, constants)
 │   ├── types/                    # 공용 타입 (chat.ts, api.ts, electron.d.ts)
-│   └── prompts/                  # 타입 호환 레이어 (실제 로직은 electron/prompts)
 ├── electron/                     # 메인 프로세스 (→ electron/AGENTS.md)
 │   ├── main.ts                   # BrowserWindow, CSP, updater
 │   ├── preload.ts                # contextBridge API (CJS 빌드)
-│   ├── core/                     # 공유 인프라 (ipc 유틸, 상수, 경로 헬퍼)
-│   ├── ipc/                      # IPC 핸들러 (ai, dialog, fs, project, settings, window)
-│   │   └── runtime.ts            # runtime:* 채널 (상태조회/설치/온보딩완료/모드전환)
-│   ├── services/                 # 비즈니스 로직 (project.service, export.service, runtime.service)
-│   ├── ai/                       # 2-phase AI 워크플로우 + OpenCode 런타임
-│   │   ├── backend/              # OpenCode CLI 런타임 (spawn/stream/kill, API만 외부 노출)
-│   └── prompts/                  # Phase 1/2 프롬프트 빌더 + Zod 스키마
+│   ├── consts.ts                 # 앱 상수
+│   ├── utils.ts                  # 경로/마크다운/IPC 헬퍼 + 공통 타입
+│   ├── ipc-handlers.ts           # IPC 핸들러 통합 등록 (ai/dialog/fs/project/settings/window/runtime)
+│   ├── project.service.ts        # Feature/캔버스 CRUD, 세션, 에셋, 파일 인덱스
+│   ├── export.service.ts         # HTML/PDF/DOCX 내보내기
+│   ├── runtime.service.ts        # runtime:* 상태조회/설치/온보딩완료/모드전환
+│   ├── ai-workflow.ts            # 2-phase AI 워크플로우 엔진
+│   ├── ai-prompts.ts             # 정적 프롬프트 + 빌더 + 스키마 통합
+│   ├── ai-canvas-utils.ts        # 토큰 추정/캔버스 truncation
+│   ├── ai-parser.ts              # JSON 파싱
+│   ├── ai-models.ts              # 모델 파싱/조회
+│   ├── ai-types.ts               # AI/OpenCode 타입 정의
+│   └── opencode-runtime/         # OpenCode CLI 런타임 (spawn/stream/kill)
 ├── tests/                        # Playwright E2E 테스트
 ├── .github/workflows/publish.yml # CI/CD (macOS + Windows → GitHub Release)
 └── version.json                  # nbgv 버저닝 (커밋 높이 기반)

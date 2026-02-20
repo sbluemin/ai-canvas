@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsePhase1Response, parsePhase2Response } from "./parser";
+import { parsePhase1Response, parsePhase2Response } from './ai-parser';
 
 describe("parsePhase1Response", () => {
   it("should parse valid JSON response", () => {

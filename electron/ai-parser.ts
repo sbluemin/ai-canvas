@@ -1,5 +1,5 @@
-import { validatePhase1Response, validatePhase2Response } from '../prompts';
-import type { Phase1Response, Phase2Response } from './types';
+import { validatePhase1Response, validatePhase2Response } from './ai-prompts';
+import type { Phase1Response, Phase2Response } from './ai-types';
 
 function extractJSON(text: string): unknown | null {
   const jsonMatch = text.match(/\{[\s\S]*\}/);

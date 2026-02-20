@@ -1,4 +1,4 @@
-import { fetchOpenCodeModelsVerbose } from './backend';
+import { fetchOpenCodeModelsVerbose } from './opencode-runtime/runtime';
 
 interface OpenCodeVerboseModelData {
   name?: string;

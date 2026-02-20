@@ -9,12 +9,15 @@ export function estimateTokens(text: string): number {
 function findCodeBlockBoundaries(content: string): Array<{ start: number; end: number }> {
   const boundaries: Array<{ start: number; end: number }> = [];
   const codeBlockRegex = /```[\s\S]*?```/g;
-  let match;
 
-  while ((match = codeBlockRegex.exec(content)) !== null) {
+  for (const match of content.matchAll(codeBlockRegex)) {
+    const start = match.index;
+    if (start === undefined) {
+      continue;
+    }
     boundaries.push({
-      start: match.index,
-      end: match.index + match[0].length,
+      start,
+      end: start + match[0].length,
     });
   }
 
@@ -174,12 +177,7 @@ export function truncateToFit(content: string, maxTokens: number): string {
     if (remainingTokens <= 50) {
       truncatedSections.push(`${'#'.repeat(header.level)} ${header.title}\n[section truncated]`);
     } else if (estimatedSectionTokens > remainingTokens) {
-      const truncatedSection = truncateSection(
-        content,
-        sectionStart,
-        sectionEnd,
-        remainingTokens * 4
-      );
+      const truncatedSection = truncateSection(content, sectionStart, sectionEnd, remainingTokens * 4);
       truncatedSections.push(truncatedSection);
     } else {
       truncatedSections.push(sectionContent);

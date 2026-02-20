@@ -76,12 +76,7 @@ interface RuntimeModelsRefreshedEvent {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
-  
-  showSaveDialog: () => ipcRenderer.invoke('dialog:showSaveDialog'),
-  showOpenDialog: () => ipcRenderer.invoke('dialog:showOpenDialog'),
-  writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
-  readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
-  
+
   ai: {
     chat: (request: AiChatRequest): Promise<{ success: boolean; error?: string }> => 
       ipcRenderer.invoke('ai:chat', request),
@@ -99,8 +94,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('project:open-directory'),
     initCanvasDir: (projectPath: string): Promise<{ success: boolean; path?: string; error?: string }> =>
       ipcRenderer.invoke('project:init-canvas-dir', projectPath),
-    listCanvasFiles: (projectPath: string): Promise<{ success: boolean; files?: string[]; error?: string }> =>
-      ipcRenderer.invoke('project:list-canvas-files', projectPath),
     listFeatures: (projectPath: string): Promise<{ success: boolean; features?: unknown[]; error?: string }> =>
       ipcRenderer.invoke('project:list-features', projectPath),
     createFeature: (projectPath: string, featureId: string, name: string): Promise<{ success: boolean; feature?: unknown; error?: string }> =>
@@ -191,8 +184,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
   window: {
-    create: (): Promise<{ success: boolean; error?: string }> =>
-      ipcRenderer.invoke('window:create'),
     showEmojiPanel: (): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('window:show-emoji-panel'),
   },

@@ -1,14 +1,62 @@
 import path from 'node:path';
+import { ipcMain, type IpcMainInvokeEvent } from 'electron';
 import {
   AI_CANVAS_DIR,
   OPENCODE_RUNTIME_DIR,
-  OPENCODE_CONFIG_FILE,
+  DEFAULT_CANVAS_NAME,
   CHAT_SESSION_NAME,
   FEATURE_META_NAME,
   WORKSPACE_NAME,
   AUTOSAVE_STATUS_NAME,
   ASSET_DIR_NAME,
+  DEFAULT_FEATURE_ID,
+  DEFAULT_FEATURE_NAME,
+  DEFAULT_CANVAS_CONTENT,
 } from './consts';
+
+export {
+  AI_CANVAS_DIR,
+  OPENCODE_RUNTIME_DIR,
+  DEFAULT_CANVAS_NAME,
+  CHAT_SESSION_NAME,
+  FEATURE_META_NAME,
+  WORKSPACE_NAME,
+  AUTOSAVE_STATUS_NAME,
+  ASSET_DIR_NAME,
+  DEFAULT_FEATURE_ID,
+  DEFAULT_FEATURE_NAME,
+  DEFAULT_CANVAS_CONTENT,
+};
+
+export interface ServiceResult<T = void> {
+  success: boolean;
+  error?: string;
+  data?: T;
+}
+
+export function ok<T>(data?: T): ServiceResult<T> {
+  return { success: true, data };
+}
+
+export function fail<T = void>(error: string): ServiceResult<T> {
+  return { success: false, error };
+}
+
+export type IpcHandler<T = any> = (
+  event: IpcMainInvokeEvent,
+  ...args: any[]
+) => Promise<T> | T;
+
+export function handleIpc<T>(channel: string, handler: IpcHandler<T>) {
+  ipcMain.handle(channel, async (event, ...args) => {
+    try {
+      return await handler(event, ...args);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
+    }
+  });
+}
 
 /**
  * 캔버스 파일명 유효성 검증
@@ -89,10 +137,6 @@ export function getAssetsDirPath(projectPath: string): string {
 
 export function getBackendDirPath(projectPath: string): string {
   return path.join(projectPath, AI_CANVAS_DIR, OPENCODE_RUNTIME_DIR);
-}
-
-export function getBackendConfigPath(projectPath: string): string {
-  return path.join(getBackendDirPath(projectPath), OPENCODE_CONFIG_FILE);
 }
 
 export function getBackendLocalBinaryPath(projectPath: string): string {

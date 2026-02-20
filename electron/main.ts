@@ -4,10 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
-import { registerIpcHandlers } from './ipc/index';
-import { readStoredThemeMode } from './ipc/settings';
-import { shutdownOpenCodeRuntime } from './ai';
-import type { ThemeMode } from './ipc/settings';
+import { registerIpcHandlers, readStoredThemeMode, type ThemeMode } from './ipc-handlers';
+import { shutdownOpenCodeRuntime } from './ai-workflow';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

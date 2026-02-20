@@ -143,7 +143,7 @@ export function WritingGoalModal() {
                 id="purpose-input"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                placeholder="예: 회의 내용 정리 및 결정사항 기록"
+                placeholder="예: 기능 플로우/디자인 요구사항 정리 및 기대 결과 도출"
                 rows={3}
               />
             </div>
@@ -156,7 +156,7 @@ export function WritingGoalModal() {
                   type="text"
                   value={audience}
                   onChange={(e) => setAudience(e.target.value)}
-                  placeholder="예: 팀원, 경영진"
+                  placeholder="예: 개발자, PO, 디자이너"
                 />
               </div>
               <div className="form-group">
@@ -166,7 +166,7 @@ export function WritingGoalModal() {
                   type="text"
                   value={tone}
                   onChange={(e) => setTone(e.target.value)}
-                  placeholder="예: 격식체, 친근한"
+                  placeholder="예: 기술적이고 논리적인, 간결한"
                 />
               </div>
             </div>

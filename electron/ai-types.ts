@@ -1,14 +1,12 @@
 export type AiProvider = 'opencode';
 
-/** 문서 목표 기반 작성 모드 메타데이터 */
 export interface WritingGoal {
-  purpose: string;      // 문서 목적 (예: "기술 제안서 작성")
-  audience: string;     // 대상 독자 (예: "경영진")
-  tone: string;         // 어조 (예: "격식체, 전문적")
-  targetLength: 'short' | 'medium' | 'long';  // 목표 길이
+  purpose: string;
+  audience: string;
+  tone: string;
+  targetLength: 'short' | 'medium' | 'long';
 }
 
-/** 채팅 파일 멘션 메타데이터 */
 export interface FileMention {
   id: string;
   fileName: string;
@@ -27,8 +25,8 @@ export interface AiChatRequest {
     before: string;
     after: string;
   };
-  writingGoal?: WritingGoal;  // 문서 목표 메타데이터 (옵셔널)
-  fileMentions?: FileMention[]; // 채팅 파일 멘션 목록 (옵셔널)
+  writingGoal?: WritingGoal;
+  fileMentions?: FileMention[];
 }
 
 export interface ConversationMessage {
@@ -55,3 +53,34 @@ export interface Phase2Response {
   message: string;
   canvasContent: string;
 }
+
+export interface OpenCodeChatRequest {
+  prompt: string;
+  systemInstruction?: string;
+  model?: string;
+  variant?: string;
+  agent?: string;
+}
+
+export interface OpenCodeChatChunk {
+  text?: string;
+  error?: string;
+  done?: boolean;
+}
+
+export interface OpenCodeChatResult {
+  success: boolean;
+  text?: string;
+  error?: string;
+}
+
+export interface OpenCodeJsonEvent {
+  type?: string;
+  text?: string;
+  part?: {
+    text?: string;
+  };
+  error?: string;
+}
+
+export type OpenCodeRuntimeBinaryMode = 'auto' | 'local' | 'global';

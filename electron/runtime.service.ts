@@ -5,11 +5,13 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  getBackendConfigPath,
   getBackendDirPath,
   getBackendLocalBinaryPath,
-} from '../core';
-import { configureOpenCodeRuntime } from '../ai';
+  type ServiceResult,
+  ok,
+  fail,
+} from './utils';
+import { configureOpenCodeRuntime } from './opencode-runtime/runtime';
 
 const execFileAsync = promisify(execFile);
 
@@ -41,20 +43,6 @@ export interface RuntimeInstallProgress {
 
 type RuntimeInstallProgressCallback = (progress: RuntimeInstallProgress) => void;
 type AuthTerminalClosedCallback = (result: { success: boolean; error?: string }) => void;
-
-export interface ServiceResult<T = void> {
-  success: boolean;
-  error?: string;
-  data?: T;
-}
-
-function ok<T>(data?: T): ServiceResult<T> {
-  return { success: true, data };
-}
-
-function fail<T = void>(error: string): ServiceResult<T> {
-  return { success: false, error };
-}
 
 function getRuntimeStatePath(projectPath: string): string {
   return path.join(getBackendDirPath(projectPath), 'runtime-state.json');
@@ -105,21 +93,8 @@ async function writeRuntimeMode(projectPath: string, mode: RuntimeMode): Promise
 
 async function ensureBackendScaffold(projectPath: string): Promise<void> {
   const backendDir = getBackendDirPath(projectPath);
-  const configPath = getBackendConfigPath(projectPath);
 
   await fs.mkdir(backendDir, { recursive: true });
-
-  if (!existsSync(configPath)) {
-    const safeModeConfig = {
-      $schema: 'https://opencode.ai/config.json',
-      tools: {
-        bash: false,
-        write: false,
-      },
-    };
-
-    await fs.writeFile(configPath, JSON.stringify(safeModeConfig, null, 2), 'utf-8');
-  }
 }
 
 async function detectGlobalBinary(): Promise<boolean> {
