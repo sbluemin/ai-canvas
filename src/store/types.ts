@@ -114,6 +114,7 @@ export interface UiSlice {
   toasts: ToastInfo[];
   isSettingsOpen: boolean;
   isExportModalOpen: boolean;
+  isCommandPaletteOpen: boolean;
   settings: AppSettings;
   canvasWidthMode: CanvasWidthMode;
 
@@ -127,6 +128,9 @@ export interface UiSlice {
   closeSettings: () => void;
   toggleExportModal: () => void;
   closeExportModal: () => void;
+  toggleCommandPalette: () => void;
+  openCommandPalette: () => void;
+  closeCommandPalette: () => void;
   setTheme: (theme: AppSettings['theme']) => void;
   setCanvasWidthMode: (mode: CanvasWidthMode) => void;
 }

@@ -63,13 +63,18 @@ type OpenCodeAgentConfig = {
   temperature: number;
 };
 
+// 빌트인 에이전트를 비활성화하는 설정
+type OpenCodeDisabledAgentConfig = {
+  disable: true;
+};
+
 type OpenCodeConfig = {
   $schema: string;
   tools: {
     bash: false;
     write: false;
   };
-  agent: Record<'canvas-planner' | 'canvas-writer', OpenCodeAgentConfig>;
+  agent: Record<string, OpenCodeAgentConfig | OpenCodeDisabledAgentConfig>;
 };
 
 export const OPENCODE_REQUIRED_AGENTS: Record<'canvas-planner' | 'canvas-writer', OpenCodeAgentConfig> = {
@@ -96,7 +101,15 @@ export function buildRuntimeConfigJson(): string {
       bash: false,
       write: false,
     },
-    agent: OPENCODE_REQUIRED_AGENTS,
+    agent: {
+      // 빌트인 에이전트 비활성화
+      build: { disable: true },
+      plan: { disable: true },
+      general: { disable: true },
+      explore: { disable: true },
+      // 앱 전용 커스텀 에이전트
+      ...OPENCODE_REQUIRED_AGENTS,
+    },
   };
 
   return JSON.stringify(runtimeConfig);

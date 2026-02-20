@@ -145,6 +145,7 @@ interface RuntimeAPI {
   setMode: (projectPath: string, mode: RuntimeMode) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
   installLocal: (projectPath: string) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
   openAuthTerminal: (projectPath: string | null) => Promise<{ success: boolean; error?: string }>;
+  openTerminal: (projectPath: string | null) => Promise<{ success: boolean; error?: string }>;
   completeOnboarding: (projectPath: string) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
   clearContext: () => Promise<{ success: boolean; error?: string }>;
   onInstallProgress: (callback: (progress: RuntimeInstallProgress) => void) => () => void;

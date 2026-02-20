@@ -10,6 +10,7 @@
 | 온보딩 | `OnboardingWizard.tsx` | opencode 설치/로그인 안내/글로벌-로컬 선택 |
 | 캔버스 메인 | `CanvasPanel.tsx` | 파일 탭, autosave, overlay, 너비 모드 제어 |
 | Feature 트리 | `FeatureExplorer.tsx` | Feature/캔버스 파일 CRUD + 드래그 정렬 + 트리 렌더 |
+| 전역 커맨드 팔레트 | `CommandPalette.tsx` | `Ctrl/Cmd+Shift+P`, 명령 검색/키보드 실행 |
 | 에디터 연결 | `MilkdownEditor.tsx` | 콘텐츠 반영 + 이미지 에셋 저장 |
 | 에디터 도구 | `EditorToolbar.tsx` | 서식 도구모음 |
 | 텍스트 선택 AI | `SelectionAiPopup.tsx` | 선택 텍스트 AI 질문 팝업 |

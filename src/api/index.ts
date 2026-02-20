@@ -286,6 +286,11 @@ export const api = {
     return window.electronAPI.runtime.openAuthTerminal(projectPath);
   },
 
+  async runtimeOpenTerminal(projectPath: string | null): Promise<{ success: boolean; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.openTerminal(projectPath);
+  },
+
   async runtimeCompleteOnboarding(projectPath: string): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
     return window.electronAPI.runtime.completeOnboarding(projectPath);

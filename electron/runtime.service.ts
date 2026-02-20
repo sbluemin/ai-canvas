@@ -12,6 +12,7 @@ import {
   fail,
 } from './utils';
 import { configureOpenCodeRuntime } from './opencode-runtime/runtime';
+import { buildRuntimeConfigJson } from './ai-prompts';
 
 const execFileAsync = promisify(execFile);
 
@@ -404,6 +405,31 @@ function escapeShellSingleQuote(value: string): string {
   return value.replace(/'/g, `'\\''`);
 }
 
+function resolveTerminalBinary(status: RuntimeStatus): string {
+  if (status.activeRuntime === 'local') {
+    return status.localBinaryPath;
+  }
+
+  return 'opencode';
+}
+
+function createTerminalLaunchEnv(status: RuntimeStatus, runtimeConfig: string): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    OPENCODE_CONFIG_CONTENT: runtimeConfig,
+  };
+
+  if (status.activeRuntime === 'local') {
+    env.OPENCODE_CONFIG_DIR = status.configDir;
+  } else {
+    delete env.OPENCODE_CONFIG_DIR;
+  }
+
+  delete env.OPENCODE_CONFIG;
+
+  return env;
+}
+
 function createAuthCompletionMarkerPath(): string {
   const id = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
   return path.join(os.tmpdir(), `ai-canvas-auth-${id}.done`);
@@ -488,6 +514,79 @@ export async function openAuthTerminal(projectPath: string | null, onClosed?: Au
       try {
         spawn(binary, args, { detached: true, stdio: 'ignore' }).unref();
         watchAuthCompletion(markerPath, onClosed);
+        return ok();
+      } catch {
+        // try next terminal
+      }
+    }
+
+    return fail('시스템 터미널을 실행하지 못했습니다');
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export async function openRuntimeTerminal(projectPath: string | null): Promise<ServiceResult> {
+  try {
+    if (!projectPath) {
+      return fail('프로젝트가 열려 있지 않습니다');
+    }
+
+    await ensureBackendScaffold(projectPath);
+
+    const status = await readStatus(projectPath);
+    if (status.activeRuntime === 'none') {
+      return fail('먼저 런타임 설치 또는 선택이 필요합니다');
+    }
+
+    const binaryPath = resolveTerminalBinary(status);
+    const runtimeConfig = buildRuntimeConfigJson();
+    const terminalEnv = createTerminalLaunchEnv(status, runtimeConfig);
+
+    if (process.platform === 'win32') {
+      const projectPathEscaped = projectPath.replace(/'/g, "''");
+      const binaryEscaped = binaryPath.replace(/'/g, "''");
+      const command = [
+        `Set-Location -LiteralPath '${projectPathEscaped}'`,
+        `& '${binaryEscaped}'`,
+      ].join('; ');
+
+      spawn('cmd.exe', ['/c', 'start', '', 'powershell.exe', '-NoExit', '-NoProfile', '-Command', command], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+        env: terminalEnv,
+      }).unref();
+
+      return ok();
+    }
+
+    const binaryCommand = `'${escapeShellSingleQuote(binaryPath)}'`;
+    const shellCommand = [
+      `cd '${escapeShellSingleQuote(projectPath.replace(/\\/g, '/'))}'`,
+      `export OPENCODE_CONFIG_CONTENT='${escapeShellSingleQuote(runtimeConfig)}'`,
+      status.activeRuntime === 'local'
+        ? `export OPENCODE_CONFIG_DIR='${escapeShellSingleQuote(status.configDir.replace(/\\/g, '/'))}'`
+        : 'unset OPENCODE_CONFIG_DIR',
+      binaryCommand,
+    ].join('; ');
+
+    if (process.platform === 'darwin') {
+      const script = `tell application \"Terminal\" to do script \"${shellCommand.replace(/"/g, '\\"')}\"`;
+      await execFileAsync('osascript', ['-e', script]);
+      return ok();
+    }
+
+    const terminalCandidates = [
+      ['x-terminal-emulator', ['-e', 'bash', '-lc', shellCommand]],
+      ['gnome-terminal', ['--', 'bash', '-lc', shellCommand]],
+      ['konsole', ['-e', 'bash', '-lc', shellCommand]],
+      ['xterm', ['-e', 'bash', '-lc', shellCommand]],
+    ] as const;
+
+    for (const [binary, args] of terminalCandidates) {
+      try {
+        spawn(binary, args, { detached: true, stdio: 'ignore' }).unref();
         return ok();
       } catch {
         // try next terminal

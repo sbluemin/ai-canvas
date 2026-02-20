@@ -8,6 +8,7 @@ export const createUiSlice: StateCreator<AppState, [], [], UiSlice> = (set) => (
   toasts: [],
   isSettingsOpen: false,
   isExportModalOpen: false,
+  isCommandPaletteOpen: false,
   canvasWidthMode: 'default',
   settings: {
     theme: 'dark',
@@ -40,6 +41,10 @@ export const createUiSlice: StateCreator<AppState, [], [], UiSlice> = (set) => (
 
   toggleExportModal: () => set((state) => ({ isExportModalOpen: !state.isExportModalOpen })),
   closeExportModal: () => set({ isExportModalOpen: false }),
+
+  toggleCommandPalette: () => set((state) => ({ isCommandPaletteOpen: !state.isCommandPaletteOpen })),
+  openCommandPalette: () => set({ isCommandPaletteOpen: true }),
+  closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
 
   setTheme: (theme) => set((state) => ({ settings: { ...state.settings, theme } })),
   setCanvasWidthMode: (mode) => set({ canvasWidthMode: mode }),

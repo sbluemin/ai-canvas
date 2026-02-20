@@ -168,6 +168,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('runtime:install-local', projectPath),
     openAuthTerminal: (projectPath: string | null): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('runtime:open-auth-terminal', projectPath),
+    openTerminal: (projectPath: string | null): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('runtime:open-terminal', projectPath),
     completeOnboarding: (projectPath: string): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
       ipcRenderer.invoke('runtime:complete-onboarding', projectPath),
     clearContext: (): Promise<{ success: boolean; error?: string }> =>

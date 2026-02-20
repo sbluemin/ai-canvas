@@ -297,6 +297,10 @@ export function registerIpcHandlers(
     });
   });
 
+  handleIpc('runtime:open-terminal', async (_event, projectPath: string | null) => {
+    return runtimeService.openRuntimeTerminal(projectPath);
+  });
+
   handleIpc('runtime:complete-onboarding', async (_event: unknown, projectPath: string) => {
     return runtimeService.completeRuntimeOnboarding(projectPath);
   });

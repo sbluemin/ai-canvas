@@ -10,6 +10,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ExportModal } from './components/ExportModal';
 import { WritingGoalModal } from './components/WritingGoalModal';
 import { OnboardingWizard } from './components/OnboardingWizard';
+import { CommandPalette } from './components/CommandPalette';
 import { useStore } from './store/useStore';
 import { api } from './api';
 import { AUTOSAVE_DELAY, logger } from './utils';
@@ -28,6 +29,7 @@ function App() {
     settings,
     setTheme,
     toggleSettings,
+    openCommandPalette,
     addToast,
     projectPath,
     features,
@@ -140,6 +142,12 @@ function App() {
         return;
       }
 
+      if (e.key.toLowerCase() === 'p' && e.shiftKey) {
+        e.preventDefault();
+        openCommandPalette();
+        return;
+      }
+
       if (e.key.toLowerCase() === 's') {
         if (!projectPath || !activeCanvasFile) return;
         e.preventDefault();
@@ -159,7 +167,7 @@ function App() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeCanvasFile, addToast, canvasContent, projectPath, toggleSettings]);
+  }, [activeCanvasFile, addToast, canvasContent, openCommandPalette, projectPath, toggleSettings]);
 
   useEffect(() => {
     if (!projectPath) return;
@@ -286,6 +294,7 @@ function App() {
         <WritingGoalModal />
         <ExportModal />
         <OnboardingWizard />
+        <CommandPalette />
         <ToastContainer />
         <ErrorPopup />
       </div>
@@ -311,6 +320,7 @@ function App() {
       <WritingGoalModal />
       <ExportModal />
       <OnboardingWizard />
+      <CommandPalette />
       <ToastContainer />
       <ErrorPopup />
     </div>

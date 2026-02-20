@@ -1,18 +1,18 @@
 # STORE KNOWLEDGE BASE
 
 ## OVERVIEW
-`src/store/`는 단일 Zustand store에 6개 slice를 합성해 앱 전역 상태를 관리한다.
+`src/store/`는 단일 Zustand store에 7개 slice를 합성해 앱 전역 상태를 관리한다.
 
 ## STRUCTURE
 ```text
 src/store/
 ├── useStore.ts           # slice 합성 + store export
 ├── useStore.test.ts      # store 통합 테스트
-├── types.ts              # AppState = 6 slice intersection 타입
+├── types.ts              # AppState = 7 slice intersection 타입
 ├── utils.ts              # store 유틸리티
 └── slices/
     ├── chatSlice.ts        # messages, conversations, aiRun
-    ├── uiSlice.ts          # drawer, modals, toasts, settings, canvasWidthMode
+    ├── uiSlice.ts          # drawer, modals, commandPalette, toasts, settings, canvasWidthMode
     ├── projectSlice.ts     # canvasContent, features, canvasFiles, canvasTree, autosave
     ├── modelSlice.ts       # availableModels, selectedModels, selectedVariant
     ├── writingGoalSlice.ts # activeWritingGoal, presets

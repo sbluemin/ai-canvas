@@ -19,7 +19,7 @@
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 |
 | AI | OpenCode CLI 런타임 관리 (`OPENCODE_CONFIG_DIR=.ai-canvas/.runtime` 프로젝트 단위 설정) |
-| State | Zustand (6 slice 합성: `src/store/types.ts` 참조) |
+| State | Zustand (7 slice 합성: `src/store/types.ts` 참조) |
 | Styling | CSS (plain imports, `[data-theme]` / `[data-platform]` 기반 테마) |
 
 ---
@@ -67,6 +67,7 @@
 - **OnboardingWizard**: 프로젝트별 OpenCode 설치/로그인 안내 온보딩 (설치→로그인 안내, 글로벌/로컬 선택)
 - **CanvasPanel**: 우측 에디터 — MilkdownEditor, EditorToolbar, SelectionAiPopup, DiffPreview
 - **FeatureExplorer**: Feature 트리 사이드바 (생성/삭제/이름변경, 아이콘, 드래그 정렬, 컨텍스트 메뉴)
+- **CommandPalette**: 전역 커맨드 팔레트 오버레이 (`Ctrl/Cmd+Shift+P`, MVP 1개 커맨드)
 - **모달**: ErrorPopup, SettingsModal, ExportModal, WritingGoalModal, ToastContainer
 
 ### AI 채팅 흐름
@@ -87,7 +88,7 @@
 ### 상태 관리 (Zustand)
 7개 slice 합성 (`src/store/types.ts`에 전체 인터페이스 정의):
 - **ChatSlice**: messages, conversations, aiRun
-- **UiSlice**: drawer, modals, toasts, settings, canvasWidthMode
+- **UiSlice**: drawer, modals, commandPalette, toasts, settings, canvasWidthMode
 - **ProjectSlice**: canvasContent, features, canvasFiles, canvasTree, autosave
 - **ModelSlice**: availableModels, selectedModels, selectedVariant
 - **WritingGoalSlice**: activeWritingGoal, presets
@@ -107,6 +108,7 @@ ai-canvas/
 │   │   ├── CanvasPanel.tsx       # 마크다운 에디터
 │   │   ├── OnboardingWizard.tsx  # OpenCode 온보딩 위저드
 │   │   ├── FeatureExplorer.tsx   # Feature 트리 사이드바
+│   │   ├── CommandPalette.tsx    # 전역 커맨드 팔레트
 │   │   ├── MilkdownEditor.tsx    # Milkdown WYSIWYG
 │   │   ├── DiffPreview.tsx       # AI 수정안 diff
 │   │   ├── SelectionAiPopup.tsx  # 텍스트 선택 AI 팝업
@@ -152,6 +154,10 @@ npm run test:vitest  # 단위 테스트
 npm run test:e2e     # Playwright E2E 테스트
 npm run build        # 프로덕션 빌드
 ```
+
+### 앱 단축키 (MVP)
+
+- `Ctrl+Shift+P` / `Cmd+Shift+P`: 커맨드 팔레트 열기
 
 ---
 
