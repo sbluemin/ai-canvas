@@ -236,12 +236,15 @@ function MilkdownEditorInner() {
     };
   }, [editorView, mermaidThemeToken]);
 
+  // 테마 변경 시 에디터를 재생성하지 않음 — 재생성 중 ProseMirror가
+  // 이미 해제된 commonmark 컨텍스트(headingAttr 등)를 참조해 크래시 발생.
+  // Mermaid 블록 재렌더링은 별도 useEffect(renderMermaidBlocks)에서 처리.
   const { get, loading } = useEditor((root) =>
     Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, root);
         ctx.set(defaultValueCtx, canvasContentRef.current);
-        ctx.set(mermaidConfigCtx.key, createMermaidConfig(mermaidThemeToken));
+        ctx.set(mermaidConfigCtx.key, createMermaidConfig(getThemeToken()));
         ctx.update(editorViewOptionsCtx, (prev) => ({
           ...prev,
           attributes: { ...prev.attributes, spellcheck: 'false' },
@@ -253,7 +256,7 @@ function MilkdownEditorInner() {
       .use(prism)
       .use(math)
       .use(diagram)
-  , [mermaidThemeToken]);
+  , []);
 
   const storeEditorRef = useCallback(() => {
     if (!loading) {

@@ -166,7 +166,7 @@ export class OpenCodeRuntime {
   async chat(request: OpenCodeChatRequest, onChunk?: (chunk: OpenCodeChatChunk) => void): Promise<OpenCodeChatResult> {
     return new Promise((resolve) => {
       const agentName = request.agent ?? 'plan';
-      const args = ['run', composePrompt(request.prompt, request.systemInstruction), '--format', 'json', '--agent', agentName];
+      const args = ['run', composePrompt(request.prompt, request.systemInstruction), '--format', 'json', '--agent', agentName, '--thinking'];
       if (request.model) {
         args.push('--model', request.model);
       }
@@ -201,8 +201,13 @@ export class OpenCodeRuntime {
 
         try {
           const payload = JSON.parse(trimmed) as OpenCodeJsonEvent;
+          // text 타입은 응답 토큰이므로 thinking 이벤트로 전달하지 않는다
+          if (payload.type && payload.type !== 'text' && payload.type !== 'error') {
+            onChunk?.({ event: payload });
+          }
           const chunkText = payload.part?.text ?? payload.text;
-          if (typeof chunkText === 'string' && chunkText.length > 0) {
+          if (typeof chunkText === 'string' && chunkText.length > 0
+            && (payload.type === 'text' || (!payload.type))) {
             accumulatedText += chunkText;
             onChunk?.({ text: chunkText });
             return;

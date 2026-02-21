@@ -27,6 +27,19 @@ export interface Message {
   timestamp: Date;
   provider?: AiProvider;
   fileMentions?: FileMention[];
+  thinkingActivities?: ThinkingActivity[];
+  thinkingCollapsed?: boolean;
+  thinkingStartedAt?: number;
+  thinkingCompletedAt?: number;
+}
+
+export interface ThinkingActivity {
+  id: string;
+  kind: 'step_start' | 'tool_use' | 'thinking';
+  label: string;
+  status: 'pending' | 'completed';
+  timestamp: number;
+  detail?: string;
 }
 
 export interface Conversation {
@@ -100,6 +113,10 @@ export interface ChatSlice {
   setIsLoading: (loading: boolean) => void;
   clearMessages: () => void;
   setMessages: (messages: Message[]) => void;
+  appendLastAssistantThinkingActivity: (activity: { kind: 'step_start' | 'tool_use' | 'thinking'; label: string; detail?: string }) => void;
+  completeLastAssistantThinkingActivity: () => void;
+  completeLastAssistantThinking: () => void;
+  setMessageThinkingCollapsed: (messageId: string, collapsed: boolean) => void;
 
   startAiRun: () => string;
   setAiPhase: (phase: AiPhase) => void;

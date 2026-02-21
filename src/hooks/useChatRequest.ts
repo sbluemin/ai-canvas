@@ -99,6 +99,9 @@ export function useChatRequest() {
     setAiRunResult,
     saveCanvasSnapshot,
     clearAiRun,
+    appendLastAssistantThinkingActivity,
+    completeLastAssistantThinkingActivity,
+    completeLastAssistantThinking,
     selectedModels,
     selectedVariant,
     showError,
@@ -141,6 +144,33 @@ export function useChatRequest() {
             break;
           }
 
+          case 'thinking_stream': {
+            if (!hasStreamingAssistantRef.current) {
+              addMessage('assistant', '', 'opencode');
+              hasStreamingAssistantRef.current = true;
+            }
+
+            if (event.activity.kind === 'step_finish') {
+              completeLastAssistantThinkingActivity();
+              break;
+            }
+
+            if (event.activity.kind === 'thinking') {
+              appendLastAssistantThinkingActivity({
+                kind: 'thinking',
+                label: event.activity.summary,
+                detail: event.activity.detail,
+              });
+              break;
+            }
+
+            appendLastAssistantThinkingActivity({
+              kind: event.activity.kind,
+              label: event.activity.label,
+            });
+            break;
+          }
+
           case 'phase':
             setAiPhase(event.phase === 'evaluating' ? 'evaluating' : 'updating');
             if (event.phase === 'updating') {
@@ -149,21 +179,31 @@ export function useChatRequest() {
             break;
 
           case 'phase1_result':
-            setAiRunResult({
-              message: event.message,
-              needsCanvasUpdate: event.needsCanvasUpdate,
-              updatePlan: event.updatePlan,
-            });
-            if (event.needsCanvasUpdate && event.updatePlan) {
-              saveCanvasSnapshot();
-              setAiPhase('updating');
-            }
-            streamedPhase1MessageRef.current = event.message;
-            if (hasStreamingAssistantRef.current) {
-              setLastMessageContent(event.message);
-            } else {
-              addMessage('assistant', event.message, 'opencode');
-              hasStreamingAssistantRef.current = true;
+            completeLastAssistantThinking();
+            {
+              const finalPhase1Message = event.message.trim().length > 0
+                ? event.message
+                : streamedPhase1MessageRef.current;
+
+              setAiRunResult({
+                message: finalPhase1Message,
+                needsCanvasUpdate: event.needsCanvasUpdate,
+                updatePlan: event.updatePlan,
+              });
+              if (event.needsCanvasUpdate && event.updatePlan) {
+                saveCanvasSnapshot();
+                setAiPhase('updating');
+              }
+
+              streamedPhase1MessageRef.current = finalPhase1Message;
+              if (hasStreamingAssistantRef.current) {
+                if (finalPhase1Message.trim().length > 0) {
+                  setLastMessageContent(finalPhase1Message);
+                }
+              } else {
+                addMessage('assistant', finalPhase1Message, 'opencode');
+                hasStreamingAssistantRef.current = true;
+              }
             }
             break;
 
@@ -187,6 +227,7 @@ export function useChatRequest() {
             streamedPhase2MessageRef.current = '';
             phase2FinalMessageRef.current = '';
             hasPhase2StreamEventRef.current = false;
+            completeLastAssistantThinking();
 
             if (event.phase === 'evaluating') {
               removeLastUserMessage();
@@ -203,6 +244,7 @@ export function useChatRequest() {
           }
 
           case 'done':
+            completeLastAssistantThinking();
             if (phase2FinalMessageRef.current) {
               const finalCombined = streamedPhase1MessageRef.current
                 ? `${streamedPhase1MessageRef.current}\n\n${phase2FinalMessageRef.current}`
@@ -232,6 +274,9 @@ export function useChatRequest() {
     setAiRunResult,
     saveCanvasSnapshot,
     clearAiRun,
+    appendLastAssistantThinkingActivity,
+    completeLastAssistantThinkingActivity,
+    completeLastAssistantThinking,
     setIsLoading,
     showError,
     removeLastUserMessage,

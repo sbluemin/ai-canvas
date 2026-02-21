@@ -38,6 +38,7 @@ export interface ConversationMessage {
 export type AiChatEvent =
   | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
   | { runId: string; type: 'phase_message_stream'; phase: 'evaluating' | 'updating'; message: string }
+  | { runId: string; type: 'thinking_stream'; phase: 'evaluating' | 'updating'; activity: ThinkingActivity }
   | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
   | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
@@ -64,6 +65,7 @@ export interface OpenCodeChatRequest {
 
 export interface OpenCodeChatChunk {
   text?: string;
+  event?: OpenCodeJsonEvent;
   error?: string;
   done?: boolean;
 }
@@ -76,11 +78,28 @@ export interface OpenCodeChatResult {
 
 export interface OpenCodeJsonEvent {
   type?: string;
+  name?: string;
+  tool?: string | { name?: string };
   text?: string;
+  message?: string;
+  summary?: string;
+  reasoning?: string;
+  content?: string;
+  input?: Record<string, unknown>;
+  args?: Record<string, unknown>;
+  path?: string;
+  file?: string;
+  target?: string;
   part?: {
     text?: string;
   };
   error?: string;
 }
+
+export type ThinkingActivity =
+  | { kind: 'step_start'; label: string }
+  | { kind: 'tool_use'; tool: string; label: string; target?: string }
+  | { kind: 'thinking'; summary: string; detail?: string }
+  | { kind: 'step_finish' };
 
 export type OpenCodeRuntimeBinaryMode = 'auto' | 'local' | 'global';

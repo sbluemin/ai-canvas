@@ -3,7 +3,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { useShallow } from 'zustand/react/shallow';
-import { useStore, Message, FileMention } from '../store/useStore';
+import { useStore, Message, FileMention, ThinkingActivity } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import { api } from '../api';
 import { AUTOSAVE_DELAY, generateId } from '../utils';
@@ -182,6 +182,14 @@ function TypingDots() {
   );
 }
 
+function formatThinkingDuration(startedAt?: number, completedAt?: number): string {
+  if (!startedAt || !completedAt || completedAt <= startedAt) {
+    return '0.0초';
+  }
+
+  return `${((completedAt - startedAt) / 1000).toFixed(1)}초`;
+}
+
 export function ChatPanel() {
   const [input, setInput] = useState('');
   const [projectFiles, setProjectFiles] = useState<string[]>([]);
@@ -197,7 +205,7 @@ export function ChatPanel() {
   const {
     messages, isLoading, aiRun, projectPath, activeFeatureId, conversations, activeConversationId,
     runtimeStatus, onboardingDismissed, openOnboarding,
-    setConversations, setActiveConversationId, setMessages
+    setConversations, setActiveConversationId, setMessages, setMessageThinkingCollapsed
   } = useStore(useShallow((state) => ({
     messages: state.messages,
     isLoading: state.isLoading,
@@ -212,6 +220,7 @@ export function ChatPanel() {
     setConversations: state.setConversations,
     setActiveConversationId: state.setActiveConversationId,
     setMessages: state.setMessages,
+    setMessageThinkingCollapsed: state.setMessageThinkingCollapsed,
   }))); 
   const { sendMessage } = useChatRequest();
 
@@ -311,11 +320,19 @@ export function ChatPanel() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  });
 
   useEffect(() => {
-    syncInputHeight();
-  }, [input]);
+    const target = inputRef.current;
+    if (!target) {
+      return;
+    }
+
+    target.style.height = 'auto';
+    const nextHeight = Math.min(target.scrollHeight, CHAT_INPUT_MAX_HEIGHT);
+    target.style.height = `${nextHeight}px`;
+    target.style.overflowY = target.scrollHeight > CHAT_INPUT_MAX_HEIGHT ? 'auto' : 'hidden';
+  });
 
   useEffect(() => {
     if (!projectPath || !activeFeatureId) return;
@@ -501,7 +518,14 @@ export function ChatPanel() {
           messages.map((msg: Message, index: number) => {
             const isLastAssistantMessage = msg.role === 'assistant' && index === messages.length - 1;
             const showInlineProgress = isLastAssistantMessage && isUpdatingCanvas && isLoading;
-            if (msg.role === 'assistant' && !msg.content && !showInlineProgress) {
+            const thinkingActivities = msg.thinkingActivities ?? [];
+            const hasThinkingActivities = thinkingActivities.length > 0;
+            const isThinkingComplete = Boolean(msg.thinkingCompletedAt);
+            const isThinkingCollapsed = Boolean(msg.thinkingCollapsed && isThinkingComplete);
+            const thinkingActivitiesId = `thinking-activities-${msg.id}`;
+            const thinkingSummary = `${thinkingActivities.length}단계, ${formatThinkingDuration(msg.thinkingStartedAt, msg.thinkingCompletedAt)}`;
+
+            if (msg.role === 'assistant' && !msg.content && !showInlineProgress && !hasThinkingActivities) {
               return null;
             }
             const providerInfo = msg.role === 'assistant' ? getProviderInfo(msg.provider) : null;
@@ -517,6 +541,58 @@ export function ChatPanel() {
                   </div>
                 )}
                 <div className="message-content">
+                  {msg.role === 'assistant' && hasThinkingActivities && (
+                    <div className={`thinking-container ${isThinkingComplete ? 'completed' : 'running'}`}>
+                      {isThinkingComplete ? (
+                        <button
+                          type="button"
+                          className="thinking-toggle"
+                          onClick={() => setMessageThinkingCollapsed(msg.id, !isThinkingCollapsed)}
+                          aria-expanded={!isThinkingCollapsed}
+                          aria-controls={thinkingActivitiesId}
+                        >
+                          <span className="thinking-state-dot completed" />
+                          <span className="thinking-toggle-texts">
+                            <span className="thinking-toggle-label">사고 과정</span>
+                            <span className="thinking-toggle-meta">{thinkingSummary}</span>
+                          </span>
+                          <ChevronDownIcon className={`thinking-toggle-chevron ${isThinkingCollapsed ? 'collapsed' : ''}`} />
+                        </button>
+                      ) : (
+                        <div className="thinking-running-title" aria-live="polite">
+                          <span className="thinking-state-dot pending" />
+                          <span className="thinking-toggle-texts">
+                            <span className="thinking-toggle-label">사고 과정</span>
+                            <span className="thinking-toggle-meta">진행 중...</span>
+                          </span>
+                        </div>
+                      )}
+
+                      {!isThinkingCollapsed && (
+                        <div id={thinkingActivitiesId} className="thinking-activities">
+                          {thinkingActivities.map((activity: ThinkingActivity, activityIndex: number) => {
+                            const isPending = activity.status === 'pending';
+                            return (
+                              <div
+                                key={activity.id}
+                                className={`thinking-activity ${isPending ? 'pending' : 'completed'}`}
+                                style={{ animationDelay: `${Math.min(activityIndex * 45, 220)}ms` }}
+                              >
+                                <span className={`thinking-state-dot ${isPending ? 'pending' : 'completed'}`} />
+                                <div className="thinking-activity-texts">
+                                  <span className="thinking-activity-label">{activity.label}</span>
+                                  {activity.detail && (
+                                    <span className="thinking-activity-detail">{activity.detail}</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {msg.role === 'user' && msg.fileMentions && msg.fileMentions.length > 0 && (
                     <div className="message-file-mentions">
                       {msg.fileMentions.map((mention) => (

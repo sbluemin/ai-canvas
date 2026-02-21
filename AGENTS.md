@@ -87,7 +87,7 @@
 
 ### 상태 관리 (Zustand)
 7개 slice 합성 (`src/store/types.ts`에 전체 인터페이스 정의):
-- **ChatSlice**: messages, conversations, aiRun
+- **ChatSlice**: messages, conversations, aiRun, 메시지별 Thinking Activity 체인(진행/완료/접힘 상태)
 - **UiSlice**: drawer, modals, commandPalette, toasts, settings, canvasWidthMode
 - **ProjectSlice**: canvasContent, features, canvasFiles, canvasTree, autosave
 - **ModelSlice**: availableModels, selectedModels, selectedVariant
