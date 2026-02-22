@@ -4,6 +4,14 @@ import { useStore } from '../store/useStore';
 import { TreeEntry, FeatureSummary, Conversation, Message, WritingGoal } from '../store/types';
 import { api } from '../api';
 import { generateId } from '../utils';
+import {
+  SddPhase,
+  buildSddDocumentContent,
+  buildSddDocumentFileName,
+  getSddPhaseFromFilePath,
+  getSddPhaseTitle,
+  getSddPhases,
+} from '../utils/sddDocument';
 import './FeatureExplorer.css';
 
 interface FeatureExplorerProps {
@@ -302,6 +310,9 @@ function TreeNode({
   }
 
   const isActive = entry.path === activeFile;
+  const sddPhase = getSddPhaseFromFilePath(entry.path);
+  const displayLabel = sddPhase ? getSddPhaseTitle(sddPhase) : entry.name.replace(/\.md$/, '');
+  const tooltip = sddPhase ? entry.name : entry.path;
   return (
     <button
       type="button"
@@ -309,13 +320,17 @@ function TreeNode({
       style={{ paddingLeft: `${28 + depth * 16}px` }}
       onClick={() => onSelect(entry.path)}
       onContextMenu={(e) => onContextMenu(e, entry)}
-      title={entry.path}
+      title={tooltip}
     >
-      <svg className="tree-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M9.5 1.5H4C3.45 1.5 3 1.95 3 2.5V13.5C3 14.05 3.45 14.5 4 14.5H12C12.55 14.5 13 14.05 13 13.5V5L9.5 1.5Z" />
-        <path d="M9.5 1.5V5H13" />
-      </svg>
-      <span className="tree-label">{entry.name.replace(/\.md$/, '')}</span>
+      <span className="tree-file-icon-wrap">
+        <svg className="tree-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M9.5 1.5H4C3.45 1.5 3 1.95 3 2.5V13.5C3 14.05 3.45 14.5 4 14.5H12C12.55 14.5 13 14.05 13 13.5V5L9.5 1.5Z" />
+          <path d="M9.5 1.5V5H13" />
+        </svg>
+        {sddPhase && <span className={`tree-sdd-dot tree-sdd-dot-${sddPhase}`} aria-hidden="true" />}
+      </span>
+      <span className="tree-label">{displayLabel}</span>
+      {sddPhase && <span className="tree-sdd-badge">SDD</span>}
     </button>
   );
 }
@@ -347,6 +362,7 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
 
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [isNewDocumentMenuOpen, setIsNewDocumentMenuOpen] = useState(false);
   const [draggingFeatureId, setDraggingFeatureId] = useState<string | null>(null);
   const [inputDialog, setInputDialog] = useState<InputDialogState | null>(null);
   const [inputValue, setInputValue] = useState('');
@@ -377,6 +393,7 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
     const handleClickOutside = (e: MouseEvent) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
         setContextMenu(null);
+        setIsNewDocumentMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -398,6 +415,7 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
   const handleContextMenu = useCallback((e: React.MouseEvent, entry: TreeEntry) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, entry });
+    setIsNewDocumentMenuOpen(false);
   }, []);
 
   const persistCurrentFeatureWorkspace = async () => {
@@ -565,7 +583,11 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
     return true;
   };
 
-  const handleCreateFileInFeature = async (featureId: string, fileName: string): Promise<boolean> => {
+  const handleCreateFileInFeature = async (
+    featureId: string,
+    fileName: string,
+    options?: { content?: string; successMessage?: string },
+  ): Promise<boolean> => {
     if (!projectPath) return false;
 
     const normalizedBaseName = fileName.endsWith('.md') ? fileName : `${fileName}.md`;
@@ -574,7 +596,7 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
     const result = await api.writeCanvasFile(
       projectPath,
       filePath,
-      `# ${fileName.replace(/\.md$/, '')}\n\nStart writing here.\n`,
+      options?.content ?? `# ${fileName.replace(/\.md$/, '')}\n\nStart writing here.\n`,
     );
     if (!result.success) {
       addToast('error', `Failed: ${result.error}`);
@@ -594,8 +616,24 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
     }
 
     onSelectFile(filePath);
-    addToast('success', `Created: ${normalizedBaseName}`);
+    addToast('success', options?.successMessage ?? `Created: ${normalizedBaseName}`);
     return true;
+  };
+
+  const handleCreateSddDocumentInFeature = async (featureId: string, phase: SddPhase): Promise<boolean> => {
+    if (!projectPath) return false;
+
+    const fileName = buildSddDocumentFileName(phase);
+    const filesResult = await api.listFeatureCanvasFiles(projectPath, featureId);
+    if (filesResult.success && filesResult.files?.includes(`${featureId}/${fileName}`)) {
+      addToast('error', `${fileName} already exists.`);
+      return false;
+    }
+
+    return handleCreateFileInFeature(featureId, fileName, {
+      content: buildSddDocumentContent(phase),
+      successMessage: `Created SDD document: ${getSddPhaseTitle(phase)}`,
+    });
   };
 
   const handleRenameFeature = async (featureId: string, nextInputName: string): Promise<boolean> => {
@@ -644,6 +682,10 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
 
   const handleRenameFile = async (oldFilePath: string, newBaseName: string): Promise<boolean> => {
     if (!projectPath) return false;
+    if (getSddPhaseFromFilePath(oldFilePath)) {
+      addToast('error', 'SDD special documents cannot be renamed.');
+      return false;
+    }
 
     // .md 확장자 자동 붙이기
     const normalizedName = newBaseName.endsWith('.md') ? newBaseName : `${newBaseName}.md`;
@@ -758,8 +800,8 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
   const openCreateFileDialog = (featureId: string) => {
     openInputDialog({
       mode: 'new-file',
-      title: `New file in ${featureId}`,
-      placeholder: 'file name',
+      title: `New blank document in ${featureId}`,
+      placeholder: 'document name',
       submitLabel: 'Create',
       featureId,
       initialValue: '',
@@ -1017,17 +1059,44 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
               <button
                 type="button"
                 onClick={() => {
-                  openCreateFileDialog(contextMenu.entry.path);
-                  setContextMenu(null);
+                  setIsNewDocumentMenuOpen((prev) => !prev);
                 }}
               >
-                New File
+                New Document...
               </button>
+              {isNewDocumentMenuOpen && (
+                <div className="tab-context-submenu">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openCreateFileDialog(contextMenu.entry.path);
+                      setContextMenu(null);
+                      setIsNewDocumentMenuOpen(false);
+                    }}
+                  >
+                    Blank Document
+                  </button>
+                  {getSddPhases().map((phase) => (
+                    <button
+                      key={phase}
+                      type="button"
+                      onClick={async () => {
+                        await handleCreateSddDocumentInFeature(contextMenu.entry.path, phase);
+                        setContextMenu(null);
+                        setIsNewDocumentMenuOpen(false);
+                      }}
+                    >
+                      SDD: {getSddPhaseTitle(phase)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => {
                   openRenameFeatureDialog(contextMenu.entry.path);
                   setContextMenu(null);
+                  setIsNewDocumentMenuOpen(false);
                 }}
               >
                 Rename Feature
@@ -1037,6 +1106,7 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
                 onClick={() => {
                   openSetFeatureIconDialog(contextMenu.entry.path);
                   setContextMenu(null);
+                  setIsNewDocumentMenuOpen(false);
                 }}
               >
                 Set Icon
@@ -1056,6 +1126,7 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
                     initialValue: '',
                   });
                   setContextMenu(null);
+                  setIsNewDocumentMenuOpen(false);
                 }}
               >
                 Delete Feature
@@ -1063,24 +1134,32 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
             </>
           ) : (
             <>
+              {(() => {
+                const isSddSpecialDocument = getSddPhaseFromFilePath(contextMenu.entry.path) !== null;
+                return (
+                  <>
               <button
                 type="button"
                 onClick={() => {
                   onSelectFile(contextMenu.entry.path);
                   setContextMenu(null);
+                  setIsNewDocumentMenuOpen(false);
                 }}
               >
                 Open
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  openRenameFileDialog(contextMenu.entry.path, contextMenu.entry.name);
-                  setContextMenu(null);
-                }}
-              >
-                Rename
-              </button>
+              {!isSddSpecialDocument && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    openRenameFileDialog(contextMenu.entry.path, contextMenu.entry.name);
+                    setContextMenu(null);
+                    setIsNewDocumentMenuOpen(false);
+                  }}
+                >
+                  Rename
+                </button>
+              )}
               <button
                 type="button"
                 className="danger"
@@ -1094,10 +1173,14 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
                     initialValue: '',
                   });
                   setContextMenu(null);
+                  setIsNewDocumentMenuOpen(false);
                 }}
               >
                 Delete
               </button>
+                  </>
+                );
+              })()}
             </>
           )}
         </div>,

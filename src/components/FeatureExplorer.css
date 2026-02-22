@@ -170,6 +170,44 @@
   opacity: 0.6;
 }
 
+.tree-file-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.tree-sdd-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--bg-surface);
+}
+
+.tree-sdd-dot-specify { background: #4285f4; }
+.tree-sdd-dot-ideate { background: #7c5cff; }
+.tree-sdd-dot-plan { background: #a142f4; }
+.tree-sdd-dot-decompose { background: #00acc1; }
+.tree-sdd-dot-implement-scope { background: #34a853; }
+.tree-sdd-dot-validate { background: #fbbc04; }
+
+.tree-sdd-badge {
+  margin-left: auto;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent-blue);
+  background: color-mix(in srgb, var(--accent-blue) 16%, transparent);
+}
+
 .tree-icon-emoji {
   font-size: 14px;
   line-height: 1;
@@ -358,6 +396,16 @@
   text-align: left;
 }
 
+.tab-context-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 4px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+
 .tab-context-menu button:hover {
   background: color-mix(in srgb, var(--text-primary) 8%, transparent);
   color: var(--text-primary);
@@ -370,4 +418,3 @@
 .tab-context-menu button.danger:hover {
   background: rgba(248, 113, 113, 0.1);
 }
-

@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { AppState, ProjectSlice, Message } from '../types';
 import { DEFAULT_CANVAS_CONTENT } from '../utils';
+import { getSddPhaseFromFilePath, stripSddFrontmatterForEditor } from '../../utils/sddDocument';
 
 export const createProjectSlice: StateCreator<AppState, [], [], ProjectSlice> = (set) => ({
   canvasContent: DEFAULT_CANVAS_CONTENT,
@@ -16,7 +17,15 @@ export const createProjectSlice: StateCreator<AppState, [], [], ProjectSlice> = 
   canvasTree: [],
   isFileExplorerOpen: false,
 
-  setCanvasContent: (content) => set({ canvasContent: content }),
+  setCanvasContent: (content) =>
+    set((state) => {
+      const activeFile = state.activeCanvasFile;
+      if (!activeFile || !getSddPhaseFromFilePath(activeFile)) {
+        return { canvasContent: content };
+      }
+
+      return { canvasContent: stripSddFrontmatterForEditor(activeFile, content) };
+    }),
   setCurrentFilePath: (path) => set({ currentFilePath: path }),
   setProjectPath: (projectPath) => set({ projectPath }),
   setFeatures: (features) => set({ features }),

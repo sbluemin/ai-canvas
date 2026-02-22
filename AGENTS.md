@@ -66,7 +66,7 @@
 - **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리, 입력창 `Shift+Enter` 개행 + 자동 높이 확장)
 - **OnboardingWizard**: 프로젝트별 OpenCode 설치/로그인 안내 온보딩 (설치→로그인 안내, 글로벌/로컬 선택)
 - **CanvasPanel**: 우측 에디터 — MilkdownEditor, EditorToolbar, SelectionAiPopup, DiffPreview
-- **FeatureExplorer**: Feature 트리 사이드바 (생성/삭제/이름변경, 아이콘, 드래그 정렬, 컨텍스트 메뉴)
+- **FeatureExplorer**: Feature 트리 사이드바 (생성/삭제/이름변경, 아이콘, 드래그 정렬, 컨텍스트 메뉴, `New Document...` 기반 Blank/SDD 생성)
 - **CommandPalette**: 전역 커맨드 팔레트 오버레이 (`Ctrl/Cmd+Shift+P`, MVP 1개 커맨드)
 - **모달**: ErrorPopup, SettingsModal, ExportModal, WritingGoalModal, ToastContainer
 
@@ -91,7 +91,7 @@
 - **UiSlice**: drawer, modals, commandPalette, toasts, settings, canvasWidthMode
 - **ProjectSlice**: canvasContent, features, canvasFiles, canvasTree, autosave
 - **ModelSlice**: availableModels, selectedModels, selectedVariant
-- **WritingGoalSlice**: activeWritingGoal, presets
+- **WritingGoalSlice**: activeWritingGoal, custom-only presets(기본 프리셋 없음)
 - **DiffPreviewSlice**: pendingCanvasPatch, chunk 선택/적용
 - **RuntimeSlice**: 런타임 상태(runtimeStatus), 온보딩 모달, 런타임 작업 busy/error
 
@@ -121,7 +121,7 @@ ai-canvas/
 │   ├── hooks/useChatRequest.ts   # AI 채팅 오케스트레이션 훅
 │   ├── context/EditorContext.tsx  # Milkdown Editor ref 공유 Context
 │   ├── api/index.ts              # Electron IPC 래퍼
-│   ├── utils/                    # 유틸리티 (logger, id, parser, constants)
+│   ├── utils/                    # 유틸리티 (logger, id, parser, constants, sddDocument)
 │   ├── types/                    # 공용 타입 (chat.ts, api.ts, electron.d.ts)
 ├── electron/                     # 메인 프로세스 (→ electron/AGENTS.md)
 │   ├── main.ts                   # BrowserWindow, CSP, updater

@@ -14,6 +14,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { useStore } from './store/useStore';
 import { api } from './api';
 import { AUTOSAVE_DELAY, logger } from './utils';
+import { composeSddContentForSave, getSddPhaseFromFilePath } from './utils/sddDocument';
 import './App.css';
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -151,7 +152,9 @@ function App() {
       if (e.key.toLowerCase() === 's') {
         if (!projectPath || !activeCanvasFile) return;
         e.preventDefault();
-        api.writeCanvasFile(projectPath, activeCanvasFile, canvasContent)
+        const sddPhase = getSddPhaseFromFilePath(activeCanvasFile);
+        const contentToSave = sddPhase ? composeSddContentForSave(sddPhase, canvasContent) : canvasContent;
+        api.writeCanvasFile(projectPath, activeCanvasFile, contentToSave)
           .then((result) => {
             if (result.success) {
               addToast('success', `${activeCanvasFile} saved`);
@@ -219,6 +222,7 @@ function App() {
 
   useEffect(() => {
     if (!projectPath || !activeFeatureId) return;
+    if (activeCanvasFile && getSddPhaseFromFilePath(activeCanvasFile)) return;
 
     const timer = window.setTimeout(async () => {
       const metaResult = await api.readFeatureMeta(projectPath, activeFeatureId);
@@ -236,7 +240,7 @@ function App() {
     }, AUTOSAVE_DELAY);
 
     return () => window.clearTimeout(timer);
-  }, [projectPath, activeFeatureId, activeWritingGoal]);
+  }, [projectPath, activeFeatureId, activeCanvasFile, activeWritingGoal]);
 
   useEffect(() => {
     if (projectPath) {
@@ -274,6 +278,7 @@ function App() {
     return (
       <div className="app-container mobile">
         <button 
+          type="button"
           className="drawer-toggle-btn" 
           onClick={toggleDrawer}
           aria-label="Toggle chat"
@@ -281,7 +286,12 @@ function App() {
           <span className="hamburger-icon" />
         </button>
         
-        <div className={`drawer-overlay ${isDrawerOpen ? 'open' : ''}`} onClick={closeDrawer} />
+        <button
+          type="button"
+          className={`drawer-overlay ${isDrawerOpen ? 'open' : ''}`}
+          onClick={closeDrawer}
+          aria-label="Close chat drawer"
+        />
         
         <div className={`drawer ${isDrawerOpen ? 'open' : ''}`}>
           <ChatPanel />

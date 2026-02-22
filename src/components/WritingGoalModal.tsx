@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useStore, WritingGoal, WritingGoalPreset } from '../store/useStore';
-import { CloseIcon, PlusIcon, TrashIcon } from './Icons';
+import { useStore, WritingGoal } from '../store/useStore';
+import { CloseIcon } from './Icons';
+import { detectSddPhase } from '../utils/sddDocument';
 import './WritingGoalModal.css';
 
 export function WritingGoalModal() {
@@ -9,9 +10,8 @@ export function WritingGoalModal() {
     closeWritingGoal,
     activeWritingGoal,
     setActiveWritingGoal,
-    writingGoalPresets,
-    addWritingGoalPreset,
-    removeWritingGoalPreset,
+    activeCanvasFile,
+    canvasContent,
   } = useStore();
 
   // 폼 상태
@@ -19,7 +19,6 @@ export function WritingGoalModal() {
   const [audience, setAudience] = useState('');
   const [tone, setTone] = useState('');
   const [targetLength, setTargetLength] = useState<'short' | 'medium' | 'long'>('medium');
-  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
   // 활성 목표가 있으면 폼에 자동 채움
   useEffect(() => {
@@ -33,17 +32,11 @@ export function WritingGoalModal() {
 
   if (!isWritingGoalOpen) return null;
 
-  // 프리셋 선택 핸들러
-  const handlePresetClick = (preset: WritingGoalPreset) => {
-    setPurpose(preset.goal.purpose);
-    setAudience(preset.goal.audience);
-    setTone(preset.goal.tone);
-    setTargetLength(preset.goal.targetLength);
-    setSelectedPresetId(preset.id);
-  };
+  const isSddSpecialDocumentActive = Boolean(activeCanvasFile && detectSddPhase(activeCanvasFile, canvasContent));
 
   // 적용 버튼 핸들러
   const handleApply = () => {
+    if (isSddSpecialDocumentActive) return;
     const goal: WritingGoal = {
       purpose,
       audience,
@@ -56,43 +49,15 @@ export function WritingGoalModal() {
 
   // 초기화 버튼 핸들러
   const handleReset = () => {
+    if (isSddSpecialDocumentActive) return;
     setActiveWritingGoal(null);
     closeWritingGoal();
   };
 
-  // 프리셋 저장 핸들러
-  const handleSavePreset = () => {
-    const name = prompt('프리셋 이름을 입력하세요:');
-    if (!name) return;
-
-    const newPreset: WritingGoalPreset = {
-      id: `custom-${Date.now()}`,
-      name,
-      goal: {
-        purpose,
-        audience,
-        tone,
-        targetLength,
-      },
-    };
-    addWritingGoalPreset(newPreset);
-    setSelectedPresetId(newPreset.id);
-  };
-
-  // 프리셋 삭제 핸들러
-  const handleDeletePreset = (presetId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm('이 프리셋을 삭제하시겠습니까?')) {
-      removeWritingGoalPreset(presetId);
-      if (selectedPresetId === presetId) {
-        setSelectedPresetId(null);
-      }
-    }
-  };
-
   return (
-    <div className="writing-goal-overlay" onClick={closeWritingGoal}>
-      <div className="writing-goal-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="writing-goal-overlay">
+      <button type="button" className="writing-goal-backdrop" onClick={closeWritingGoal} aria-label="닫기" />
+      <div className="writing-goal-modal" role="dialog" aria-modal="true" aria-label="문서 작성 목표">
         {/* 헤더 */}
         <div className="writing-goal-header">
           <div className="header-title-group">
@@ -106,44 +71,24 @@ export function WritingGoalModal() {
 
         {/* 스크롤 가능한 콘텐츠 영역 */}
         <div className="writing-goal-content">
-          {/* 프리셋 섹션 */}
-          <section className="writing-goal-section">
-            <div className="section-header">
-              <label>프리셋</label>
-              <button type="button" className="btn-ghost-sm" onClick={handleSavePreset}>
-                <PlusIcon width={14} height={14} /> <span>저장</span>
-              </button>
+          {isSddSpecialDocumentActive && (
+            <div className="writing-goal-lock-notice">
+              <span className="state-dot locked" aria-hidden="true" />
+              <span>SDD 문서에서는 Goal을 편집할 수 없어요. 일반 문서로 전환하면 다시 수정할 수 있습니다.</span>
             </div>
-            <div className="preset-chips">
-              {writingGoalPresets.map((preset) => (
-                <div
-                  key={preset.id}
-                  className={`preset-chip ${selectedPresetId === preset.id ? 'active' : ''}`}
-                  onClick={() => handlePresetClick(preset)}
-                >
-                  <span className="preset-name">{preset.name}</span>
-                  <button
-                    type="button"
-                    className="preset-delete"
-                    onClick={(e) => handleDeletePreset(preset.id, e)}
-                    aria-label="프리셋 삭제"
-                  >
-                    <TrashIcon width={12} height={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-
+          )}
           {/* 커스텀 입력 폼 */}
-          <div className="writing-goal-form">
+          <div className={`writing-goal-form${isSddSpecialDocumentActive ? ' locked' : ''}`}>
             <div className="form-group">
               <label htmlFor="purpose-input">문서 목적</label>
               <textarea
                 id="purpose-input"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                placeholder="예: 기능 플로우/디자인 요구사항 정리 및 기대 결과 도출"
+                readOnly={isSddSpecialDocumentActive}
+                placeholder={isSddSpecialDocumentActive && purpose.trim() === ''
+                  ? 'SDD 문서에서는 Goal을 설정하지 않습니다.'
+                  : '예: 기능 플로우/디자인 요구사항 정리 및 기대 결과 도출'}
                 rows={3}
               />
             </div>
@@ -156,6 +101,7 @@ export function WritingGoalModal() {
                   type="text"
                   value={audience}
                   onChange={(e) => setAudience(e.target.value)}
+                  readOnly={isSddSpecialDocumentActive}
                   placeholder="예: 개발자, PO, 디자이너"
                 />
               </div>
@@ -166,13 +112,14 @@ export function WritingGoalModal() {
                   type="text"
                   value={tone}
                   onChange={(e) => setTone(e.target.value)}
+                  readOnly={isSddSpecialDocumentActive}
                   placeholder="예: 기술적이고 논리적인, 간결한"
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label>목표 길이</label>
+              <span className="form-label">목표 길이</span>
               <div className="segment-control">
                 {(['short', 'medium', 'long'] as const).map((len) => (
                   <button
@@ -180,6 +127,7 @@ export function WritingGoalModal() {
                     type="button"
                     className={`segment-item ${targetLength === len ? 'active' : ''}`}
                     onClick={() => setTargetLength(len)}
+                    disabled={isSddSpecialDocumentActive}
                   >
                     {len === 'short' ? '짧게' : len === 'medium' ? '중간' : '길게'}
                   </button>
@@ -191,8 +139,8 @@ export function WritingGoalModal() {
 
         {/* 하단 액션 버튼 */}
         <div className="writing-goal-actions">
-          <button type="button" onClick={handleReset} className="btn-ghost">초기화</button>
-          <button type="button" onClick={handleApply} className="wg-btn-primary">목표 적용하기</button>
+          <button type="button" onClick={handleReset} className="btn-ghost" disabled={isSddSpecialDocumentActive}>초기화</button>
+          <button type="button" onClick={handleApply} className="wg-btn-primary" disabled={isSddSpecialDocumentActive}>목표 적용하기</button>
         </div>
       </div>
     </div>
