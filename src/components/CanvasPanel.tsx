@@ -5,7 +5,6 @@ import { EditorToolbar } from './EditorToolbar';
 import { EditorProvider } from '../context/EditorContext';
 import { FeatureExplorer } from './FeatureExplorer';
 import { api } from '../api';
-import { WritingGoal } from '../store/types';
 import {
   composeSddContentForSave,
   detectSddPhase,
@@ -14,34 +13,6 @@ import {
   getSddWritingGoal,
 } from '../utils/sddDocument';
 import './CanvasPanel.css';
-
-function normalizeWritingGoal(input: unknown): WritingGoal | null {
-  if (!input || typeof input !== 'object') return null;
-  const goal = input as Partial<WritingGoal>;
-  if (
-    typeof goal.purpose !== 'string'
-    || typeof goal.audience !== 'string'
-    || typeof goal.tone !== 'string'
-    || (goal.targetLength !== 'short' && goal.targetLength !== 'medium' && goal.targetLength !== 'long')
-  ) {
-    return null;
-  }
-
-  return {
-    purpose: goal.purpose,
-    audience: goal.audience,
-    tone: goal.tone,
-    targetLength: goal.targetLength,
-  };
-}
-
-function extractWritingGoalFromMeta(meta: unknown): WritingGoal | null {
-  if (!meta || typeof meta !== 'object') {
-    return null;
-  }
-  const value = (meta as { writingGoal?: unknown }).writingGoal;
-  return normalizeWritingGoal(value);
-}
 
 export function CanvasPanel() {
   const { 
@@ -159,14 +130,7 @@ export function CanvasPanel() {
         return;
       }
 
-      if (projectPath && activeFeatureId) {
-        const metaResult = await api.readFeatureMeta(projectPath, activeFeatureId);
-        if (metaResult.success) {
-          setActiveWritingGoal(extractWritingGoalFromMeta(metaResult.meta));
-        } else {
-          setActiveWritingGoal(null);
-        }
-      }
+      setActiveWritingGoal(null);
     }
   };
 

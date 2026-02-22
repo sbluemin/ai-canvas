@@ -43,9 +43,9 @@ export function CommandPalette() {
   const commands = useMemo<PaletteCommand[]>(() => {
     const disabled = !runtimeReady || !projectReady;
     const disabledReason = !projectReady
-      ? '프로젝트 열기 필요'
+      ? 'Open a project first'
       : !runtimeReady
-        ? '런타임 설정 필요'
+        ? 'Runtime setup required'
         : undefined;
 
     return [
@@ -61,7 +61,7 @@ export function CommandPalette() {
             return;
           }
 
-          addToast('error', result.error ?? '터미널 실행에 실패했습니다');
+          addToast('error', result.error ?? 'Failed to launch terminal');
         },
       },
     ];
@@ -150,7 +150,7 @@ export function CommandPalette() {
 
         <div className="command-palette-list" role="listbox" aria-label="Command palette commands">
           {filteredCommands.length === 0 ? (
-            <div className="command-palette-empty">일치하는 명령이 없습니다</div>
+            <div className="command-palette-empty">No matching commands</div>
           ) : (
             filteredCommands.map((command, index) => (
               <button

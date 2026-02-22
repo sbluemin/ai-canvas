@@ -86,12 +86,12 @@ export function OnboardingWizard() {
   const showInstallProgress = step === 'install' && installPhase !== null && installPhase !== 'error';
 
   const installButtonLabel = isInstallDownloading
-    ? `OpenCode 다운로드 중... ${progressPercent}%`
+    ? `Downloading OpenCode... ${progressPercent}%`
     : isInstallFinalizing
-      ? '시스템에 설정하는 중...'
+      ? 'Configuring system...'
       : installPhase === 'done' && !runtimeBusy
-        ? '설치 완료'
-        : 'OpenCode 설치하기';
+        ? 'Installation Complete'
+        : 'Install OpenCode';
 
   const runWithBusy = async (action: () => Promise<void>) => {
     setRuntimeBusy(true);
@@ -111,7 +111,7 @@ export function OnboardingWizard() {
       return;
     }
 
-    setRuntimeError(statusResult.error ?? '런타임 상태를 불러오지 못했습니다');
+    setRuntimeError(statusResult.error ?? 'Failed to load runtime status');
   };
 
   const chooseGlobal = async () => {
@@ -126,11 +126,11 @@ export function OnboardingWizard() {
           return;
         }
 
-        setRuntimeError(doneResult.error ?? '온보딩 완료 처리에 실패했습니다');
+        setRuntimeError(doneResult.error ?? 'Failed to complete onboarding');
         return;
       }
 
-      setRuntimeError(result.error ?? '글로벌 런타임 선택에 실패했습니다');
+      setRuntimeError(result.error ?? 'Failed to select global runtime');
     });
   };
 
@@ -152,12 +152,12 @@ export function OnboardingWizard() {
           return;
         }
 
-        setRuntimeError(doneResult.error ?? '온보딩 완료 처리에 실패했습니다');
+        setRuntimeError(doneResult.error ?? 'Failed to complete onboarding');
         return;
       }
 
       setInstallPhase('error');
-      setRuntimeError(result.error ?? '프로젝트 런타임 설치에 실패했습니다');
+      setRuntimeError(result.error ?? 'Failed to install project runtime');
     });
   };
 
@@ -171,7 +171,7 @@ export function OnboardingWizard() {
         return;
       }
 
-      setRuntimeError(result.error ?? '온보딩 완료 처리에 실패했습니다');
+      setRuntimeError(result.error ?? 'Failed to complete onboarding');
     });
   };
 
@@ -183,26 +183,26 @@ export function OnboardingWizard() {
     <div className="onboarding-overlay" onClick={skipForNow}>
       <div className="onboarding-modal" onClick={(event) => event.stopPropagation()}>
         <div className="onboarding-header">
-          <h3>AI 기능 준비</h3>
-          <button type="button" onClick={skipForNow}>나중에</button>
+          <h3>AI Setup</h3>
+          <button type="button" onClick={skipForNow}>Later</button>
         </div>
 
         {step === 'choice' && (
           <div className="onboarding-body">
-            <p>이미 설치된 AI 엔진을 찾았습니다. 이 프로젝트에서 사용할 방식을 선택해주세요.</p>
+            <p>An existing AI engine was found. Please choose how to use it for this project.</p>
             <div className="onboarding-action-row">
-              <button type="button" className="onboarding-secondary" onClick={chooseGlobal} disabled={runtimeBusy}>글로벌 엔진 사용</button>
-              <button type="button" className="onboarding-primary" onClick={installLocal} disabled={runtimeBusy}>프로젝트 전용 설치</button>
+              <button type="button" className="onboarding-secondary" onClick={chooseGlobal} disabled={runtimeBusy}>Use Global Engine</button>
+              <button type="button" className="onboarding-primary" onClick={installLocal} disabled={runtimeBusy}>Install for Project</button>
             </div>
           </div>
         )}
 
         {step === 'install' && (
           <div className="onboarding-body">
-            <p>AI 기능을 활성화하기 위해 전용 엔진을 설치합니다.</p>
+            <p>Install a dedicated engine to enable AI features.</p>
             <div className="onboarding-action-row">
               <button type="button" className="onboarding-primary" onClick={installLocal} disabled={runtimeBusy}>{installButtonLabel}</button>
-              <button type="button" className="onboarding-secondary" onClick={refreshStatus} disabled={runtimeBusy}>{runtimeError ? '다시 시도' : '다시 확인'}</button>
+              <button type="button" className="onboarding-secondary" onClick={refreshStatus} disabled={runtimeBusy}>{runtimeError ? 'Retry' : 'Refresh'}</button>
             </div>
             {showInstallProgress && (
               <div className="onboarding-progress" role="status" aria-live="polite">

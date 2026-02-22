@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../store/useStore';
-import { TreeEntry, FeatureSummary, Conversation, Message, WritingGoal } from '../store/types';
+import { TreeEntry, FeatureSummary, Conversation, Message } from '../store/types';
 import { api } from '../api';
 import { generateId } from '../utils';
 import {
@@ -151,35 +151,6 @@ function getFeatureFiles(canvasTree: TreeEntry[], featureId: string): string[] {
 
 function findFeature(featureId: string, features: FeatureSummary[]): FeatureSummary | null {
   return features.find((feature) => feature.id === featureId) ?? null;
-}
-
-function normalizeWritingGoal(input: unknown): WritingGoal | null {
-  if (!input || typeof input !== 'object') return null;
-  const goal = input as Partial<WritingGoal>;
-  if (
-    typeof goal.purpose !== 'string'
-    || typeof goal.audience !== 'string'
-    || typeof goal.tone !== 'string'
-    || (goal.targetLength !== 'short' && goal.targetLength !== 'medium' && goal.targetLength !== 'long')
-  ) {
-    return null;
-  }
-
-  return {
-    purpose: goal.purpose,
-    audience: goal.audience,
-    tone: goal.tone,
-    targetLength: goal.targetLength,
-  };
-}
-
-function extractWritingGoalFromMeta(meta: unknown): WritingGoal | null {
-  if (!meta || typeof meta !== 'object') {
-    return null;
-  }
-
-  const value = (meta as { writingGoal?: unknown }).writingGoal;
-  return normalizeWritingGoal(value);
 }
 
 function createDefaultConversation(messages: Message[]): Conversation {
@@ -483,12 +454,7 @@ export function FeatureExplorer({ onSelectFile, onRefreshTree }: FeatureExplorer
       setMessages(sessionMessages);
     }
 
-    const metaResult = await api.readFeatureMeta(projectPath, featureId);
-    if (metaResult.success) {
-      setActiveWritingGoal(extractWritingGoalFromMeta(metaResult.meta));
-    } else {
-      setActiveWritingGoal(null);
-    }
+    setActiveWritingGoal(null);
 
     if (files.length > 0) {
       onSelectFile(files[0]);

@@ -1,4 +1,4 @@
-import { useStore, type Message, type Conversation, type AutosaveStatus, type SelectedModels, type FeatureSummary, type WritingGoal } from '../../../store/useStore';
+import { useStore, type Message, type Conversation, type AutosaveStatus, type SelectedModels, type FeatureSummary } from '../../../store/useStore';
 import { api } from '../../../api';
 import { generateId } from '../../../utils';
 import './ProjectSelector.css';
@@ -18,10 +18,10 @@ function parseStoredMessages(rawMessages: unknown[] | undefined): Message[] {
   const parsed: Message[] = [];
 
   rawMessages.forEach((msg) => {
-    if (!msg || typeof msg !== 'object') return null;
+    if (!msg || typeof msg !== 'object') return;
     const item = msg as Record<string, unknown>;
     const role = item.role === 'assistant' ? 'assistant' : item.role === 'user' ? 'user' : null;
-    if (!role || typeof item.content !== 'string') return null;
+    if (!role || typeof item.content !== 'string') return;
 
     const rawTimestamp = item.timestamp;
     const timestamp = rawTimestamp instanceof Date
@@ -148,35 +148,6 @@ function createDefaultConversation(messages: Message[]): Conversation {
   };
 }
 
-function normalizeWritingGoal(input: unknown): WritingGoal | null {
-  if (!input || typeof input !== 'object') return null;
-  const goal = input as Partial<WritingGoal>;
-  if (
-    typeof goal.purpose !== 'string'
-    || typeof goal.audience !== 'string'
-    || typeof goal.tone !== 'string'
-    || (goal.targetLength !== 'short' && goal.targetLength !== 'medium' && goal.targetLength !== 'long')
-  ) {
-    return null;
-  }
-
-  return {
-    purpose: goal.purpose,
-    audience: goal.audience,
-    tone: goal.tone,
-    targetLength: goal.targetLength,
-  };
-}
-
-function extractWritingGoalFromMeta(meta: unknown): WritingGoal | null {
-  if (!meta || typeof meta !== 'object') {
-    return null;
-  }
-
-  const value = (meta as { writingGoal?: unknown }).writingGoal;
-  return normalizeWritingGoal(value);
-}
-
 export function ProjectSelector() {
   const {
     projectPath,
@@ -231,13 +202,7 @@ export function ProjectSelector() {
       setMessages(sessionMessages);
     }
 
-    const metaResult = await api.readFeatureMeta(nextProjectPath, featureId);
-    if (metaResult.success) {
-      const writingGoal = extractWritingGoalFromMeta(metaResult.meta);
-      setActiveWritingGoal(writingGoal);
-    } else {
-      setActiveWritingGoal(null);
-    }
+    setActiveWritingGoal(null);
 
     if (files.length > 0) {
       const firstFile = files[0];
@@ -336,11 +301,13 @@ export function ProjectSelector() {
   };
 
   return (
-    <div className="project-selector" onClick={handleOpenProject}>
-      <div className="project-label">
-        <span className="project-name">{projectName ?? 'AI Canvas'}</span>
-        <span className="project-selector-arrow">▾</span>
-      </div>
+    <div className="project-selector">
+      <button type="button" className="project-open-btn" onClick={handleOpenProject}>
+        <div className="project-label">
+          <span className="project-name">{projectName ?? 'AI Canvas'}</span>
+          <span className="project-selector-arrow">▾</span>
+        </div>
+      </button>
       {projectPath && (
         <button
           type="button"
@@ -348,7 +315,7 @@ export function ProjectSelector() {
           onClick={handleOpenInExplorer}
           title="Open Folder"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
         </button>

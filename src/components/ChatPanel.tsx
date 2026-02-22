@@ -9,7 +9,7 @@ import { api } from '../api';
 import { AUTOSAVE_DELAY, generateId } from '../utils';
 import { Logo } from './Logo';
 import './ChatPanel.css';
-import { PlusIcon, MicrophoneIcon, SendIcon, ChevronDownIcon } from './Icons';
+import { PlusIcon, SendIcon, ChevronDownIcon } from './Icons';
 
 
 const FILE_MENTION_REGEX = /(^|\s)@([^\s@]+)/g;
@@ -184,10 +184,10 @@ function TypingDots() {
 
 function formatThinkingDuration(startedAt?: number, completedAt?: number): string {
   if (!startedAt || !completedAt || completedAt <= startedAt) {
-    return '0.0초';
+    return '0.0s';
   }
 
-  return `${((completedAt - startedAt) / 1000).toFixed(1)}초`;
+  return `${((completedAt - startedAt) / 1000).toFixed(1)}s`;
 }
 
 export function ChatPanel() {
@@ -523,7 +523,7 @@ export function ChatPanel() {
             const isThinkingComplete = Boolean(msg.thinkingCompletedAt);
             const isThinkingCollapsed = Boolean(msg.thinkingCollapsed && isThinkingComplete);
             const thinkingActivitiesId = `thinking-activities-${msg.id}`;
-            const thinkingSummary = `${thinkingActivities.length}단계, ${formatThinkingDuration(msg.thinkingStartedAt, msg.thinkingCompletedAt)}`;
+            const thinkingSummary = `${thinkingActivities.length} steps, ${formatThinkingDuration(msg.thinkingStartedAt, msg.thinkingCompletedAt)}`;
 
             if (msg.role === 'assistant' && !msg.content && !showInlineProgress && !hasThinkingActivities) {
               return null;
@@ -553,7 +553,7 @@ export function ChatPanel() {
                         >
                           <span className="thinking-state-dot completed" />
                           <span className="thinking-toggle-texts">
-                            <span className="thinking-toggle-label">사고 과정</span>
+                            <span className="thinking-toggle-label">Thinking</span>
                             <span className="thinking-toggle-meta">{thinkingSummary}</span>
                           </span>
                           <ChevronDownIcon className={`thinking-toggle-chevron ${isThinkingCollapsed ? 'collapsed' : ''}`} />
@@ -562,8 +562,8 @@ export function ChatPanel() {
                         <div className="thinking-running-title" aria-live="polite">
                           <span className="thinking-state-dot pending" />
                           <span className="thinking-toggle-texts">
-                            <span className="thinking-toggle-label">사고 과정</span>
-                            <span className="thinking-toggle-meta">진행 중...</span>
+                            <span className="thinking-toggle-label">Thinking</span>
+                            <span className="thinking-toggle-meta">In progress...</span>
                           </span>
                         </div>
                       )}
@@ -671,10 +671,8 @@ export function ChatPanel() {
               disabled={isLoading || isChatLocked}
               rows={1}
             />
-            <button type="button" className="input-action-btn mic-btn" title="Voice input">
-              <MicrophoneIcon />
-            </button>
             <button 
+
               type="submit" 
               className="send-btn"
               disabled={isLoading || isChatLocked || !input.trim()}

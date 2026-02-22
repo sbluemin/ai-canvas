@@ -29,7 +29,7 @@ export function SettingsModal() {
     try {
       const result = await api.runtimeOpenAuthTerminal(projectPath);
       if (!result.success) {
-        setRuntimeError(result.error ?? '터미널 실행에 실패했습니다');
+        setRuntimeError(result.error ?? 'Failed to launch terminal');
       }
     } finally {
       setRuntimeBusy(false);
@@ -76,7 +76,7 @@ export function SettingsModal() {
                 <div className="setting-row">
                   <div className="setting-label">
                     <span className="setting-name">Theme</span>
-                    <span className="setting-description">앱의 외관 테마를 선택합니다</span>
+                    <span className="setting-description">Choose the app appearance theme</span>
                   </div>
                   <select
                     id="theme-select"
@@ -96,14 +96,14 @@ export function SettingsModal() {
                 <div className="setting-row vertical">
                   <div className="setting-label">
                     <span className="setting-name">OPENCODE_CONFIG_DIR</span>
-                    <span className="setting-description">OpenCode 런타임 설정 디렉토리</span>
+                    <span className="setting-description">OpenCode runtime configuration directory</span>
                   </div>
-                  <p className="settings-runtime-path">{runtimeStatus?.configDir || '사용 안 함 (Global Runtime)'}</p>
+                  <p className="settings-runtime-path">{runtimeStatus?.configDir || 'Not set (Global Runtime)'}</p>
                 </div>
                 <div className="setting-row vertical">
                   <div className="setting-label">
-                    <span className="setting-name">로그인</span>
-                    <span className="setting-description">AI 모델 연결이 필요하면 아래 버튼으로 로그인하세요</span>
+                    <span className="setting-name">Login</span>
+                    <span className="setting-description">Use the button below to log in if AI model connection is required</span>
                   </div>
                   <button
                     type="button"
@@ -111,7 +111,7 @@ export function SettingsModal() {
                     onClick={handleRuntimeLogin}
                     disabled={runtimeBusy || runtimeStatus?.activeRuntime === 'none'}
                   >
-                    터미널에서 로그인
+                    Login via Terminal
                   </button>
                   {runtimeError && <p className="settings-runtime-error">{runtimeError}</p>}
                 </div>

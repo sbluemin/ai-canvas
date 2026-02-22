@@ -1,12 +1,21 @@
 .project-selector {
   display: flex;
   align-items: center;
-  cursor: pointer;
   border-radius: 6px;
+}
+
+.project-open-btn {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
   transition: background-color 0.15s;
 }
 
-.project-selector:hover {
+.project-open-btn:hover {
   background-color: var(--bg-hover);
 }
 
