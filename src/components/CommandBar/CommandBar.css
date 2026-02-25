@@ -15,13 +15,6 @@
   padding-right: 140px;
 }
 
-.command-bar-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  -webkit-app-region: no-drag;
-}
-
 .command-bar-content {
   display: flex;
   align-items: center;

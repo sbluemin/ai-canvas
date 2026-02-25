@@ -10,6 +10,7 @@ import { AUTOSAVE_DELAY, generateId } from '../utils';
 import { Logo } from './Logo';
 import './ChatPanel.css';
 import { PlusIcon, SendIcon, ChevronDownIcon } from './Icons';
+import { ChatModelSelector } from './ChatModelSelector';
 
 
 const FILE_MENTION_REGEX = /(^|\s)@([^\s@]+)/g;
@@ -661,24 +662,29 @@ export function ChatPanel() {
         )}
         <div className="input-wrapper">
           <form className="input-form" onSubmit={handleSubmit}>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={handleInputChange}
-              onSelect={handleInputSelect}
-              onKeyDown={handleInputKeyDown}
-              placeholder="Type a message... (use @path/to/file)"
-              disabled={isLoading || isChatLocked}
-              rows={1}
-            />
-            <button 
+            <div className="input-header">
+              <ChatModelSelector />
+            </div>
 
-              type="submit" 
-              className="send-btn"
-              disabled={isLoading || isChatLocked || !input.trim()}
-            >
-              <SendIcon />
-            </button>
+            <div className="input-body">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={handleInputChange}
+                onSelect={handleInputSelect}
+                onKeyDown={handleInputKeyDown}
+                placeholder="Type a message... (use @path/to/file)"
+                disabled={isLoading || isChatLocked}
+                rows={1}
+              />
+              <button
+                type="submit"
+                className="send-btn"
+                disabled={isLoading || isChatLocked || !input.trim()}
+              >
+                <SendIcon />
+              </button>
+            </div>
           </form>
           {showMentionMenu && (
             <div className="mention-autocomplete" role="listbox" aria-label="File mention suggestions">

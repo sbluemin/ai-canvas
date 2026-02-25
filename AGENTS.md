@@ -39,7 +39,7 @@
 #### 적용 컴포넌트
 | 컴포넌트 | 패턴 |
 |----------|------|
-| ModelSelector | Intelligent Control Capsule — Runtime dot(global=초록/project=파란/missing=빨간) + Model 선택 + Refresh 통합. Split-Pane Glass 드롭다운 (Provider→Model→Variant 계층 선택) + Footer (런타임 상세/Setup) |
+| ChatModelSelector | Input Header Capsule — Chat 입력창 상단에 배치. Runtime dot(global=초록/project=파란/missing=빨간) + Model/Variant 선택 + Refresh 통합. Upward Glass 드롭다운 (Provider→Model→Variant 계층 선택) + Footer (런타임 상세/Setup) |
 | Goal / Export / Settings | Ghost Button + 인라인 SVG |
 | SettingsModal | Split Layout (Sidebar Nav + Content Area) |
 | Width 컨트롤 | Glass Icon Toggle (3개 아이콘) |
@@ -62,8 +62,8 @@
 
 ### 레이아웃
 - **App.tsx**: 루트 — Allotment 좌우 분할 (모바일: 단일 캔버스)
-- **CommandBar**: 상단 — ProjectSelector, ModelSelector(Intelligent Control Capsule: Runtime+Model+Refresh 통합), Goal/Export/Settings
-- **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리, 입력창 `Shift+Enter` 개행 + 자동 높이 확장)
+- **CommandBar**: 상단 — ProjectSelector, Goal/Export/Settings
+- **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리, 입력창 `Shift+Enter` 개행 + 자동 높이 확장 + 입력창 상단 `ChatModelSelector`)
 - **OnboardingWizard**: 프로젝트별 OpenCode 설치/로그인 안내 온보딩 (설치→로그인 안내, 글로벌/로컬 선택)
 - **CanvasPanel**: 우측 에디터 — MilkdownEditor, EditorToolbar, SelectionAiPopup, DiffPreview
 - **FeatureExplorer**: Feature 트리 사이드바 (생성/삭제/이름변경, 아이콘, 드래그 정렬, 컨텍스트 메뉴, `New Document...` 기반 Blank/SDD 생성)
@@ -103,8 +103,9 @@
 ai-canvas/
 ├── src/                          # 렌더러 (→ src/AGENTS.md)
 │   ├── components/               # UI 컴포넌트 (→ src/components/AGENTS.md)
-│   │   ├── CommandBar/           # 상단 커맨드바 (ProjectSelector/, ModelSelector/)
+│   │   ├── CommandBar/           # 상단 커맨드바 (ProjectSelector/)
 │   │   ├── ChatPanel.tsx         # AI 채팅
+│   │   ├── ChatModelSelector.tsx # Chat 입력 헤더 모델 선택기
 │   │   ├── CanvasPanel.tsx       # 마크다운 에디터
 │   │   ├── OnboardingWizard.tsx  # OpenCode 온보딩 위저드
 │   │   ├── FeatureExplorer.tsx   # Feature 트리 사이드바

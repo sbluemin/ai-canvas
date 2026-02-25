@@ -770,9 +770,9 @@
 
 .input-form {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: 6px;
-  padding: 8px 8px 8px 14px;
+  padding: 8px 8px 8px 12px;
   background: color-mix(in srgb, var(--bg-input), transparent 10%);
   border: 1px solid var(--border-color);
   border-radius: 20px;
@@ -786,6 +786,21 @@
   border-color: var(--accent-blue);
   box-shadow: 0 2px 16px color-mix(in srgb, var(--accent-blue) 15%, transparent),
               0 0 0 1px color-mix(in srgb, var(--accent-blue) 20%, transparent);
+}
+
+.input-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 2px 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-subtle), transparent 20%);
+}
+
+.input-body {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
 }
 
 .input-action-btn {
