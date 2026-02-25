@@ -12,7 +12,12 @@ import { EditorView } from '@milkdown/prose/view';
 import mermaid from 'mermaid';
 import type { MermaidConfig } from 'mermaid';
 import { useStore } from '../store/useStore';
-import { useEditorContext } from '../context/EditorContext';
+import {
+  useEditorContext,
+  type ActiveBlockType,
+  type ActiveInlineMarks,
+  type ActiveListType,
+} from '../context/EditorContext';
 import { SelectionAiPopup } from './SelectionAiPopup';
 import { api } from '../api';
 import './MilkdownEditor.css';
@@ -173,8 +178,55 @@ function MilkdownEditorInner() {
   const canvasContentRef = useRef(canvasContent);
   const [mermaidThemeToken, setMermaidThemeToken] = useState(getThemeToken);
 
-  const { editorRef } = useEditorContext();
+  const {
+    editorRef,
+    setActiveBlockType,
+    setActiveInlineMarks,
+    setActiveListType,
+  } = useEditorContext();
   const [editorView, setEditorView] = useState<EditorView | null>(null);
+
+  const getActiveBlockType = useCallback((view: EditorView): ActiveBlockType => {
+    const parentNode = view.state.selection.$from.parent;
+    if (parentNode.type.name !== 'heading') {
+      return 'body';
+    }
+
+    const levelAttr = parentNode.attrs.level;
+    if (levelAttr === 1) {
+      return 'heading1';
+    }
+    if (levelAttr === 2) {
+      return 'heading2';
+    }
+    if (levelAttr === 3) {
+      return 'heading3';
+    }
+
+    return 'body';
+  }, []);
+
+  const getActiveInlineMarks = useCallback((view: EditorView): ActiveInlineMarks => {
+    const marks = view.state.storedMarks ?? view.state.selection.$from.marks();
+    return {
+      bold: marks.some((mark) => mark.type.name === 'strong'),
+      italic: marks.some((mark) => mark.type.name === 'emphasis'),
+    };
+  }, []);
+
+  const getActiveListType = useCallback((view: EditorView): ActiveListType => {
+    const { $from } = view.state.selection;
+    for (let depth = $from.depth; depth > 0; depth -= 1) {
+      const node = $from.node(depth);
+      if (node.type.name === 'bullet_list') {
+        return 'bullet';
+      }
+      if (node.type.name === 'ordered_list') {
+        return 'ordered';
+      }
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
     canvasContentRef.current = canvasContent;
@@ -236,6 +288,83 @@ function MilkdownEditorInner() {
     };
   }, [editorView, mermaidThemeToken]);
 
+  useEffect(() => {
+    if (!editorView) {
+      setActiveBlockType('body');
+      setActiveInlineMarks({ bold: false, italic: false });
+      setActiveListType(null);
+      return;
+    }
+
+    const root = editorView.dom as HTMLElement;
+    let rafId: number | null = null;
+
+    const syncToolbarState = () => {
+      const nextBlockType = getActiveBlockType(editorView);
+      setActiveBlockType((prevBlockType) => (prevBlockType === nextBlockType ? prevBlockType : nextBlockType));
+
+      const nextInlineMarks = getActiveInlineMarks(editorView);
+      setActiveInlineMarks((prevInlineMarks) => (
+        prevInlineMarks.bold === nextInlineMarks.bold && prevInlineMarks.italic === nextInlineMarks.italic
+          ? prevInlineMarks
+          : nextInlineMarks
+      ));
+
+      const nextListType = getActiveListType(editorView);
+      setActiveListType((prevListType) => (prevListType === nextListType ? prevListType : nextListType));
+    };
+
+    const scheduleSync = () => {
+      if (rafId !== null) {
+        return;
+      }
+
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        syncToolbarState();
+      });
+    };
+
+    const handleSelectionChange = () => {
+      const selection = document.getSelection();
+      const anchorNode = selection?.anchorNode;
+      if (!anchorNode) {
+        return;
+      }
+
+      const anchorElement = anchorNode instanceof Element ? anchorNode : anchorNode.parentElement;
+      if (!anchorElement || !root.contains(anchorElement)) {
+        return;
+      }
+
+      scheduleSync();
+    };
+
+    scheduleSync();
+    root.addEventListener('mouseup', scheduleSync);
+    root.addEventListener('keyup', scheduleSync);
+    root.addEventListener('input', scheduleSync);
+    document.addEventListener('selectionchange', handleSelectionChange);
+
+    return () => {
+      root.removeEventListener('mouseup', scheduleSync);
+      root.removeEventListener('keyup', scheduleSync);
+      root.removeEventListener('input', scheduleSync);
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [
+    editorView,
+    getActiveBlockType,
+    getActiveInlineMarks,
+    getActiveListType,
+    setActiveBlockType,
+    setActiveInlineMarks,
+    setActiveListType,
+  ]);
+
   // 테마 변경 시 에디터를 재생성하지 않음 — 재생성 중 ProseMirror가
   // 이미 해제된 commonmark 컨텍스트(headingAttr 등)를 참조해 크래시 발생.
   // Mermaid 블록 재렌더링은 별도 useEffect(renderMermaidBlocks)에서 처리.
@@ -277,14 +406,20 @@ function MilkdownEditorInner() {
   }, [storeEditorRef, editorRef]);
 
   useEffect(() => {
-    const editor = get();
-    if (editor) {
-      const currentMarkdown = editor.action(getMarkdown());
-      if (currentMarkdown !== canvasContent) {
-        editor.action(replaceAll(canvasContent));
-      }
+    if (!editorView) {
+      return;
     }
-  }, [canvasContent, get]);
+
+    const editor = editorRef.current;
+    if (!editor) {
+      return;
+    }
+
+    const currentMarkdown = editor.action(getMarkdown());
+    if (currentMarkdown !== canvasContent) {
+      editor.action(replaceAll(canvasContent));
+    }
+  }, [canvasContent, editorRef, editorView]);
 
   // 에디터→store 동기화: 폴링 대신 input/blur 이벤트 기반
   useEffect(() => {
@@ -293,13 +428,20 @@ function MilkdownEditorInner() {
     let debounceTimer: number | null = null;
 
     const syncToStore = () => {
-      const editor = get();
+      const editor = editorRef.current;
       if (!editor) return;
       const markdown = editor.action(getMarkdown());
       if (markdown !== canvasContentRef.current) {
         canvasContentRef.current = markdown;
         setCanvasContent(markdown);
       }
+    };
+
+    const scheduleSync = (delay: number) => {
+      if (debounceTimer !== null) {
+        window.clearTimeout(debounceTimer);
+      }
+      debounceTimer = window.setTimeout(syncToStore, delay);
     };
 
     // blur 시 즉시 동기화 → CanvasPanel onBlur에서 최신 내용으로 저장 가능
@@ -310,9 +452,22 @@ function MilkdownEditorInner() {
 
     // 입력 시 500ms 디바운스 동기화
     const handleInput = () => {
-      if (debounceTimer !== null) window.clearTimeout(debounceTimer);
-      debounceTimer = window.setTimeout(syncToStore, 500);
+      scheduleSync(500);
     };
+
+    const handleMutation = () => {
+      scheduleSync(120);
+    };
+
+    const observer = typeof MutationObserver === 'undefined'
+      ? null
+      : new MutationObserver(handleMutation);
+
+    observer?.observe(editorView.dom, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
 
     editorView.dom.addEventListener('blur', handleBlur, true);
     editorView.dom.addEventListener('input', handleInput);
@@ -320,9 +475,10 @@ function MilkdownEditorInner() {
     return () => {
       editorView.dom.removeEventListener('blur', handleBlur, true);
       editorView.dom.removeEventListener('input', handleInput);
+      observer?.disconnect();
       if (debounceTimer !== null) window.clearTimeout(debounceTimer);
     };
-  }, [editorView, get, setCanvasContent]);
+  }, [editorRef, editorView, setCanvasContent]);
 
   const insertMarkdown = useCallback((markdown: string) => {
     const editor = editorRef.current;

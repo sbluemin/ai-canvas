@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { 
   toggleStrongCommand, 
   toggleEmphasisCommand,
@@ -17,6 +17,7 @@ import './EditorToolbar.css';
 function UndoIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Undo</title>
       <path d="M3 7v6h6" />
       <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
     </svg>
@@ -26,6 +27,7 @@ function UndoIcon() {
 function RedoIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Redo</title>
       <path d="M21 7v6h-6" />
       <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
     </svg>
@@ -35,6 +37,7 @@ function RedoIcon() {
 function BoldIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <title>Bold</title>
       <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
       <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
     </svg>
@@ -44,6 +47,7 @@ function BoldIcon() {
 function ItalicIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Italic</title>
       <line x1="19" y1="4" x2="10" y2="4" />
       <line x1="14" y1="20" x2="5" y2="20" />
       <line x1="15" y1="4" x2="9" y2="20" />
@@ -54,6 +58,7 @@ function ItalicIcon() {
 function BulletListIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Bullet list</title>
       <line x1="9" y1="6" x2="20" y2="6" />
       <line x1="9" y1="12" x2="20" y2="12" />
       <line x1="9" y1="18" x2="20" y2="18" />
@@ -67,6 +72,7 @@ function BulletListIcon() {
 function NumberListIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Numbered list</title>
       <line x1="10" y1="6" x2="21" y2="6" />
       <line x1="10" y1="12" x2="21" y2="12" />
       <line x1="10" y1="18" x2="21" y2="18" />
@@ -80,6 +86,7 @@ function NumberListIcon() {
 function FormulaIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Formula</title>
       <text x="2" y="17" fontSize="14" fill="currentColor" stroke="none" fontFamily="serif" fontStyle="italic">fx</text>
     </svg>
   );
@@ -88,6 +95,7 @@ function FormulaIcon() {
 function ChevronDownIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <title>Open heading menu</title>
       <polyline points="6 9 12 15 18 9" />
     </svg>
   );
@@ -95,12 +103,27 @@ function ChevronDownIcon() {
 
 export function EditorToolbar() {
   const [isHeadingOpen, setIsHeadingOpen] = useState(false);
-  const [selectedHeading, setSelectedHeading] = useState('Heading 1');
+  const [selectedHeading, setSelectedHeading] = useState('Body');
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [findValue, setFindValue] = useState('');
   const [replaceValue, setReplaceValue] = useState('');
   const [matchCase, setMatchCase] = useState(false);
-  const { editorRef } = useEditorContext();
+  const {
+    editorRef,
+    activeBlockType,
+    activeInlineMarks,
+    activeListType,
+  } = useEditorContext();
+
+  useEffect(() => {
+    const blockLabelMap = {
+      heading1: 'Heading 1',
+      heading2: 'Heading 2',
+      heading3: 'Heading 3',
+      body: 'Body',
+    } as const;
+    setSelectedHeading(blockLabelMap[activeBlockType]);
+  }, [activeBlockType]);
 
   const executeCommand = useCallback((command: Parameters<typeof callCommand>[0], payload?: unknown) => {
     const editor = editorRef.current;
@@ -235,13 +258,13 @@ export function EditorToolbar() {
   return (
     <div className="editor-toolbar">
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleUndo} title="Undo">
+        <button type="button" className="toolbar-btn" onClick={handleUndo} title="Undo">
           <UndoIcon />
         </button>
-        <button className="toolbar-btn" onClick={handleRedo} title="Redo">
+        <button type="button" className="toolbar-btn" onClick={handleRedo} title="Redo">
           <RedoIcon />
         </button>
-        <button className="toolbar-btn" onClick={() => setIsFindOpen(!isFindOpen)} title="Find & Replace">
+        <button type="button" className="toolbar-btn" onClick={() => setIsFindOpen(!isFindOpen)} title="Find & Replace">
           Find
         </button>
       </div>
@@ -251,6 +274,7 @@ export function EditorToolbar() {
       <div className="toolbar-group">
         <div className="heading-dropdown">
           <button 
+            type="button"
             className="heading-btn" 
             onClick={() => setIsHeadingOpen(!isHeadingOpen)}
           >
@@ -259,10 +283,10 @@ export function EditorToolbar() {
           </button>
           {isHeadingOpen && (
             <div className="heading-menu">
-              <button onClick={() => handleHeadingSelect('Heading 1', 1)}>Heading 1</button>
-              <button onClick={() => handleHeadingSelect('Heading 2', 2)}>Heading 2</button>
-              <button onClick={() => handleHeadingSelect('Heading 3', 3)}>Heading 3</button>
-              <button onClick={() => handleHeadingSelect('Body', null)}>Body</button>
+              <button type="button" onClick={() => handleHeadingSelect('Heading 1', 1)}>Heading 1</button>
+              <button type="button" onClick={() => handleHeadingSelect('Heading 2', 2)}>Heading 2</button>
+              <button type="button" onClick={() => handleHeadingSelect('Heading 3', 3)}>Heading 3</button>
+              <button type="button" onClick={() => handleHeadingSelect('Body', null)}>Body</button>
             </div>
           )}
         </div>
@@ -271,25 +295,45 @@ export function EditorToolbar() {
       <div className="toolbar-divider" />
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleBold} title="Bold">
+        <button
+          type="button"
+          className={`toolbar-btn${activeInlineMarks.bold ? ' active' : ''}`}
+          onClick={handleBold}
+          title="Bold"
+        >
           <BoldIcon />
         </button>
-        <button className="toolbar-btn" onClick={handleItalic} title="Italic">
+        <button
+          type="button"
+          className={`toolbar-btn${activeInlineMarks.italic ? ' active' : ''}`}
+          onClick={handleItalic}
+          title="Italic"
+        >
           <ItalicIcon />
         </button>
       </div>
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleBulletList} title="Bullet List">
+        <button
+          type="button"
+          className={`toolbar-btn${activeListType === 'bullet' ? ' active' : ''}`}
+          onClick={handleBulletList}
+          title="Bullet List"
+        >
           <BulletListIcon />
         </button>
-        <button className="toolbar-btn" onClick={handleNumberList} title="Numbered List">
+        <button
+          type="button"
+          className={`toolbar-btn${activeListType === 'ordered' ? ' active' : ''}`}
+          onClick={handleNumberList}
+          title="Numbered List"
+        >
           <NumberListIcon />
         </button>
       </div>
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleFormula} title="Formula">
+        <button type="button" className="toolbar-btn" onClick={handleFormula} title="Formula">
           <FormulaIcon />
         </button>
       </div>

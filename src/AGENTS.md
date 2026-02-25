@@ -11,7 +11,7 @@ src/
 ├── hooks/               # 고수준 UI orchestration hook
 │   └── useChatRequest.ts  # AI Phase 1/2 이벤트 수신/조합
 ├── context/             # React Context
-│   └── EditorContext.tsx  # Milkdown Editor ref 공유 (EditorProvider + useEditorContext)
+│   └── EditorContext.tsx  # Milkdown Editor ref + active 서식 상태(heading/inline/list) 공유
 ├── api/                 # preload bridge wrapper
 │   └── index.ts         # Electron/Web 분기, IPC 래퍼
 ├── utils/               # 공용 유틸리티
@@ -29,7 +29,7 @@ src/
 | 렌더러 부트스트랩 | `main.tsx` | platform attribute + root mount |
 | AI 요청 흐름 | `hooks/useChatRequest.ts` | phase event 수신/조합 |
 | Electron API 접근 | `api/index.ts` | `window.electronAPI` wrapper |
-| 에디터 ref 공유 | `context/EditorContext.tsx` | Milkdown Editor ref Provider |
+| 에디터 ref/서식상태 공유 | `context/EditorContext.tsx` | Milkdown Editor ref + activeBlockType/activeInlineMarks/activeListType Provider |
 | 상태 조합 | `store/useStore.ts` | slice 합성 지점 |
 | 타입 기준점 | `types/chat.ts` | provider, message, writing goal |
 

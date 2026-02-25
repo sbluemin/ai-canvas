@@ -119,7 +119,7 @@ ai-canvas/
 │   │   ├── types.ts              # AppState/도메인 타입
 │   │   └── slices/               # 7개 slice (RuntimeSlice 추가)
 │   ├── hooks/useChatRequest.ts   # AI 채팅 오케스트레이션 훅
-│   ├── context/EditorContext.tsx  # Milkdown Editor ref 공유 Context
+│   ├── context/EditorContext.tsx  # Milkdown Editor ref + active 서식 상태(heading/inline/list) 공유 Context
 │   ├── api/index.ts              # Electron IPC 래퍼
 │   ├── utils/                    # 유틸리티 (logger, id, parser, constants, sddDocument)
 │   ├── types/                    # 공용 타입 (chat.ts, api.ts, electron.d.ts)
