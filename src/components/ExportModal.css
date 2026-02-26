@@ -54,12 +54,12 @@
 }
 
 .export-close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-on-dark-strong);
   color: var(--text-primary);
 }
 
 [data-theme='light'] .export-close-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-on-dark);
 }
 
 /* ── Body ── */
@@ -105,11 +105,11 @@
 }
 
 [data-theme='light'] .export-format-card {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--hover-on-dark);
 }
 
 .export-format-card:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-on-dark-strong);
   border-color: var(--border-color);
   color: var(--text-primary);
   transform: translateY(-2px);
@@ -117,7 +117,7 @@
 }
 
 [data-theme='light'] .export-format-card:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--hover-on-dark);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
@@ -189,13 +189,13 @@
 }
 
 .export-share-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hover-on-dark);
   border-color: var(--border-color);
   color: var(--text-primary);
 }
 
 [data-theme='light'] .export-share-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--hover-on-dark);
 }
 
 .export-share-btn:disabled {

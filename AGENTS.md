@@ -45,6 +45,17 @@
 | Width 컨트롤 | Glass Icon Toggle (3개 아이콘) |
 | Save Status | Pulsing Dot Indicator |
 
+#### 전역 CSS 토큰 체계 (`App.css :root`)
+| 카테고리 | 변수 접두사 | 설명 |
+|----------|-----------|------|
+| 상태 컬러 | `--status-*` | success/info/error/warning/check — Runtime Dot 등 의미론적 상태 표시 |
+| SDD Phase | `--sdd-*` | specify/ideate/plan/decompose/implement/validate — Phase Dot 컬러 |
+| 위험 컬러 | `--danger*`, `--error-*` | 위험/에러 버튼·아이콘·토스트 등 |
+| Glass Surface | `--glass-bg-*`, `--glass-border-*` | 투명도별 Glass 배경 (light/medium/heavy) 및 테두리 |
+| Hover on Glass | `--hover-on-dark*` | Glass 위 인터랙티브 hover 배경 |
+| Breakpoints | 주석 표준 | `480px`(mobile), `768px`(tablet), `1024px`(desktop) |
+| 전역 포커스 링 | `button/input/select/textarea:focus-visible` | 이중 `box-shadow` 포커스 링 자동 적용 |
+
 #### 테마
 - 다크: `rgba(30,31,32,0.65)` bg, `rgba(60,63,65,0.5)` border
 - 라이트: `rgba(248,249,250,0.7)` bg, `rgba(218,220,224,0.6)` border

@@ -142,12 +142,12 @@
   box-shadow: 0 0 8px rgba(138, 180, 248, 0.45);
 }
 
-.canvas-sdd-phase-dot-specify { background: #4285f4; }
-.canvas-sdd-phase-dot-ideate { background: #7c5cff; }
-.canvas-sdd-phase-dot-plan { background: #a142f4; }
-.canvas-sdd-phase-dot-decompose { background: #00acc1; }
-.canvas-sdd-phase-dot-implement-scope { background: #34a853; }
-.canvas-sdd-phase-dot-validate { background: #fbbc04; }
+.canvas-sdd-phase-dot-specify { background: var(--sdd-specify); }
+.canvas-sdd-phase-dot-ideate { background: var(--sdd-ideate); }
+.canvas-sdd-phase-dot-plan { background: var(--sdd-plan); }
+.canvas-sdd-phase-dot-decompose { background: var(--sdd-decompose); }
+.canvas-sdd-phase-dot-implement-scope { background: var(--sdd-implement); }
+.canvas-sdd-phase-dot-validate { background: var(--sdd-validate); }
 
 @media (max-width: 900px) {
   .canvas-sdd-phase-text {
@@ -293,10 +293,10 @@
 .canvas-width-control {
   display: flex;
   align-items: center;
-  background: rgba(30, 31, 32, 0.5);
+  background: var(--glass-bg-medium);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(60, 63, 65, 0.4);
+  border: 1px solid color-mix(in srgb, var(--glass-border), transparent 20%);
   border-radius: var(--radius-sm);
   padding: 2px;
   gap: 0;
@@ -304,8 +304,8 @@
 }
 
 [data-theme='light'] .canvas-width-control {
-  background: rgba(241, 243, 244, 0.6);
-  border-color: rgba(218, 220, 224, 0.5);
+  background: var(--glass-bg-medium);
+  border-color: var(--glass-border);
 }
 
 .canvas-width-btn {
@@ -384,12 +384,12 @@
 }
 
 .save-status-indicator.error {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .save-status-indicator.error::before {
-  background: #f87171;
-  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+  background: var(--danger);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 50%, transparent);
 }
 
 @keyframes status-pulse {
@@ -701,11 +701,11 @@
 }
 
 .tab-context-menu button.danger {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .tab-context-menu button.danger:hover {
-  background: rgba(248, 113, 113, 0.1);
+  background: var(--danger-bg);
 }
 
 .delete-confirm-overlay {
@@ -764,9 +764,9 @@
 }
 
 .delete-confirm-actions button.danger {
-  background: rgba(248, 113, 113, 0.15);
-  border-color: rgba(248, 113, 113, 0.3);
-  color: #f87171;
+  background: var(--danger-bg-strong);
+  border-color: var(--danger-border);
+  color: var(--danger);
 }
 
 .delete-confirm-actions button.danger:hover {

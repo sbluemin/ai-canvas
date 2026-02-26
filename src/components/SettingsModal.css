@@ -72,12 +72,12 @@
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hover-on-dark);
   color: var(--text-primary);
 }
 
 [data-theme='light'] .nav-item:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-on-dark);
 }
 
 .nav-item.active {
@@ -124,12 +124,12 @@
 }
 
 .close-button:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-on-dark-strong);
   color: var(--text-primary);
 }
 
 [data-theme='light'] .close-button:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-on-dark);
 }
 
 .content-body {
@@ -238,7 +238,7 @@
 
 .settings-runtime-error {
   margin: 0;
-  color: #ff4d4f;
+  color: var(--danger-text);
   font-size: 12px;
   font-weight: 500;
 }

@@ -30,6 +30,48 @@
   --accent-green: #34a853;      /* 녹색 */
   --accent-selection: rgba(138, 180, 248, 0.15);  /* 선택 영역 */
   --canvas-updating-overlay-bg: rgba(19, 19, 20, 0.7);
+
+  /* 상태 표시 컬러 (Runtime Dot, 체크, 에러 등) */
+  --status-success: #10b981;    /* 성공/글로벌 런타임 */
+  --status-info: #3b82f6;       /* 정보/프로젝트 런타임 */
+  --status-error: #ef4444;      /* 에러/누락 상태 */
+  --status-warning: #f5a524;    /* 경고/잠금 */
+  --status-check: #4ade80;      /* 체크마크 컬러 */
+
+  /* SDD Phase 컬러 */
+  --sdd-specify: #4285f4;
+  --sdd-ideate: #7c5cff;
+  --sdd-plan: #a142f4;
+  --sdd-decompose: #00acc1;
+  --sdd-implement: #34a853;
+  --sdd-validate: #fbbc04;
+
+  /* 위험 컬러 */
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.1);
+  --danger-bg-strong: rgba(248, 113, 113, 0.15);
+  --danger-border: rgba(248, 113, 113, 0.3);
+  --danger-solid: #dc2626;
+  --danger-text: #ff4d4f;
+  --error-icon: #ef4444;
+  --error-toast: #ea4335;
+
+  /* Glass Surface 배경 토큰 */
+  --glass-bg: rgba(30, 31, 32, 0.85);
+  --glass-bg-medium: rgba(30, 31, 32, 0.65);
+  --glass-bg-heavy: rgba(30, 31, 32, 0.88);
+  --glass-bg-light: rgba(30, 31, 32, 0.55);
+  --glass-border: rgba(60, 63, 65, 0.5);
+  --glass-border-strong: rgba(60, 63, 65, 0.65);
+
+  /* 인터랙티브 hover 배경 (glass 위) */
+  --hover-on-dark: rgba(255, 255, 255, 0.06);
+  --hover-on-dark-strong: rgba(255, 255, 255, 0.08);
+
+  /* Breakpoints (참고용 — CSS에서 변수로 미디어 쿼리 불가, 주석으로 표준화) */
+  /* --bp-mobile: 480px */
+  /* --bp-tablet: 768px */
+  /* --bp-desktop: 1024px */
   
   /* 폰트 설정 */
   font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -70,6 +112,43 @@
   --accent-green: #1e8e3e;      /* 녹색 */
   --accent-selection: rgba(26, 115, 232, 0.1);  /* 선택 영역 */
   --canvas-updating-overlay-bg: rgba(255, 255, 255, 0.68);
+
+  /* 상태 표시 컬러 — 라이트 테마에서도 동일 sematic 컬러 유지 */
+  --status-success: #059669;
+  --status-info: #2563eb;
+  --status-error: #dc2626;
+  --status-warning: #d97706;
+  --status-check: #16a34a;
+
+  /* SDD Phase 컬러 — 라이트에서 약간 어둡게 */
+  --sdd-specify: #1a73e8;
+  --sdd-ideate: #6d42d4;
+  --sdd-plan: #8e24aa;
+  --sdd-decompose: #00838f;
+  --sdd-implement: #1e8e3e;
+  --sdd-validate: #f09300;
+
+  /* 위험 컬러 — 라이트 */
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.08);
+  --danger-bg-strong: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.25);
+  --danger-solid: #dc2626;
+  --danger-text: #dc2626;
+  --error-icon: #dc2626;
+  --error-toast: #dc2626;
+
+  /* Glass Surface 배경 토큰 — 라이트 */
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-bg-medium: rgba(248, 249, 250, 0.7);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.9);
+  --glass-bg-light: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(218, 220, 224, 0.6);
+  --glass-border-strong: rgba(218, 220, 224, 0.8);
+
+  /* 인터랙티브 hover 배경 (glass 위) — 라이트 */
+  --hover-on-dark: rgba(0, 0, 0, 0.04);
+  --hover-on-dark-strong: rgba(0, 0, 0, 0.06);
 }
 
 html, body, #root {
@@ -318,4 +397,23 @@ html, body, #root {
 ::selection {
   background: var(--accent-selection);
   color: var(--text-primary);
+}
+
+/* ─── 전역 포커스 링 (접근성) ─── */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-blue) 40%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent-blue) 20%, transparent);
+}
+
+/* 부모가 :focus-within으로 대신 처리하는 폼 내부 요소 예외 */
+.input-form textarea:focus-visible,
+.input-form input:focus-visible,
+.command-palette-input:focus-visible {
+  box-shadow: none;
 }

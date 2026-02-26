@@ -82,8 +82,8 @@
 }
 
 .state-dot.locked {
-  background: #f5a524;
-  box-shadow: 0 0 8px rgba(245, 165, 36, 0.45);
+  background: var(--status-warning);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--status-warning) 45%, transparent);
 }
 
 .writing-goal-lock-notice {
@@ -92,8 +92,8 @@
   gap: 8px;
   padding: 10px 12px;
   border-radius: var(--radius-md);
-  border: 1px solid color-mix(in srgb, #f5a524 42%, transparent);
-  background: color-mix(in srgb, #f5a524 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-warning) 42%, transparent);
+  background: color-mix(in srgb, var(--status-warning) 12%, transparent);
   color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.4;
@@ -115,12 +115,12 @@
 }
 
 .wg-close-button:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-on-dark-strong);
   color: var(--text-primary);
 }
 
 [data-theme='light'] .wg-close-button:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-on-dark);
 }
 
 /* 스크롤 콘텐츠 영역 */

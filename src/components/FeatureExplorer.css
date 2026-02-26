@@ -5,16 +5,16 @@
   width: 220px;
   min-width: 180px;
   max-width: 300px;
-  border-right: 1px solid rgba(60, 63, 65, 0.5);
-  background: rgba(30, 31, 32, 0.65);
+  border-right: 1px solid var(--glass-border);
+  background: var(--glass-bg-medium);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
 }
 
 [data-theme='light'] .feature-explorer {
-  background: rgba(248, 249, 250, 0.7);
-  border-right-color: rgba(218, 220, 224, 0.6);
+  background: var(--glass-bg-medium);
+  border-right-color: var(--glass-border);
 }
 
 .feature-explorer-header {
@@ -190,12 +190,12 @@
   box-shadow: 0 0 0 1px var(--bg-surface);
 }
 
-.tree-sdd-dot-specify { background: #4285f4; }
-.tree-sdd-dot-ideate { background: #7c5cff; }
-.tree-sdd-dot-plan { background: #a142f4; }
-.tree-sdd-dot-decompose { background: #00acc1; }
-.tree-sdd-dot-implement-scope { background: #34a853; }
-.tree-sdd-dot-validate { background: #fbbc04; }
+.tree-sdd-dot-specify { background: var(--sdd-specify); }
+.tree-sdd-dot-ideate { background: var(--sdd-ideate); }
+.tree-sdd-dot-plan { background: var(--sdd-plan); }
+.tree-sdd-dot-decompose { background: var(--sdd-decompose); }
+.tree-sdd-dot-implement-scope { background: var(--sdd-implement); }
+.tree-sdd-dot-validate { background: var(--sdd-validate); }
 
 .tree-sdd-badge {
   margin-left: auto;
@@ -282,7 +282,7 @@
 
 .feature-explorer-input-modal {
   width: min(320px, calc(100% - 24px));
-  background: rgba(30, 31, 32, 0.85);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
@@ -295,7 +295,7 @@
 }
 
 [data-theme='light'] .feature-explorer-input-modal {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--glass-bg);
 }
 
 .feature-explorer-input-modal h4 {
@@ -351,9 +351,9 @@
 }
 
 .feature-explorer-input-actions button.danger {
-  background: #dc2626;
+  background: var(--danger-solid);
   color: white;
-  border-color: #dc2626;
+  border-color: var(--danger-solid);
 }
 
 .feature-explorer-input-actions button.danger:hover {
@@ -364,10 +364,10 @@
 .tab-context-menu {
   position: fixed;
   z-index: 1000;
-  background: rgba(30, 31, 32, 0.85);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(60, 63, 65, 0.5);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   min-width: 150px;
@@ -377,8 +377,8 @@
 }
 
 [data-theme='light'] .tab-context-menu {
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(218, 220, 224, 0.6);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
@@ -412,9 +412,9 @@
 }
 
 .tab-context-menu button.danger {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .tab-context-menu button.danger:hover {
-  background: rgba(248, 113, 113, 0.1);
+  background: var(--danger-bg);
 }

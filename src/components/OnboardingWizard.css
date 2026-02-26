@@ -121,6 +121,6 @@
 
 .onboarding-error {
   margin: 12px 0 0;
-  color: #ea4335;
+  color: var(--error-toast);
   font-size: 12px;
 }

@@ -27,10 +27,10 @@
   max-height: min(70vh, 420px);
   display: flex;
   flex-direction: column;
-  background: rgba(30, 31, 32, 0.86);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(60, 63, 65, 0.6);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   overflow: hidden;
@@ -38,8 +38,8 @@
 }
 
 [data-theme='light'] .command-palette {
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(218, 220, 224, 0.6);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
   box-shadow: 0 12px 34px rgba(60, 64, 67, 0.16);
 }
 

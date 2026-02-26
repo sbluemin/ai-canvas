@@ -24,11 +24,11 @@
   overflow: hidden;
 
   /* Glass Effect */
-  background: rgba(30, 31, 32, 0.55);
+  background: var(--glass-bg-light);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px color-mix(in srgb, var(--text-primary) 5%, transparent);
 
   /* Animation */
   animation: toast-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -36,8 +36,8 @@
 }
 
 [data-theme='light'] .toast-item {
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--glass-bg-light);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), inset 0 0 0 0.5px rgba(255, 255, 255, 0.3);
 }
 
@@ -57,7 +57,7 @@
 }
 
 .toast-item.success .toast-icon { color: var(--accent-green); }
-.toast-item.error .toast-icon { color: #ea4335; }
+.toast-item.error .toast-icon { color: var(--error-toast); }
 .toast-item.info .toast-icon { color: var(--accent-blue); }
 
 /* Content */
@@ -109,7 +109,7 @@
 }
 
 .toast-item.success .toast-progress { color: var(--accent-green); }
-.toast-item.error .toast-progress { color: #ea4335; }
+.toast-item.error .toast-progress { color: var(--error-toast); }
 .toast-item.info .toast-progress { color: var(--accent-blue); }
 
 /* Animations */
