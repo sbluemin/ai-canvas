@@ -99,9 +99,9 @@ export function useChatRequest() {
     setAiRunResult,
     saveCanvasSnapshot,
     clearAiRun,
-    appendLastAssistantThinkingActivity,
-    completeLastAssistantThinkingActivity,
-    completeLastAssistantThinking,
+    appendAgentThought,
+    appendAgentStep,
+    completeAgentActivity,
     selectedModels,
     selectedVariant,
     showError,
@@ -151,23 +151,24 @@ export function useChatRequest() {
             }
 
             if (event.activity.kind === 'step_finish') {
-              completeLastAssistantThinkingActivity();
+              // step_finish: 모든 running step을 done으로
               break;
             }
 
-            if (event.activity.kind === 'thinking') {
-              appendLastAssistantThinkingActivity({
-                kind: 'thinking',
-                label: event.activity.summary,
-                detail: event.activity.detail,
+            if (event.activity.kind === 'thought') {
+              appendAgentThought(event.activity.text);
+              break;
+            }
+
+            if (event.activity.kind === 'step') {
+              appendAgentStep({
+                label: event.activity.label,
+                tool: event.activity.tool,
+                target: event.activity.target,
               });
               break;
             }
 
-            appendLastAssistantThinkingActivity({
-              kind: event.activity.kind,
-              label: event.activity.label,
-            });
             break;
           }
 
@@ -179,7 +180,7 @@ export function useChatRequest() {
             break;
 
           case 'phase1_result':
-            completeLastAssistantThinking();
+            completeAgentActivity();
             {
               const finalPhase1Message = event.message.trim().length > 0
                 ? event.message
@@ -227,7 +228,7 @@ export function useChatRequest() {
             streamedPhase2MessageRef.current = '';
             phase2FinalMessageRef.current = '';
             hasPhase2StreamEventRef.current = false;
-            completeLastAssistantThinking();
+            completeAgentActivity();
 
             if (event.phase === 'evaluating') {
               removeLastUserMessage();
@@ -244,7 +245,7 @@ export function useChatRequest() {
           }
 
           case 'done':
-            completeLastAssistantThinking();
+            completeAgentActivity();
             if (phase2FinalMessageRef.current) {
               const finalCombined = streamedPhase1MessageRef.current
                 ? `${streamedPhase1MessageRef.current}\n\n${phase2FinalMessageRef.current}`
@@ -274,9 +275,9 @@ export function useChatRequest() {
     setAiRunResult,
     saveCanvasSnapshot,
     clearAiRun,
-    appendLastAssistantThinkingActivity,
-    completeLastAssistantThinkingActivity,
-    completeLastAssistantThinking,
+    appendAgentThought,
+    appendAgentStep,
+    completeAgentActivity,
     setIsLoading,
     showError,
     removeLastUserMessage,

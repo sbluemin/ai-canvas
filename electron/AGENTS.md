@@ -21,9 +21,7 @@ electron/
 ├── ai-parser.test.ts      # parser 회귀 테스트
 ├── ai-models.ts           # 모델 조회/파싱
 ├── ai-types.ts            # AI/OpenCode 공용 타입
-└── opencode-runtime/
-    ├── runtime.ts         # 프로세스 spawn/kill + 공개 API
-    └── binary-resolver.ts # Windows 바이너리 탐색
+└── unified-agent-adapter.ts # @sbluemin/unified-agent SDK 어댑터 (프로세스 관리 위임)
 ```
 
 ## WHERE TO LOOK
@@ -37,8 +35,8 @@ electron/
 | 런타임 설정 | `runtime.service.ts` | 프로젝트 로컬 opencode 설치/로그인 안내/모드 |
 | AI 실행 엔진 | `ai-workflow.ts` | phase 전환 + 이벤트 송신 |
 | 프롬프트/스키마 | `ai-prompts.ts` | planner/writer prompt + validator |
-| OpenCode 런타임 API | `opencode-runtime/runtime.ts` | 런타임 캡슐화 |
-| 모델 조회 | `ai-models.ts` | runtime 경유 모델 목록 |
+| OpenCode 런타임 API | `unified-agent-adapter.ts` | @sbluemin/unified-agent SDK 경유 |
+| 모델 조회 | `ai-models.ts` | adapter 경유 모델 목록 |
 
 ## CONVENTIONS
 - IPC 채널: prefix 네임스페이스 (`ai:`, `project:`, `fs:`, `dialog:`, `settings:`, `window:`, `runtime:`).

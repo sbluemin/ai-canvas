@@ -11,9 +11,8 @@ type AiChatEvent =
       type: 'thinking_stream';
       phase: 'evaluating' | 'updating';
       activity:
-        | { kind: 'step_start'; label: string }
-        | { kind: 'tool_use'; tool: string; label: string; target?: string }
-        | { kind: 'thinking'; summary: string; detail?: string }
+        | { kind: 'thought'; text: string }
+        | { kind: 'step'; label: string; tool?: string; target?: string }
         | { kind: 'step_finish' };
     }
   | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }

@@ -27,20 +27,16 @@ export interface Message {
   timestamp: Date;
   provider?: AiProvider;
   fileMentions?: FileMention[];
-  thinkingActivities?: ThinkingActivity[];
-  thinkingCollapsed?: boolean;
-  thinkingStartedAt?: number;
-  thinkingCompletedAt?: number;
+  agentActivities?: AgentActivity[];
+  activityCollapsed?: boolean;
+  activityStartedAt?: number;
+  activityCompletedAt?: number;
 }
 
-export interface ThinkingActivity {
-  id: string;
-  kind: 'step_start' | 'tool_use' | 'thinking';
-  label: string;
-  status: 'pending' | 'completed';
-  timestamp: number;
-  detail?: string;
-}
+/** 에이전트 활동: Thought(스트리밍 사고)와 Step(도구 사용/작업 단위) */
+export type AgentActivity =
+  | { kind: 'thought'; text: string }
+  | { kind: 'step'; id: string; label: string; tool?: string; target?: string; status: 'running' | 'done'; timestamp: number };
 
 export interface Conversation {
   id: string;
@@ -113,10 +109,10 @@ export interface ChatSlice {
   setIsLoading: (loading: boolean) => void;
   clearMessages: () => void;
   setMessages: (messages: Message[]) => void;
-  appendLastAssistantThinkingActivity: (activity: { kind: 'step_start' | 'tool_use' | 'thinking'; label: string; detail?: string }) => void;
-  completeLastAssistantThinkingActivity: () => void;
-  completeLastAssistantThinking: () => void;
-  setMessageThinkingCollapsed: (messageId: string, collapsed: boolean) => void;
+  appendAgentThought: (text: string) => void;
+  appendAgentStep: (step: { label: string; tool?: string; target?: string }) => void;
+  completeAgentActivity: () => void;
+  setMessageActivityCollapsed: (messageId: string, collapsed: boolean) => void;
 
   startAiRun: () => string;
   setAiPhase: (phase: AiPhase) => void;

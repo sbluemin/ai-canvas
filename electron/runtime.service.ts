@@ -11,7 +11,7 @@ import {
   ok,
   fail,
 } from './utils';
-import { configureOpenCodeRuntime } from './opencode-runtime/runtime';
+import { configureOpenCodeRuntime } from './unified-agent-adapter';
 import { buildRuntimeConfigJson } from './ai-prompts';
 
 const execFileAsync = promisify(execFile);

@@ -1,8 +1,8 @@
 import type { IpcMainInvokeEvent } from 'electron';
-import type { AiChatRequest, AiChatEvent, OpenCodeChatChunk, OpenCodeJsonEvent, ThinkingActivity } from './ai-types';
+import type { AiChatRequest, AiChatEvent, OpenCodeChatChunk, OpenCodeJsonEvent, AgentActivityEvent } from './ai-types';
 import { buildPhase1Prompt, buildPhase2Prompt } from './ai-prompts';
 import { parsePhase1Response, parsePhase2Response } from './ai-parser';
-import { chatWithOpenCode, getOpenCodeProjectPath, shutdownOpenCodeRuntime } from './opencode-runtime/runtime';
+import { chatWithOpenCode, getOpenCodeProjectPath, shutdownOpenCodeRuntime } from './unified-agent-adapter';
 
 const PHASE2_STREAM_CHUNK_SIZE = 12;
 const PHASE2_STREAM_TICK_MS = 16;
@@ -108,19 +108,13 @@ function resolveThinkingText(payload: OpenCodeJsonEvent): string | null {
   );
 }
 
-function mapToThinkingActivity(payload: OpenCodeJsonEvent): ThinkingActivity | null {
+function mapToAgentActivity(payload: OpenCodeJsonEvent): AgentActivityEvent | null {
   const eventType = payload.type;
   if (!eventType) {
     return null;
   }
 
-  if (eventType === 'step_start') {
-    return {
-      kind: 'step_start',
-      label: resolveThinkingText(payload) || '요청 분석 중...',
-    };
-  }
-
+  // 도구 사용 → step
   if (eventType === 'tool_use') {
     const tool = (resolveToolName(payload) || 'tool').toLowerCase();
     const target = resolveToolTarget(payload);
@@ -133,29 +127,31 @@ function mapToThinkingActivity(payload: OpenCodeJsonEvent): ThinkingActivity | n
     }
 
     return {
-      kind: 'tool_use',
-      tool,
+      kind: 'step',
       label,
+      tool,
       ...(target ? { target } : {}),
     };
   }
 
+  // 작업 시작 → step
+  if (eventType === 'step_start') {
+    return {
+      kind: 'step',
+      label: resolveThinkingText(payload) || '요청 분석 중...',
+    };
+  }
+
+  // 사고 과정 → thought (스트리밍 텍스트)
   if (eventType === 'thinking' || eventType === 'reasoning') {
     const text = resolveThinkingText(payload);
     if (!text) {
       return null;
     }
-    const summary = firstLine(text);
-    if (!summary) {
-      return null;
-    }
-    return {
-      kind: 'thinking',
-      summary,
-      ...(text !== summary ? { detail: text } : {}),
-    };
+    return { kind: 'thought', text };
   }
 
+  // 완료
   if (eventType === 'step_finish') {
     return { kind: 'step_finish' };
   }
@@ -172,6 +168,7 @@ async function callProvider(
 ): Promise<string> {
   let capturedError: string | undefined;
 
+
   const result = await chatWithOpenCode(
     { prompt, model: modelId, variant, agent },
     (chunk) => {
@@ -181,6 +178,7 @@ async function callProvider(
       onChunk?.(chunk);
     }
   );
+
 
   if (!result.success) {
     throw new Error(result.error || capturedError || 'OpenCode chat failed');
@@ -246,7 +244,7 @@ export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: 
     let lastPhase1Message = '';
     const phase1RawText = await callProvider(phase1Prompt, modelId, variant, (chunk) => {
       if (chunk.event) {
-        const activity = mapToThinkingActivity(chunk.event);
+        const activity = mapToAgentActivity(chunk.event);
         if (activity) {
           sendEvent({
             runId,
@@ -301,7 +299,7 @@ export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: 
             return;
           }
 
-          const activity = mapToThinkingActivity(chunk.event);
+          const activity = mapToAgentActivity(chunk.event);
           if (!activity) {
             return;
           }
@@ -319,6 +317,8 @@ export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: 
       const phase2Result = parsePhase2Response(phase2RawText);
 
       if (!phase2Result) {
+        // eslint-disable-next-line no-console
+        console.error('[ai-canvas] Phase 2 parse failed. rawText (first 500 chars):', phase2RawText.slice(0, 500));
         sendEvent({ runId, type: 'error', phase: 'updating', error: 'Failed to parse Phase 2 response' });
         return;
       }

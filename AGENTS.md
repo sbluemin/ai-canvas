@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 |
-| AI | OpenCode CLI 런타임 관리 (`OPENCODE_CONFIG_DIR=.ai-canvas/.runtime` 프로젝트 단위 설정) |
+| AI | @sbluemin/unified-agent SDK + OpenCode CLI (`OPENCODE_CONFIG_DIR=.ai-canvas/.runtime` 프로젝트 단위 설정) |
 | State | Zustand (7 slice 합성: `src/store/types.ts` 참조) |
 | Styling | CSS (plain imports, `[data-theme]` / `[data-platform]` 기반 테마) |
 
@@ -150,7 +150,7 @@ ai-canvas/
 │   ├── ai-parser.ts              # JSON 파싱
 │   ├── ai-models.ts              # 모델 파싱/조회
 │   ├── ai-types.ts               # AI/OpenCode 타입 정의
-│   └── opencode-runtime/         # OpenCode CLI 런타임 (spawn/stream/kill)
+│   └── unified-agent-adapter.ts  # @sbluemin/unified-agent SDK 어댑터
 ├── tests/                        # Playwright E2E 테스트
 ├── .github/workflows/publish.yml # CI/CD (macOS + Windows → GitHub Release)
 └── version.json                  # nbgv 버저닝 (커밋 높이 기반)

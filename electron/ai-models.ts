@@ -1,4 +1,4 @@
-import { fetchOpenCodeModelsVerbose } from './opencode-runtime/runtime';
+import { fetchOpenCodeModelsVerbose } from './unified-agent-adapter';
 
 interface OpenCodeVerboseModelData {
   name?: string;

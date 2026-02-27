@@ -3,7 +3,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { useShallow } from 'zustand/react/shallow';
-import { useStore, Message, FileMention, ThinkingActivity } from '../store/useStore';
+import { useStore, Message, FileMention, AgentActivity } from '../store/useStore';
 import { useChatRequest } from '../hooks/useChatRequest';
 import { api } from '../api';
 import { AUTOSAVE_DELAY, generateId } from '../utils';
@@ -206,7 +206,7 @@ export function ChatPanel() {
   const {
     messages, isLoading, aiRun, projectPath, activeFeatureId, conversations, activeConversationId,
     runtimeStatus, onboardingDismissed, openOnboarding,
-    setConversations, setActiveConversationId, setMessages, setMessageThinkingCollapsed
+    setConversations, setActiveConversationId, setMessages, setMessageActivityCollapsed
   } = useStore(useShallow((state) => ({
     messages: state.messages,
     isLoading: state.isLoading,
@@ -221,7 +221,7 @@ export function ChatPanel() {
     setConversations: state.setConversations,
     setActiveConversationId: state.setActiveConversationId,
     setMessages: state.setMessages,
-    setMessageThinkingCollapsed: state.setMessageThinkingCollapsed,
+    setMessageActivityCollapsed: state.setMessageActivityCollapsed,
   }))); 
   const { sendMessage } = useChatRequest();
 
@@ -519,14 +519,18 @@ export function ChatPanel() {
           messages.map((msg: Message, index: number) => {
             const isLastAssistantMessage = msg.role === 'assistant' && index === messages.length - 1;
             const showInlineProgress = isLastAssistantMessage && isUpdatingCanvas && isLoading;
-            const thinkingActivities = msg.thinkingActivities ?? [];
-            const hasThinkingActivities = thinkingActivities.length > 0;
-            const isThinkingComplete = Boolean(msg.thinkingCompletedAt);
-            const isThinkingCollapsed = Boolean(msg.thinkingCollapsed && isThinkingComplete);
-            const thinkingActivitiesId = `thinking-activities-${msg.id}`;
-            const thinkingSummary = `${thinkingActivities.length} steps, ${formatThinkingDuration(msg.thinkingStartedAt, msg.thinkingCompletedAt)}`;
+            const agentActivities = msg.agentActivities ?? [];
+            const hasActivities = agentActivities.length > 0;
+            const isActivityComplete = Boolean(msg.activityCompletedAt);
+            const isActivityCollapsed = Boolean(msg.activityCollapsed && isActivityComplete);
+            const activitiesId = `agent-activities-${msg.id}`;
 
-            if (msg.role === 'assistant' && !msg.content && !showInlineProgress && !hasThinkingActivities) {
+            // Thought와 Steps 분리
+            const thought = agentActivities.find((a): a is Extract<AgentActivity, { kind: 'thought' }> => a.kind === 'thought');
+            const steps = agentActivities.filter((a): a is Extract<AgentActivity, { kind: 'step' }> => a.kind === 'step');
+            const activitySummary = `${steps.length} steps, ${formatThinkingDuration(msg.activityStartedAt, msg.activityCompletedAt)}`;
+
+            if (msg.role === 'assistant' && !msg.content && !showInlineProgress && !hasActivities) {
               return null;
             }
             const providerInfo = msg.role === 'assistant' ? getProviderInfo(msg.provider) : null;
@@ -542,53 +546,76 @@ export function ChatPanel() {
                   </div>
                 )}
                 <div className="message-content">
-                  {msg.role === 'assistant' && hasThinkingActivities && (
-                    <div className={`thinking-container ${isThinkingComplete ? 'completed' : 'running'}`}>
-                      {isThinkingComplete ? (
+                  {msg.role === 'assistant' && hasActivities && (
+                    <div className={`agent-activity ${isActivityComplete ? 'completed' : 'running'}`}>
+                      {isActivityComplete ? (
                         <button
                           type="button"
-                          className="thinking-toggle"
-                          onClick={() => setMessageThinkingCollapsed(msg.id, !isThinkingCollapsed)}
-                          aria-expanded={!isThinkingCollapsed}
-                          aria-controls={thinkingActivitiesId}
+                          className="agent-activity-toggle"
+                          onClick={() => setMessageActivityCollapsed(msg.id, !isActivityCollapsed)}
+                          aria-expanded={!isActivityCollapsed}
+                          aria-controls={activitiesId}
                         >
-                          <span className="thinking-state-dot completed" />
-                          <span className="thinking-toggle-texts">
-                            <span className="thinking-toggle-label">Thinking</span>
-                            <span className="thinking-toggle-meta">{thinkingSummary}</span>
+                          <span className="agent-activity-dot completed" />
+                          <span className="agent-activity-texts">
+                            <span className="agent-activity-label">Activity</span>
+                            <span className="agent-activity-meta">{activitySummary}</span>
                           </span>
-                          <ChevronDownIcon className={`thinking-toggle-chevron ${isThinkingCollapsed ? 'collapsed' : ''}`} />
+                          <ChevronDownIcon className={`agent-activity-chevron ${isActivityCollapsed ? 'collapsed' : ''}`} />
                         </button>
                       ) : (
-                        <div className="thinking-running-title" aria-live="polite">
-                          <span className="thinking-state-dot pending" />
-                          <span className="thinking-toggle-texts">
-                            <span className="thinking-toggle-label">Thinking</span>
-                            <span className="thinking-toggle-meta">In progress...</span>
+                        <div className="agent-activity-running" aria-live="polite">
+                          <span className="agent-activity-dot pending" />
+                          <span className="agent-activity-texts">
+                            <span className="agent-activity-label">Activity</span>
+                            <span className="agent-activity-meta">In progress...</span>
                           </span>
                         </div>
                       )}
 
-                      {!isThinkingCollapsed && (
-                        <div id={thinkingActivitiesId} className="thinking-activities">
-                          {thinkingActivities.map((activity: ThinkingActivity, activityIndex: number) => {
-                            const isPending = activity.status === 'pending';
-                            return (
-                              <div
-                                key={activity.id}
-                                className={`thinking-activity ${isPending ? 'pending' : 'completed'}`}
-                                style={{ animationDelay: `${Math.min(activityIndex * 45, 220)}ms` }}
-                              >
-                                <span className={`thinking-state-dot ${isPending ? 'pending' : 'completed'}`} />
-                                <div className="thinking-activity-texts">
-                                  <span className="thinking-activity-label">{activity.label}</span>
-                                  {activity.detail && (
-                                    <span className="thinking-activity-detail">{activity.detail}</span>
-                                  )}
-                                </div>
+                      {!isActivityCollapsed && (
+                        <div id={activitiesId} className="agent-activity-body">
+                          {thought && (
+                            <div className="agent-section agent-section--analysis">
+                              <div className="agent-section-header">
+                                <span className="agent-indicator-analysis" aria-hidden="true" />
+                                <span className="agent-section-label">Analysis</span>
                               </div>
-                            );
-                          })}
+                              <div className="agent-thought">
+                                <span className="agent-thought-text">{thought.text}</span>
+                              </div>
+                            </div>
+                          )}
+                          {steps.length > 0 && (
+                            <div className="agent-section agent-section--actions">
+                              <div className="agent-section-header">
+                                <svg className="agent-indicator-actions" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                  <path d="M5 4L9 8L5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M9 12H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                <span className="agent-section-label">Actions</span>
+                              </div>
+                              <div className="agent-steps">
+                                {steps.map((step, stepIdx) => (
+                                  <div
+                                    key={step.id}
+                                    className={`agent-step ${step.status === 'running' ? 'running' : 'done'}`}
+                                    style={{ animationDelay: `${Math.min(stepIdx * 45, 220)}ms` }}
+                                  >
+                                    <span className={`agent-activity-dot ${step.status === 'running' ? 'pending' : 'completed'}`} />
+                                    <div className="agent-step-texts">
+                                      <span className="agent-step-label">{step.label}</span>
+                                      {step.tool && (
+                                        <span className="agent-step-detail">
+                                          {step.tool}{step.target ? `: ${step.target}` : ''}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

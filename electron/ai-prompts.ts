@@ -90,7 +90,7 @@ export const OPENCODE_REQUIRED_AGENTS: Record<'canvas-planner' | 'canvas-writer'
     mode: 'all',
     prompt: CANVAS_WRITER_PROMPT,
     tools: { write: false, edit: false, bash: false },
-    temperature: 0.2,
+    temperature: 0.1,
   },
 };
 

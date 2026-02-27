@@ -38,7 +38,7 @@ export interface ConversationMessage {
 export type AiChatEvent =
   | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
   | { runId: string; type: 'phase_message_stream'; phase: 'evaluating' | 'updating'; message: string }
-  | { runId: string; type: 'thinking_stream'; phase: 'evaluating' | 'updating'; activity: ThinkingActivity }
+  | { runId: string; type: 'thinking_stream'; phase: 'evaluating' | 'updating'; activity: AgentActivityEvent }
   | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
   | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
@@ -96,10 +96,10 @@ export interface OpenCodeJsonEvent {
   error?: string;
 }
 
-export type ThinkingActivity =
-  | { kind: 'step_start'; label: string }
-  | { kind: 'tool_use'; tool: string; label: string; target?: string }
-  | { kind: 'thinking'; summary: string; detail?: string }
+/** IPC thinking_stream 이벤트로 전달되는 에이전트 활동 */
+export type AgentActivityEvent =
+  | { kind: 'thought'; text: string }
+  | { kind: 'step'; label: string; tool?: string; target?: string }
   | { kind: 'step_finish' };
 
 export type OpenCodeRuntimeBinaryMode = 'auto' | 'local' | 'global';

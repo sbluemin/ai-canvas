@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { AppState, ChatSlice, Message, ThinkingActivity } from '../types';
+import { AppState, ChatSlice, Message } from '../types';
 import { generateId } from '../utils';
 
 export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) => ({
@@ -120,7 +120,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
       return { messages, conversations: nextConversations };
     }),
 
-  appendLastAssistantThinkingActivity: (activity) =>
+  appendAgentThought: (text) =>
     set((state) => {
       const messages = [...state.messages];
       const lastIndex = messages.length - 1;
@@ -129,68 +129,25 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
       }
 
       const lastMessage = messages[lastIndex];
-      const existingActivities = [...(lastMessage.thinkingActivities ?? [])].map((item) =>
-        item.status === 'pending'
-          ? { ...item, status: 'completed' as const }
-          : item
-      );
-      const nextActivity: ThinkingActivity = {
-        id: generateId('thinking'),
-        kind: activity.kind,
-        label: activity.label,
-        status: 'pending',
-        timestamp: Date.now(),
-        ...(activity.detail ? { detail: activity.detail } : {}),
-      };
+      const activities = [...(lastMessage.agentActivities ?? [])];
 
-      messages[lastIndex] = {
-        ...lastMessage,
-        thinkingActivities: [...existingActivities, nextActivity],
-        thinkingCollapsed: false,
-        thinkingStartedAt: lastMessage.thinkingStartedAt ?? Date.now(),
-        ...(lastMessage.thinkingCompletedAt ? { thinkingCompletedAt: undefined } : {}),
-      };
-
-      const nextConversations = state.activeConversationId
-        ? state.conversations.map((conv) =>
-            conv.id === state.activeConversationId
-              ? { ...conv, messages, updatedAt: Date.now() }
-              : conv
-          )
-        : state.conversations;
-
-      return { messages, conversations: nextConversations };
-    }),
-
-  completeLastAssistantThinkingActivity: () =>
-    set((state) => {
-      const messages = [...state.messages];
-      const lastIndex = messages.length - 1;
-      if (lastIndex < 0 || messages[lastIndex].role !== 'assistant') {
-        return {};
-      }
-
-      const lastMessage = messages[lastIndex];
-      const existingActivities = [...(lastMessage.thinkingActivities ?? [])];
-      let pendingIndex = -1;
-      for (let i = existingActivities.length - 1; i >= 0; i -= 1) {
-        if (existingActivities[i].status === 'pending') {
-          pendingIndex = i;
-          break;
+      // 기존 thought를 찾아 텍스트 이어붙이기 (없으면 생성)
+      const thoughtIdx = activities.findIndex((a) => a.kind === 'thought');
+      if (thoughtIdx >= 0) {
+        const existing = activities[thoughtIdx];
+        if (existing.kind === 'thought') {
+          activities[thoughtIdx] = { ...existing, text: existing.text + text };
         }
+      } else {
+        activities.unshift({ kind: 'thought', text }); // thought는 항상 맨 앞
       }
-      if (pendingIndex < 0) {
-        return {};
-      }
-
-      existingActivities[pendingIndex] = {
-        ...existingActivities[pendingIndex],
-        status: 'completed',
-      };
 
       messages[lastIndex] = {
         ...lastMessage,
-        thinkingActivities: existingActivities,
+        agentActivities: activities,
+        activityCollapsed: false,
+        activityStartedAt: lastMessage.activityStartedAt ?? Date.now(),
+        ...(lastMessage.activityCompletedAt ? { activityCompletedAt: undefined } : {}),
       };
 
       const nextConversations = state.activeConversationId
@@ -204,7 +161,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
       return { messages, conversations: nextConversations };
     }),
 
-  completeLastAssistantThinking: () =>
+  appendAgentStep: (step) =>
     set((state) => {
       const messages = [...state.messages];
       const lastIndex = messages.length - 1;
@@ -213,23 +170,29 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
       }
 
       const lastMessage = messages[lastIndex];
-      const existingActivities = [...(lastMessage.thinkingActivities ?? [])];
-      if (existingActivities.length === 0) {
-        return {};
-      }
-
-      const normalizedActivities = existingActivities.map((item) =>
-        item.status === 'pending'
-          ? { ...item, status: 'completed' as const }
-          : item
+      // 이전 running step을 done으로 변경
+      const activities = [...(lastMessage.agentActivities ?? [])].map((a) =>
+        a.kind === 'step' && a.status === 'running'
+          ? { ...a, status: 'done' as const }
+          : a
       );
+
+      activities.push({
+        kind: 'step' as const,
+        id: generateId('step'),
+        label: step.label,
+        ...(step.tool ? { tool: step.tool } : {}),
+        ...(step.target ? { target: step.target } : {}),
+        status: 'running' as const,
+        timestamp: Date.now(),
+      });
 
       messages[lastIndex] = {
         ...lastMessage,
-        thinkingActivities: normalizedActivities,
-        thinkingCollapsed: true,
-        thinkingStartedAt: lastMessage.thinkingStartedAt ?? normalizedActivities[0].timestamp,
-        thinkingCompletedAt: Date.now(),
+        agentActivities: activities,
+        activityCollapsed: false,
+        activityStartedAt: lastMessage.activityStartedAt ?? Date.now(),
+        ...(lastMessage.activityCompletedAt ? { activityCompletedAt: undefined } : {}),
       };
 
       const nextConversations = state.activeConversationId
@@ -243,7 +206,52 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
       return { messages, conversations: nextConversations };
     }),
 
-  setMessageThinkingCollapsed: (messageId, collapsed) =>
+  completeAgentActivity: () =>
+    set((state) => {
+      const messages = [...state.messages];
+      const lastIndex = messages.length - 1;
+      if (lastIndex < 0 || messages[lastIndex].role !== 'assistant') {
+        return {};
+      }
+
+      const lastMessage = messages[lastIndex];
+      const activities = [...(lastMessage.agentActivities ?? [])];
+      if (activities.length === 0) {
+        return {};
+      }
+
+      // 모든 running step을 done으로
+      const normalized = activities.map((a) =>
+        a.kind === 'step' && a.status === 'running'
+          ? { ...a, status: 'done' as const }
+          : a
+      );
+
+      // activityStartedAt 결정
+      const firstStep = normalized.find((a) => a.kind === 'step');
+      const startAt = lastMessage.activityStartedAt
+        ?? (firstStep && firstStep.kind === 'step' ? firstStep.timestamp : Date.now());
+
+      messages[lastIndex] = {
+        ...lastMessage,
+        agentActivities: normalized,
+        activityCollapsed: true,
+        activityStartedAt: startAt,
+        activityCompletedAt: Date.now(),
+      };
+
+      const nextConversations = state.activeConversationId
+        ? state.conversations.map((conv) =>
+            conv.id === state.activeConversationId
+              ? { ...conv, messages, updatedAt: Date.now() }
+              : conv
+          )
+        : state.conversations;
+
+      return { messages, conversations: nextConversations };
+    }),
+
+  setMessageActivityCollapsed: (messageId, collapsed) =>
     set((state) => {
       const messageIndex = state.messages.findIndex((message) => message.id === messageId);
       if (messageIndex < 0) {
@@ -251,14 +259,14 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set) 
       }
 
       const targetMessage = state.messages[messageIndex];
-      if (!targetMessage.thinkingActivities || targetMessage.thinkingActivities.length === 0) {
+      if (!targetMessage.agentActivities || targetMessage.agentActivities.length === 0) {
         return {};
       }
 
       const messages = [...state.messages];
       messages[messageIndex] = {
         ...targetMessage,
-        thinkingCollapsed: collapsed,
+        activityCollapsed: collapsed,
       };
 
       const nextConversations = state.activeConversationId

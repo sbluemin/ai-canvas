@@ -8,6 +8,7 @@ const isWebMode = process.env.npm_lifecycle_event?.includes('web') || process.ar
 
 const electronExternals = [
   'electron',
+  '@sbluemin/unified-agent',
 ];
 
 export default defineConfig({
