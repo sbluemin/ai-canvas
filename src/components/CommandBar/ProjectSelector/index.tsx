@@ -276,11 +276,12 @@ export function ProjectSelector() {
     const runtimeResult = await api.runtimeCheckStatus(path);
     if (runtimeResult.success && runtimeResult.data) {
       const status = runtimeResult.data;
+      const shouldOpenOnboarding = status.activeRuntime === 'none' && !status.onboardingDone;
       setRuntimeStatus(status);
       setRuntimeError(null);
-      setOnboardingDismissed(status.onboardingDone);
+      setOnboardingDismissed(status.onboardingDone || status.activeRuntime !== 'none');
 
-      if (!status.onboardingDone) {
+      if (shouldOpenOnboarding) {
         openOnboarding();
       } else {
         closeOnboarding();

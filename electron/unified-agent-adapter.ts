@@ -5,7 +5,6 @@
  * chatWithOpenCode, fetchModelsViaSdk 등의 인터페이스를 제공하여
  * ai-workflow.ts / ai-models.ts 측 호출 코드 변경을 최소화한다.
  */
-import { existsSync } from 'node:fs';
 import { UnifiedAgentClient } from '@sbluemin/unified-agent';
 import type { ModelInfo as SdkModelInfo } from '@sbluemin/unified-agent';
 import type {
@@ -13,10 +12,8 @@ import type {
   OpenCodeChatRequest,
   OpenCodeChatResult,
   OpenCodeJsonEvent,
-  OpenCodeRuntimeBinaryMode,
 } from './ai-types';
 import { buildRuntimeConfigJson } from './ai-prompts';
-import { getBackendDirPath, getBackendLocalBinaryPath } from './utils';
 
 // ─── 상수 ───
 
@@ -26,52 +23,16 @@ const CLIENT_INFO = { name: 'ai-canvas', version: '1.0.0' };
 // ─── 모듈 상태 ───
 
 let runtimeProjectPath: string | null = null;
-let runtimeBinaryMode: OpenCodeRuntimeBinaryMode = 'auto';
 
 /** 활성 어댑터 추적 (shutdown 시 일괄 정리용) */
 const activeClients = new Set<UnifiedAgentClient>();
 
 // ─── 헬퍼 ───
 
-/**
- * 바이너리 모드와 프로젝트 경로를 바탕으로 opencode CLI 실행 경로를 결정한다.
- * SDK의 `cliPath` 옵션에 전달된다.
- */
-function resolveCliPath(): string | undefined {
-  // global 모드면 시스템 PATH에서 찾도록 undefined 반환
-  if (runtimeBinaryMode === 'global') {
-    return undefined;
-  }
-
-  // 프로젝트가 없으면 local 검색 불가
-  if (!runtimeProjectPath) {
-    return undefined;
-  }
-
-  // 로컬 바이너리 존재 여부 확인
-  const localBinaryPath = getBackendLocalBinaryPath(runtimeProjectPath);
-  if (existsSync(localBinaryPath)) {
-    return localBinaryPath;
-  }
-
-  // local 모드인데 바이너리가 없으면 undefined (SDK가 기본 'opencode' 커맨드 사용)
-  return undefined;
-}
-
-/**
- * SDK connect()에 전달할 환경변수를 생성한다.
- * OPENCODE_CONFIG_CONTENT, OPENCODE_CONFIG_DIR 등을 포함한다.
- */
 function buildSdkEnv(): Record<string, string> {
-  const env: Record<string, string> = {
+  return {
     OPENCODE_CONFIG_CONTENT: buildRuntimeConfigJson(),
   };
-
-  if (runtimeProjectPath) {
-    env.OPENCODE_CONFIG_DIR = getBackendDirPath(runtimeProjectPath);
-  }
-
-  return env;
 }
 
 // ─── SDK 이벤트 → OpenCodeChatChunk 변환 헬퍼 ───
@@ -182,8 +143,7 @@ export async function chatWithOpenCode(
 
     // ── 연결 ──
 
-    const cliPath = resolveCliPath();
-    const connectResult = await client.connect({
+    await client.connect({
       cli: 'opencode',
       cwd: runtimeProjectPath ?? process.cwd(),
       timeout: REQUEST_TIMEOUT_MS,
@@ -191,7 +151,6 @@ export async function chatWithOpenCode(
       model: request.model,
       env: buildSdkEnv(),
       clientInfo: CLIENT_INFO,
-      ...(cliPath ? { cliPath } : {}),
     });
     
     // ── 에이전트(모드) 선택 ──
@@ -269,7 +228,6 @@ export async function fetchModelsViaSdk(): Promise<AppModelInfo[]> {
   const client = new UnifiedAgentClient();
 
   try {
-    const cliPath = resolveCliPath();
     await client.connect({
       cli: 'opencode',
       cwd: runtimeProjectPath ?? process.cwd(),
@@ -277,7 +235,6 @@ export async function fetchModelsViaSdk(): Promise<AppModelInfo[]> {
       autoApprove: true,
       env: buildSdkEnv(),
       clientInfo: CLIENT_INFO,
-      ...(cliPath ? { cliPath } : {}),
     });
 
     const result = client.getAvailableModels();
@@ -301,13 +258,8 @@ export async function fetchModelsViaSdk(): Promise<AppModelInfo[]> {
 
 // ─── 런타임 설정 / 생명주기 ───
 
-/** 런타임 프로젝트 경로 및 바이너리 모드를 설정한다. */
-export function configureOpenCodeRuntime(
-  projectPath: string | null,
-  binaryMode: OpenCodeRuntimeBinaryMode = 'auto',
-): void {
+export function configureOpenCodeRuntime(projectPath: string | null): void {
   runtimeProjectPath = projectPath;
-  runtimeBinaryMode = binaryMode;
 }
 
 /** 현재 설정된 프로젝트 경로를 반환한다. */

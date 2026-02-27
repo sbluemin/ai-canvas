@@ -1,5 +1,4 @@
 export const AI_CANVAS_DIR = '.ai-canvas';
-export const OPENCODE_RUNTIME_DIR = '.runtime';
 export const DEFAULT_CANVAS_NAME = 'canvas.md';
 export const CHAT_SESSION_NAME = 'chat-session.json';
 export const FEATURE_META_NAME = 'meta.json';

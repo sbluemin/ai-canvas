@@ -247,7 +247,7 @@ function App() {
       return;
     }
 
-    api.runtimeCheckStatus(null)
+    api.runtimeCheckStatus()
       .then((result) => {
         if (result.success && result.data) {
           setRuntimeStatus(result.data);

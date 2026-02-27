@@ -13,7 +13,7 @@ electron/
 ├── ipc-handlers.ts        # 모든 IPC 채널 등록 단일 엔트리
 ├── project.service.ts     # Feature/캔버스 CRUD, 세션, 에셋, 파일 인덱스
 ├── export.service.ts      # HTML/PDF/DOCX 내보내기
-├── runtime.service.ts     # opencode 설치/로그인 안내/모드/상태 관리
+├── runtime.service.ts     # 글로벌 opencode 설치 확인/로그인 안내/상태 관리
 ├── ai-workflow.ts         # 2-phase 워크플로우 엔진
 ├── ai-prompts.ts          # 통합 프롬프트/빌더/시그널 토큰
 ├── ai-canvas-utils.ts     # 토큰 추정/캔버스 truncation
@@ -32,7 +32,7 @@ electron/
 | IPC 핸들러 등록 | `ipc-handlers.ts` | 채널별 라우팅 일원화 |
 | 프로젝트 비즈니스 로직 | `project.service.ts` | Feature/캔버스 CRUD, 세션, 에셋 |
 | 문서 내보내기 | `export.service.ts` | HTML/PDF/DOCX |
-| 런타임 설정 | `runtime.service.ts` | 프로젝트 로컬 opencode 설치/로그인 안내/모드 |
+| 런타임 설정 | `runtime.service.ts` | 글로벌 opencode 설치 확인/로그인 안내 |
 | AI 실행 엔진 | `ai-workflow.ts` | phase 전환 + 이벤트 송신 |
 | 프롬프트/시그널 | `ai-prompts.ts` | 통합 에이전트 prompt + 시그널 토큰 + validator |
 | OpenCode 런타임 API | `unified-agent-adapter.ts` | @sbluemin/unified-agent SDK 경유 |
@@ -42,7 +42,7 @@ electron/
 - IPC 채널: prefix 네임스페이스 (`ai:`, `project:`, `fs:`, `dialog:`, `settings:`, `window:`, `runtime:`).
 - IPC 핸들러는 라우팅만 담당, 비즈니스 로직은 `*.service.ts`에 위임.
 - preload는 CJS 번들만 허용 (`--format=cjs`).
-- 정적 agent 프롬프트/런타임 설정은 `ai-prompts.ts`를 단일 소스로 사용하며, 실행 시 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다. (`.ai-canvas/.runtime`은 컨텍스트/인증 데이터 경로로 유지)
+- 정적 agent 프롬프트/런타임 설정은 `ai-prompts.ts`를 단일 소스로 사용하며, 실행 시 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다.
 - AI 응답은 시그널 토큰(`⟨CANVAS⟩`, `⟨/CANVAS⟩`) 기반 자연어로 처리되며, `ai-parser.ts`의 `SignalScanner`가 스트리밍 중 시그널을 감지한다.
 
 ## ANTI-PATTERNS

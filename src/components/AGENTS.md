@@ -8,7 +8,7 @@
 |------|----------|-------|
 | 채팅 UI | `ChatPanel.tsx` | 대화 목록 + 메시지 렌더 + `@파일` 멘션 + 입력창 구성 |
 | 채팅 입력 헤더 모델 선택 | `ChatModelSelector.tsx` | Runtime dot + model/variant + refresh + setup |
-| 온보딩 | `OnboardingWizard.tsx` | opencode 설치/로그인 안내/글로벌-로컬 선택 |
+| 온보딩 | `OnboardingWizard.tsx` | 글로벌 OpenCode 설치 확인/로그인 안내 |
 | 캔버스 메인 | `CanvasPanel.tsx` | 파일 탭, autosave, overlay, 너비 모드 제어 |
 | Feature 트리 | `FeatureExplorer.tsx` | Feature/캔버스 파일 CRUD + 드래그 정렬 + 트리 렌더 |
 | 전역 커맨드 팔레트 | `CommandPalette.tsx` | `Ctrl/Cmd+Shift+P`, 명령 검색/키보드 실행 |

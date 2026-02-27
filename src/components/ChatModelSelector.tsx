@@ -6,14 +6,12 @@ import './ChatModelSelector.css';
 
 function getRuntimeStateClass(status: RuntimeStatus | null): string {
   if (!status || status.activeRuntime === 'none') return 'missing';
-  if (status.activeRuntime === 'global') return 'global';
-  return 'project';
+  return 'global';
 }
 
 function getRuntimeLabel(status: RuntimeStatus | null): string {
   if (!status || status.activeRuntime === 'none') return 'Runtime Missing';
-  if (status.activeRuntime === 'global') return 'Global Runtime';
-  return 'Project Runtime';
+  return 'Global Runtime';
 }
 
 export function ChatModelSelector() {

@@ -2,7 +2,6 @@ import path from 'node:path';
 import { ipcMain, type IpcMainInvokeEvent } from 'electron';
 import {
   AI_CANVAS_DIR,
-  OPENCODE_RUNTIME_DIR,
   DEFAULT_CANVAS_NAME,
   CHAT_SESSION_NAME,
   FEATURE_META_NAME,
@@ -16,7 +15,6 @@ import {
 
 export {
   AI_CANVAS_DIR,
-  OPENCODE_RUNTIME_DIR,
   DEFAULT_CANVAS_NAME,
   CHAT_SESSION_NAME,
   FEATURE_META_NAME,
@@ -133,15 +131,6 @@ export function getAutosaveStatusPath(projectPath: string): string {
 
 export function getAssetsDirPath(projectPath: string): string {
   return path.join(projectPath, AI_CANVAS_DIR, ASSET_DIR_NAME);
-}
-
-export function getBackendDirPath(projectPath: string): string {
-  return path.join(projectPath, AI_CANVAS_DIR, OPENCODE_RUNTIME_DIR);
-}
-
-export function getBackendLocalBinaryPath(projectPath: string): string {
-  const fileName = process.platform === 'win32' ? 'opencode.exe' : 'opencode';
-  return path.join(getBackendDirPath(projectPath), fileName);
 }
 
 export function markdownToBasicHtml(markdown: string): string {

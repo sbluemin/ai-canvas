@@ -10,7 +10,16 @@
   -webkit-backdrop-filter: blur(4px);
 }
 
+.settings-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: transparent;
+}
+
 .settings-modal {
+  position: relative;
+  z-index: 1;
   display: flex;
   width: min(680px, 95vw);
   height: min(480px, 85vh);
@@ -191,23 +200,6 @@
 
 .content-body select:focus {
   border-color: var(--accent-blue);
-}
-
-.settings-runtime-path {
-  margin: 0;
-  font-size: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: var(--text-primary);
-  word-break: break-all;
-  width: 100%;
-  border: 1px solid var(--border-subtle);
-}
-
-[data-theme='light'] .settings-runtime-path {
-  background: rgba(0, 0, 0, 0.05);
 }
 
 .settings-runtime-login-btn {

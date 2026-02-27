@@ -35,7 +35,7 @@ src/
 
 ## CONVENTIONS
 - renderer는 Electron/Node API를 직접 호출하지 않고 반드시 `api/index.ts`를 경유한다.
-- 정적 프롬프트/런타임 설정 단일 소스는 renderer 바깥의 `electron/ai/opencode.ts`이며, electron 런타임이 실행 시 이를 `OPENCODE_CONFIG_CONTENT`로 주입한다.
+- 정적 프롬프트/런타임 설정 단일 소스는 `electron/ai-prompts.ts`이며, Electron 런타임이 실행 시 이를 `OPENCODE_CONFIG_CONTENT`로 주입한다.
 - 에디터 인스턴스 접근은 `useEditorContext()` 훅을 통해서만 수행한다.
 
 ## ANTI-PATTERNS

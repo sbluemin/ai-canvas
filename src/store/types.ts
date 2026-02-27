@@ -199,16 +199,10 @@ export interface WritingGoalSlice {
   closeWritingGoal: () => void;
 }
 
-export type RuntimeMode = 'auto' | 'local' | 'global';
-
 export interface RuntimeStatus {
-  mode: RuntimeMode;
-  activeRuntime: 'local' | 'global' | 'none';
-  localInstalled: boolean;
+  activeRuntime: 'global' | 'none';
   globalInstalled: boolean;
   onboardingDone: boolean;
-  localBinaryPath: string;
-  configDir: string;
 }
 
 export interface RuntimeSlice {

@@ -57,24 +57,11 @@ export type AiChatEvent =
   | { runId: string; type: 'done' };
 
 type ThemeMode = 'dark' | 'light' | 'system';
-type RuntimeMode = 'auto' | 'local' | 'global';
 
 interface RuntimeStatus {
-  mode: RuntimeMode;
-  activeRuntime: 'local' | 'global' | 'none';
-  localInstalled: boolean;
+  activeRuntime: 'global' | 'none';
   globalInstalled: boolean;
   onboardingDone: boolean;
-  localBinaryPath: string;
-  configDir: string;
-}
-
-interface RuntimeInstallProgress {
-  projectPath: string;
-  phase: 'downloading' | 'extracting' | 'finalizing' | 'done' | 'error';
-  percent: number;
-  receivedBytes?: number;
-  totalBytes?: number;
 }
 
 interface RuntimeModelsRefreshedEvent {
@@ -169,25 +156,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('settings:write', settings),
   },
   runtime: {
-    checkStatus: (projectPath: string | null): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
+    checkStatus: (projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
       ipcRenderer.invoke('runtime:check-status', projectPath),
-    setMode: (projectPath: string, mode: RuntimeMode): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
-      ipcRenderer.invoke('runtime:set-mode', projectPath, mode),
-    installLocal: (projectPath: string): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
-      ipcRenderer.invoke('runtime:install-local', projectPath),
     openAuthTerminal: (projectPath: string | null): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('runtime:open-auth-terminal', projectPath),
     openTerminal: (projectPath: string | null): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('runtime:open-terminal', projectPath),
-    completeOnboarding: (projectPath: string): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
+    completeOnboarding: (projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
       ipcRenderer.invoke('runtime:complete-onboarding', projectPath),
     clearContext: (): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('runtime:clear-context'),
-    onInstallProgress: (callback: (progress: RuntimeInstallProgress) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, progress: RuntimeInstallProgress) => callback(progress);
-      ipcRenderer.on('runtime:install-progress', listener);
-      return () => ipcRenderer.removeListener('runtime:install-progress', listener);
-    },
     onModelsRefreshed: (callback: (event: RuntimeModelsRefreshedEvent) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: RuntimeModelsRefreshedEvent) => callback(payload);
       ipcRenderer.on('runtime:models-refreshed', listener);

@@ -98,5 +98,3 @@ export type AgentActivityEvent =
   | { kind: 'thought'; text: string }
   | { kind: 'step'; label: string; tool?: string; target?: string }
   | { kind: 'step_finish' };
-
-export type OpenCodeRuntimeBinaryMode = 'auto' | 'local' | 'global';

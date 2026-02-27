@@ -12,7 +12,6 @@ export function SettingsModal() {
     closeSettings,
     settings,
     setTheme,
-    projectPath,
     runtimeStatus,
     runtimeBusy,
     runtimeError,
@@ -27,7 +26,7 @@ export function SettingsModal() {
     setRuntimeBusy(true);
     setRuntimeError(null);
     try {
-      const result = await api.runtimeOpenAuthTerminal(projectPath);
+      const result = await api.runtimeOpenAuthTerminal(null);
       if (!result.success) {
         setRuntimeError(result.error ?? 'Failed to launch terminal');
       }
@@ -42,8 +41,14 @@ export function SettingsModal() {
   ];
 
   return (
-    <div className="settings-overlay" onClick={closeSettings}>
-      <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="settings-overlay">
+      <button
+        type="button"
+        className="settings-backdrop"
+        onClick={closeSettings}
+        aria-label="Close settings"
+      />
+      <div className="settings-modal">
         <aside className="settings-sidebar">
           <div className="sidebar-header">
             <h3>Settings</h3>
@@ -93,13 +98,6 @@ export function SettingsModal() {
 
             {activeTab === 'runtime' && (
               <div className="settings-section">
-                <div className="setting-row vertical">
-                  <div className="setting-label">
-                    <span className="setting-name">OPENCODE_CONFIG_DIR</span>
-                    <span className="setting-description">OpenCode runtime configuration directory</span>
-                  </div>
-                  <p className="settings-runtime-path">{runtimeStatus?.configDir || 'Not set (Global Runtime)'}</p>
-                </div>
                 <div className="setting-row vertical">
                   <div className="setting-label">
                     <span className="setting-name">Login</span>

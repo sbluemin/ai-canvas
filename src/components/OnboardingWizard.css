@@ -8,7 +8,16 @@
   z-index: 1200;
 }
 
+.onboarding-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: transparent;
+}
+
 .onboarding-modal {
+  position: relative;
+  z-index: 1;
   width: min(520px, 94vw);
   border: 1px solid var(--border-color);
   border-radius: 14px;

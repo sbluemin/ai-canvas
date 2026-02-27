@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 |
-| AI | @sbluemin/unified-agent SDK + OpenCode CLI (`OPENCODE_CONFIG_DIR=.ai-canvas/.runtime` 프로젝트 단위 설정), 시그널 토큰 기반 응답 |
+| AI | @sbluemin/unified-agent SDK + OpenCode CLI(글로벌 런타임), 시그널 토큰 기반 응답 |
 | State | Zustand (7 slice 합성: `src/store/types.ts` 참조) |
 | Styling | CSS (plain imports, `[data-theme]` / `[data-platform]` 기반 테마) |
 
@@ -39,7 +39,7 @@
 #### 적용 컴포넌트
 | 컴포넌트 | 패턴 |
 |----------|------|
-| ChatModelSelector | Input Header Capsule — Chat 입력창 상단에 배치. Runtime dot(global=초록/project=파란/missing=빨간) + Model/Variant 선택 + Refresh 통합. Upward Glass 드롭다운 (Provider→Model→Variant 계층 선택) + Footer (런타임 상세/Setup) |
+| ChatModelSelector | Input Header Capsule — Chat 입력창 상단에 배치. Runtime dot(global=초록/missing=빨간) + Model/Variant 선택 + Refresh 통합. Upward Glass 드롭다운 (Provider→Model→Variant 계층 선택) + Footer (런타임 상세/Setup) |
 | Goal / Export / Settings | Ghost Button + 인라인 SVG |
 | SettingsModal | Split Layout (Sidebar Nav + Content Area) |
 | Width 컨트롤 | Glass Icon Toggle (3개 아이콘) |
@@ -75,7 +75,7 @@
 - **App.tsx**: 루트 — Allotment 좌우 분할 (모바일: 단일 캔버스)
 - **CommandBar**: 상단 — ProjectSelector, Goal/Export/Settings
 - **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리, 입력창 `Shift+Enter` 개행 + 자동 높이 확장 + 입력창 상단 `ChatModelSelector`)
-- **OnboardingWizard**: 프로젝트별 OpenCode 설치/로그인 안내 온보딩 (설치→로그인 안내, 글로벌/로컬 선택)
+- **OnboardingWizard**: 글로벌 OpenCode 설치 확인/로그인 안내 온보딩
 - **CanvasPanel**: 우측 에디터 — MilkdownEditor, EditorToolbar, SelectionAiPopup, DiffPreview
 - **FeatureExplorer**: Feature 트리 사이드바 (생성/삭제/이름변경, 아이콘, 드래그 정렬, 컨텍스트 메뉴, `New Document...` 기반 Blank/SDD 생성)
 - **CommandPalette**: 전역 커맨드 팔레트 오버레이 (`Ctrl/Cmd+Shift+P`, MVP 1개 커맨드)
@@ -88,7 +88,7 @@
 4. ⟨/CANVAS⟩ 감지 또는 스트림 종료 → `chat_result` → 캔버스 반영
 5. 완료 → `done`
 
-> 에이전트 프롬프트/런타임 설정 단일 소스: `electron/ai-prompts.ts` (`CANVAS_AGENT_PROMPT`, `buildRuntimeConfigJson`). 실행 시 이를 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다. (`.ai-canvas/.runtime`은 컨텍스트/인증 데이터 경로로 유지)
+> 에이전트 프롬프트/런타임 설정 단일 소스: `electron/ai-prompts.ts` (`CANVAS_AGENT_PROMPT`, `buildRuntimeConfigJson`). 실행 시 이를 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다.
 
 ### 이벤트 타입
 - `{ runId, type:'phase', phase:'evaluating'|'updating' }`
@@ -144,7 +144,7 @@ ai-canvas/
 │   ├── ipc-handlers.ts           # IPC 핸들러 통합 등록 (ai/dialog/fs/project/settings/window/runtime)
 │   ├── project.service.ts        # Feature/캔버스 CRUD, 세션, 에셋, 파일 인덱스
 │   ├── export.service.ts         # HTML/PDF/DOCX 내보내기
-│   ├── runtime.service.ts        # runtime:* 상태조회/설치/온보딩완료/모드전환
+│   ├── runtime.service.ts        # runtime:* 상태조회/온보딩완료/터미널 실행
 │   ├── ai-workflow.ts            # 2-phase AI 워크플로우 엔진
 │   ├── ai-prompts.ts             # 통합 프롬프트 + 빌더 + 시그널 토큰
 │   ├── ai-canvas-utils.ts        # 토큰 추정/캔버스 truncation

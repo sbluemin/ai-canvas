@@ -263,18 +263,8 @@ export function registerIpcHandlers(
     return { success: true };
   });
 
-  handleIpc('runtime:check-status', async (_event: unknown, projectPath: string | null) => {
-    return runtimeService.checkRuntimeStatus(projectPath);
-  });
-
-  handleIpc('runtime:set-mode', async (_event: unknown, projectPath: string, mode: 'auto' | 'local' | 'global') => {
-    return runtimeService.setRuntimeMode(projectPath, mode);
-  });
-
-  handleIpc('runtime:install-local', async (event, projectPath: string) => {
-    return runtimeService.installLocalRuntime(projectPath, (progress) => {
-      event.sender.send('runtime:install-progress', progress);
-    });
+  handleIpc('runtime:check-status', async (_event: unknown, projectPath?: string | null) => {
+    return runtimeService.checkRuntimeStatus(projectPath ?? null);
   });
 
   handleIpc('runtime:open-auth-terminal', async (event, projectPath: string | null) => {
@@ -301,8 +291,8 @@ export function registerIpcHandlers(
     return runtimeService.openRuntimeTerminal(projectPath);
   });
 
-  handleIpc('runtime:complete-onboarding', async (_event: unknown, projectPath: string) => {
-    return runtimeService.completeRuntimeOnboarding(projectPath);
+  handleIpc('runtime:complete-onboarding', async (_event: unknown, projectPath?: string | null) => {
+    return runtimeService.completeRuntimeOnboarding(projectPath ?? null);
   });
 
   handleIpc('runtime:clear-context', async () => {
