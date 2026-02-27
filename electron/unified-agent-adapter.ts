@@ -2,13 +2,12 @@
  * UnifiedAgent SDK 어댑터
  *
  * 기존 opencode-runtime/runtime.ts가 담당하던 역할을 @sbluemin/unified-agent SDK로 대체한다.
- * 기존 인터페이스(chatWithOpenCode, fetchOpenCodeModelsVerbose 등)를 그대로 유지하여
+ * chatWithOpenCode, fetchModelsViaSdk 등의 인터페이스를 제공하여
  * ai-workflow.ts / ai-models.ts 측 호출 코드 변경을 최소화한다.
  */
-import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { promisify } from 'node:util';
 import { UnifiedAgentClient } from '@sbluemin/unified-agent';
+import type { ModelInfo as SdkModelInfo } from '@sbluemin/unified-agent';
 import type {
   OpenCodeChatChunk,
   OpenCodeChatRequest,
@@ -19,13 +18,9 @@ import type {
 import { buildRuntimeConfigJson } from './ai-prompts';
 import { getBackendDirPath, getBackendLocalBinaryPath } from './utils';
 
-const execFileAsync = promisify(execFile);
-
 // ─── 상수 ───
 
 const REQUEST_TIMEOUT_MS = 600_000;
-const MODELS_CMD_TIMEOUT_MS = 600_000;
-const MODELS_MAX_BUFFER = 16 * 1024 * 1024;
 const CLIENT_INFO = { name: 'ai-canvas', version: '1.0.0' };
 
 // ─── 모듈 상태 ───
@@ -258,33 +253,50 @@ export async function chatWithOpenCode(
   }
 }
 
+/** SDK의 ModelInfo → 앱 내부 ModelInfo 변환용 타입 */
+export interface AppModelInfo {
+  id: string;
+  name: string;
+  providerId?: string;
+  modelId?: string;
+}
+
 /**
- * opencode models --refresh --verbose 실행.
- * SDK에 모델 조회 API가 없으므로 기존 방식(execFile)을 유지한다.
+ * SDK를 사용하여 사용 가능한 모델 목록을 조회한다.
+ * UnifiedAgentClient를 connect → getAvailableModels → disconnect 순서로 호출한다.
  */
-export async function fetchOpenCodeModelsVerbose(): Promise<string> {
-  const cliPath = resolveCliPath() ?? 'opencode';
-  const env: NodeJS.ProcessEnv = {
-    ...process.env,
-    ...buildSdkEnv(),
-  };
+export async function fetchModelsViaSdk(): Promise<AppModelInfo[]> {
+  const client = new UnifiedAgentClient();
 
-  // OPENCODE_CONFIG 환경변수는 제거 (CONFIG_CONTENT 우선)
-  delete env.OPENCODE_CONFIG;
-
-  const { stdout } = await execFileAsync(
-    cliPath,
-    ['models', '--refresh', '--verbose'],
-    {
+  try {
+    const cliPath = resolveCliPath();
+    await client.connect({
+      cli: 'opencode',
       cwd: runtimeProjectPath ?? process.cwd(),
-      env,
-      timeout: MODELS_CMD_TIMEOUT_MS,
-      windowsHide: true,
-      maxBuffer: MODELS_MAX_BUFFER,
-    },
-  );
+      timeout: REQUEST_TIMEOUT_MS,
+      autoApprove: true,
+      env: buildSdkEnv(),
+      clientInfo: CLIENT_INFO,
+      ...(cliPath ? { cliPath } : {}),
+    });
 
-  return stdout;
+    const result = client.getAvailableModels();
+    if (!result) return [];
+
+    return result.availableModels.map((m: SdkModelInfo) => {
+      const parts = m.modelId.split('/');
+      const providerId = parts.length > 1 ? parts[0] : undefined;
+      const modelId = parts.length > 1 ? parts.slice(1).join('/') : m.modelId;
+      return {
+        id: m.modelId,
+        name: m.name || m.modelId,
+        providerId,
+        modelId,
+      };
+    });
+  } finally {
+    await client.disconnect().catch(() => {});
+  }
 }
 
 // ─── 런타임 설정 / 생명주기 ───
