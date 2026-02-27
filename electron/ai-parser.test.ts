@@ -1,191 +1,167 @@
 import { describe, it, expect } from 'vitest';
-import { parsePhase1Response, parsePhase2Response } from './ai-parser';
+import { SignalScanner, parseChatResponse } from './ai-parser';
+import { SIGNAL_CANVAS_OPEN, SIGNAL_CANVAS_CLOSE } from './ai-prompts';
 
-describe("parsePhase1Response", () => {
-  it("should parse valid JSON response", () => {
-    const validJson = JSON.stringify({
-      message: "Test message",
-      needsCanvasUpdate: true,
-      updatePlan: "Update plan details"
-    });
+// ─── parseChatResponse ─────────────────────────────────────────
 
-    const result = parsePhase1Response(validJson);
-
+describe('parseChatResponse', () => {
+  it('시그널 없는 자연어 → message만 반환', () => {
+    const result = parseChatResponse('현재 문서 구조가 잘 잡혀있네요.');
     expect(result).toEqual({
-      message: "Test message",
-      needsCanvasUpdate: true,
-      updatePlan: "Update plan details"
+      message: '현재 문서 구조가 잘 잡혀있네요.',
     });
   });
 
-  it("should handle valid JSON embedded in text", () => {
-    const text = `Here is the response:
-    {
-      "message": "Embedded message",
-      "needsCanvasUpdate": false
-    }
-    End of response.`;
-
-    const result = parsePhase1Response(text);
-
+  it('시그널 포함 → message + canvasContent 분리', () => {
+    const raw = `개요를 추가하겠습니다.\n\n${SIGNAL_CANVAS_OPEN}\n# 제목\n\n본문입니다.\n${SIGNAL_CANVAS_CLOSE}`;
+    const result = parseChatResponse(raw);
     expect(result).toEqual({
-      message: "Embedded message",
-      needsCanvasUpdate: false,
-      updatePlan: undefined
+      message: '개요를 추가하겠습니다.',
+      canvasContent: '# 제목\n\n본문입니다.',
     });
   });
 
-  it("should return default response for invalid JSON", () => {
-    const invalidJson = "{ invalid json }";
-    const result = parsePhase1Response(invalidJson);
+  it('빈 문자열 → 빈 message', () => {
+    const result = parseChatResponse('');
+    expect(result).toEqual({ message: '' });
+  });
 
+  it('시그널만 있고 메시지 없음 → 빈 message + canvasContent', () => {
+    const raw = `${SIGNAL_CANVAS_OPEN}\n# 콘텐츠\n${SIGNAL_CANVAS_CLOSE}`;
+    const result = parseChatResponse(raw);
     expect(result).toEqual({
-      message: invalidJson,
-      needsCanvasUpdate: false
+      message: '',
+      canvasContent: '# 콘텐츠',
     });
   });
 
-  it("should return default response for non-JSON text", () => {
-    const text = "Just plain text response";
-    const result = parsePhase1Response(text);
-
+  it('닫는 시그널 누락 시 → ⟨CANVAS⟩ 이후 전체를 canvasContent로', () => {
+    const raw = `메시지\n${SIGNAL_CANVAS_OPEN}\n미완성 콘텐츠`;
+    const result = parseChatResponse(raw);
     expect(result).toEqual({
-      message: text,
-      needsCanvasUpdate: false
+      message: '메시지',
+      canvasContent: '미완성 콘텐츠',
     });
   });
 
-  it("should return default response for schema mismatch (missing fields)", () => {
-    const json = JSON.stringify({
-      message: "Missing needsCanvasUpdate"
-    });
+  it('canvasContent 내부 마크다운이 보존됨', () => {
+    const canvas = '# 타이틀\n\n## 섹션\n\n- 항목1\n- 항목2\n\n```js\nconsole.log("hello");\n```';
+    const raw = `변경 완료.\n\n${SIGNAL_CANVAS_OPEN}\n${canvas}\n${SIGNAL_CANVAS_CLOSE}`;
+    const result = parseChatResponse(raw);
+    expect(result.canvasContent).toBe(canvas);
+  });
 
-    const result = parsePhase1Response(json);
-
+  it('닫는 시그널 이후 텍스트 → doneMessage로 캡처', () => {
+    const raw = `메시지\n${SIGNAL_CANVAS_OPEN}\n콘텐츠\n${SIGNAL_CANVAS_CLOSE}\n완료했습니다.`;
+    const result = parseChatResponse(raw);
     expect(result).toEqual({
-      message: json,
-      needsCanvasUpdate: false
+      message: '메시지',
+      canvasContent: '콘텐츠',
+      doneMessage: '완료했습니다.',
     });
   });
 
-  it("should return default response for schema mismatch (wrong types)", () => {
-    const json = JSON.stringify({
-      message: "Wrong type",
-      needsCanvasUpdate: "not a boolean"
-    });
-
-    const result = parsePhase1Response(json);
-
-    expect(result).toEqual({
-      message: json,
-      needsCanvasUpdate: false
-    });
+  it('3단계 흐름: Do → Canvas → Done', () => {
+    const raw = `목차를 추가하겠습니다.\n\n${SIGNAL_CANVAS_OPEN}\n# 타이틀\n## 목차\n1. 개요\n${SIGNAL_CANVAS_CLOSE}\n\n목차 추가를 완료했습니다.`;
+    const result = parseChatResponse(raw);
+    expect(result.message).toBe('목차를 추가하겠습니다.');
+    expect(result.canvasContent).toBe('# 타이틀\n## 목차\n1. 개요');
+    expect(result.doneMessage).toBe('목차 추가를 완료했습니다.');
   });
 
-  it("should handle empty string", () => {
-    const result = parsePhase1Response("");
-
-    expect(result).toEqual({
-      message: "",
-      needsCanvasUpdate: false
-    });
+  it('닫는 시그널 이후 텍스트 없음 → doneMessage 없음', () => {
+    const raw = `메시지\n${SIGNAL_CANVAS_OPEN}\n콘텐츠\n${SIGNAL_CANVAS_CLOSE}`;
+    const result = parseChatResponse(raw);
+    expect(result.doneMessage).toBeUndefined();
   });
 });
 
-describe("parsePhase2Response", () => {
-  it("should parse valid JSON correctly", () => {
-    const input = JSON.stringify({
-      message: "Hello world",
-      canvasContent: "# Title\n\nContent"
-    });
+// ─── SignalScanner (스트리밍) ───────────────────────────────────
 
-    const result = parsePhase2Response(input);
+describe('SignalScanner', () => {
+  it('시그널 없는 스트리밍 → message 텍스트만 반환', () => {
+    const scanner = new SignalScanner();
+    const r1 = scanner.feed('안녕하세요 ');
+    const r2 = scanner.feed('테스트입니다.');
+    const r3 = scanner.flush();
 
-    expect(result).toEqual({
-      message: "Hello world",
-      canvasContent: "# Title\n\nContent"
-    });
+    const combined = r1.text + r2.text + r3.text;
+    expect(combined).toBe('안녕하세요 테스트입니다.');
+    expect(scanner.state).toBe('message');
   });
 
-  it("should parse JSON embedded in text", () => {
-    const json = JSON.stringify({
-      message: "Embedded",
-      canvasContent: "Some content"
-    });
-    const input = `Here is the response: ${json} and some footer text.`;
+  it('시그널 한 chunk에 완전히 포함 → 상태 전환', () => {
+    const scanner = new SignalScanner();
 
-    const result = parsePhase2Response(input);
+    const r1 = scanner.feed(`메시지입니다.\n${SIGNAL_CANVAS_OPEN}\n# 캔버스`);
+    expect(r1.signals).toContain(SIGNAL_CANVAS_OPEN);
+    expect(scanner.state).toBe('canvas');
 
-    expect(result).toEqual({
-      message: "Embedded",
-      canvasContent: "Some content"
-    });
+    const r2 = scanner.feed(`\n본문\n${SIGNAL_CANVAS_CLOSE}`);
+    expect(r2.signals).toContain(SIGNAL_CANVAS_CLOSE);
+    expect(scanner.state).toBe('done');
   });
 
-  it("should return null for invalid JSON structure", () => {
-    const input = "{ invalid json }";
-    const result = parsePhase2Response(input);
-    expect(result).toBeNull();
+  it('시그널이 chunk 경계를 걸치는 경우 처리', () => {
+    const scanner = new SignalScanner();
+
+    // ⟨CANVAS⟩ (8자)를 두 chunk로 분할
+    const signal = SIGNAL_CANVAS_OPEN;
+    const half = Math.floor(signal.length / 2);
+
+    scanner.feed('메시지\n');
+    scanner.feed(signal.slice(0, half));
+
+    // 아직 시그널 감지 안됨 (불완전)
+    expect(scanner.state).toBe('message');
+
+    const result = scanner.feed(signal.slice(half) + '\n캔버스 콘텐츠');
+    expect(result.signals).toContain(SIGNAL_CANVAS_OPEN);
+    expect(scanner.state).toBe('canvas');
   });
 
-  it("should return null when required fields are missing", () => {
-    const input = JSON.stringify({
-      message: "Missing canvasContent"
-    });
+  it('전체 흐름: message → canvas → done', () => {
+    const scanner = new SignalScanner();
+    const messageChunks: string[] = [];
+    const canvasChunks: string[] = [];
 
-    const result = parsePhase2Response(input);
+    const feed = (chunk: string) => {
+      const result = scanner.feed(chunk);
+      // 현재 상태에 따라 텍스트 분류 — 시그널 전환 전의 텍스트도 포함
+      if (result.signals.includes(SIGNAL_CANVAS_OPEN)) {
+        // 시그널 전 텍스트는 message, 시그널 후 텍스트는 canvas
+        // feed()는 시그널 전까지를 text로 반환하고 시그널 후는 버퍼에 유지
+        messageChunks.push(result.text);
+      } else if (scanner.state === 'message') {
+        messageChunks.push(result.text);
+      } else {
+        canvasChunks.push(result.text);
+      }
+    };
 
-    expect(result).toBeNull();
+    feed('프로젝트 배경을 ');
+    feed('추가하겠습니다.\n\n');
+    feed(SIGNAL_CANVAS_OPEN + '\n');
+    feed('# 제목\n');
+    feed('## 배경\n본문');
+    feed('\n' + SIGNAL_CANVAS_CLOSE);
+
+    const flushed = scanner.flush();
+    canvasChunks.push(flushed.text);
+
+    const message = messageChunks.join('').trim();
+    const canvas = canvasChunks.join('').trim();
+
+    expect(message).toBe('프로젝트 배경을 추가하겠습니다.');
+    expect(canvas).toBe('# 제목\n## 배경\n본문');
   });
 
-  it("should return null when field types are incorrect", () => {
-    const input = JSON.stringify({
-      message: 123, // Should be string
-      canvasContent: "Content"
-    });
+  it('reset() → 초기 상태로 복원', () => {
+    const scanner = new SignalScanner();
+    scanner.feed(`${SIGNAL_CANVAS_OPEN}\n콘텐츠`);
+    expect(scanner.state).toBe('canvas');
 
-    const result = parsePhase2Response(input);
-
-    expect(result).toBeNull();
-  });
-
-  it("should return null for empty string", () => {
-    const result = parsePhase2Response("");
-    expect(result).toBeNull();
-  });
-
-  it("should return null for string without JSON braces", () => {
-    const result = parsePhase2Response("Just some plain text without braces");
-    expect(result).toBeNull();
-  });
-
-  it("should handle multiple JSON objects by taking the outermost braces (greedy match)", () => {
-    // Current implementation uses greedy regex /\{[\s\S]*\}/
-    // So if input is: { "a": 1 } text { "b": 2 }
-    // It matches: { "a": 1 } text { "b": 2 }
-    // Which is invalid JSON, so it should return null.
-
-    const input = '{"message": "First", "canvasContent": "1"} filler {"message": "Second", "canvasContent": "2"}';
-
-    const result = parsePhase2Response(input);
-
-    // Expectation based on current implementation:
-    // extractJSON returns null because JSON.parse fails on the concatenated string
-    expect(result).toBeNull();
-  });
-
-  it("should handle nested objects correctly", () => {
-    // Nested braces should be handled correctly by JSON.parse as long as the outer match is valid
-    const input = JSON.stringify({
-      message: "Nested",
-      canvasContent: JSON.stringify({ key: "value" })
-    });
-
-    const result = parsePhase2Response(input);
-
-    expect(result).toEqual({
-      message: "Nested",
-      canvasContent: JSON.stringify({ key: "value" })
-    });
+    scanner.reset();
+    expect(scanner.state).toBe('message');
   });
 });

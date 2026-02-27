@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 |
-| AI | @sbluemin/unified-agent SDK + OpenCode CLI (`OPENCODE_CONFIG_DIR=.ai-canvas/.runtime` 프로젝트 단위 설정) |
+| AI | @sbluemin/unified-agent SDK + OpenCode CLI (`OPENCODE_CONFIG_DIR=.ai-canvas/.runtime` 프로젝트 단위 설정), 시그널 토큰 기반 응답 |
 | State | Zustand (7 slice 합성: `src/store/types.ts` 참조) |
 | Styling | CSS (plain imports, `[data-theme]` / `[data-platform]` 기반 테마) |
 
@@ -83,17 +83,18 @@
 
 ### AI 채팅 흐름
 1. 렌더러 → `ai:chat` IPC (runId, prompt, history, canvasContent, selection, modelId?, variant?, writingGoal?, fileMentions?)
-2. Phase 1: `canvas-planner` 에이전트 → 의도 평가 → `phase_message_stream` → `phase1_result`
-3. Phase 2 (needsCanvasUpdate=true): `canvas-writer` 에이전트 → 캔버스 변경 → `phase2_result` → `pendingCanvasPatch` → DiffPreview
-4. 완료 → `done`
+2. `canvas-agent` 단일 에이전트가 응답 → 자연어 메시지 스트리밍 (`phase_message_stream`)
+3. ⟨CANVAS⟩ 시그널 감지 시 → `phase: updating` 전환 + 캔버스 콘텐츠 스트리밍 (`canvas_content_stream`)
+4. ⟨/CANVAS⟩ 감지 또는 스트림 종료 → `chat_result` → 캔버스 반영
+5. 완료 → `done`
 
-> 에이전트 프롬프트/런타임 설정 단일 소스: `electron/ai-prompts.ts` (`CANVAS_PLANNER_PROMPT`, `CANVAS_WRITER_PROMPT`, `buildRuntimeConfigJson`). 실행 시 이를 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다. (`.ai-canvas/.runtime`은 컨텍스트/인증 데이터 경로로 유지)
+> 에이전트 프롬프트/런타임 설정 단일 소스: `electron/ai-prompts.ts` (`CANVAS_AGENT_PROMPT`, `buildRuntimeConfigJson`). 실행 시 이를 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다. (`.ai-canvas/.runtime`은 컨텍스트/인증 데이터 경로로 유지)
 
 ### 이벤트 타입
 - `{ runId, type:'phase', phase:'evaluating'|'updating' }`
 - `{ runId, type:'phase_message_stream', phase, message }`
-- `{ runId, type:'phase1_result', message, needsCanvasUpdate, updatePlan? }`
-- `{ runId, type:'phase2_result', message, canvasContent }`
+- `{ runId, type:'canvas_content_stream', content }`
+- `{ runId, type:'chat_result', message, canvasContent? }`
 - `{ runId, type:'error', phase, error }` / `{ runId, type:'done' }`
 
 ### 상태 관리 (Zustand)
@@ -145,9 +146,9 @@ ai-canvas/
 │   ├── export.service.ts         # HTML/PDF/DOCX 내보내기
 │   ├── runtime.service.ts        # runtime:* 상태조회/설치/온보딩완료/모드전환
 │   ├── ai-workflow.ts            # 2-phase AI 워크플로우 엔진
-│   ├── ai-prompts.ts             # 정적 프롬프트 + 빌더 + 스키마 통합
+│   ├── ai-prompts.ts             # 통합 프롬프트 + 빌더 + 시그널 토큰
 │   ├── ai-canvas-utils.ts        # 토큰 추정/캔버스 truncation
-│   ├── ai-parser.ts              # JSON 파싱
+│   ├── ai-parser.ts              # 시그널 스캐너 + 채팅 응답 파서
 │   ├── ai-models.ts              # 모델 파싱/조회
 │   ├── ai-types.ts               # AI/OpenCode 타입 정의
 │   └── unified-agent-adapter.ts  # @sbluemin/unified-agent SDK 어댑터

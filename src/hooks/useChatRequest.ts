@@ -110,10 +110,7 @@ export function useChatRequest() {
 
   const currentRunIdRef = useRef<string | null>(null);
   const hasStreamingAssistantRef = useRef(false);
-  const streamedPhase1MessageRef = useRef('');
-  const streamedPhase2MessageRef = useRef('');
-  const phase2FinalMessageRef = useRef('');
-  const hasPhase2StreamEventRef = useRef(false);
+  const streamedMessageRef = useRef('');
 
   useEffect(() => {
     if (!api.isElectron) return;
@@ -130,17 +127,8 @@ export function useChatRequest() {
               hasStreamingAssistantRef.current = true;
             }
 
-            if (event.phase === 'evaluating') {
-              streamedPhase1MessageRef.current = event.message;
-              setLastMessageContent(event.message);
-            } else {
-              hasPhase2StreamEventRef.current = true;
-              streamedPhase2MessageRef.current = event.message;
-              const combined = streamedPhase1MessageRef.current
-                ? `${streamedPhase1MessageRef.current}\n\n${event.message}`
-                : event.message;
-              setLastMessageContent(combined);
-            }
+            streamedMessageRef.current = event.message;
+            setLastMessageContent(event.message);
             break;
           }
 
@@ -151,7 +139,6 @@ export function useChatRequest() {
             }
 
             if (event.activity.kind === 'step_finish') {
-              // step_finish: 모든 running step을 done으로
               break;
             }
 
@@ -179,55 +166,45 @@ export function useChatRequest() {
             }
             break;
 
-          case 'phase1_result':
-            completeAgentActivity();
-            {
-              const finalPhase1Message = event.message.trim().length > 0
-                ? event.message
-                : streamedPhase1MessageRef.current;
-
-              setAiRunResult({
-                message: finalPhase1Message,
-                needsCanvasUpdate: event.needsCanvasUpdate,
-                updatePlan: event.updatePlan,
-              });
-              if (event.needsCanvasUpdate && event.updatePlan) {
-                saveCanvasSnapshot();
-                setAiPhase('updating');
-              }
-
-              streamedPhase1MessageRef.current = finalPhase1Message;
-              if (hasStreamingAssistantRef.current) {
-                if (finalPhase1Message.trim().length > 0) {
-                  setLastMessageContent(finalPhase1Message);
-                }
-              } else {
-                addMessage('assistant', finalPhase1Message, 'opencode');
-                hasStreamingAssistantRef.current = true;
-              }
-            }
+          case 'canvas_content_stream':
+            // 캔버스 실시간 스트리밍 프리뷰 (선택적)
+            // 현재는 최종 chat_result에서 일괄 반영하므로 여기서는 아무 처리도 하지 않음
+            // 향후 실시간 프리뷰 기능 구현 시 setCanvasContent(event.content) 활용 가능
             break;
 
-          case 'phase2_result':
-            phase2FinalMessageRef.current = event.message;
-            streamedPhase2MessageRef.current = '';
-            hasPhase2StreamEventRef.current = false;
-            // 캔버스에 즉시 반영
-            setCanvasContent(event.canvasContent);
-            if (streamedPhase1MessageRef.current) {
-              setLastMessageContent(streamedPhase1MessageRef.current);
+          case 'chat_result':
+            completeAgentActivity();
+            {
+              const finalMessage = event.message.trim().length > 0
+                ? event.message
+                : streamedMessageRef.current;
+
+              setAiRunResult({
+                message: finalMessage,
+                needsCanvasUpdate: !!event.canvasContent,
+              });
+
+              // assistant 메시지 업데이트
+              if (hasStreamingAssistantRef.current) {
+                if (finalMessage.trim().length > 0) {
+                  setLastMessageContent(finalMessage);
+                }
+              } else {
+                addMessage('assistant', finalMessage, 'opencode');
+                hasStreamingAssistantRef.current = true;
+              }
+
+              // 캔버스 업데이트 (canvasContent가 있을 때만)
+              if (event.canvasContent) {
+                setCanvasContent(event.canvasContent);
+              }
             }
             break;
 
           case 'error': {
-            // runId를 먼저 null로 설정하여, 이후 도착하는 done 이벤트가
-            // runId guard에서 무시되도록 함 — done에서 중복 cleanup 방지
             currentRunIdRef.current = null;
             hasStreamingAssistantRef.current = false;
-            streamedPhase1MessageRef.current = '';
-            streamedPhase2MessageRef.current = '';
-            phase2FinalMessageRef.current = '';
-            hasPhase2StreamEventRef.current = false;
+            streamedMessageRef.current = '';
             completeAgentActivity();
 
             if (event.phase === 'evaluating') {
@@ -246,22 +223,11 @@ export function useChatRequest() {
 
           case 'done':
             completeAgentActivity();
-            if (phase2FinalMessageRef.current) {
-              const finalCombined = streamedPhase1MessageRef.current
-                ? `${streamedPhase1MessageRef.current}\n\n${phase2FinalMessageRef.current}`
-                : phase2FinalMessageRef.current;
-              if (!hasPhase2StreamEventRef.current || streamedPhase2MessageRef.current !== phase2FinalMessageRef.current) {
-                setLastMessageContent(finalCombined);
-              }
-            }
             setIsLoading(false);
             clearAiRun();
             currentRunIdRef.current = null;
             hasStreamingAssistantRef.current = false;
-            streamedPhase1MessageRef.current = '';
-            streamedPhase2MessageRef.current = '';
-            phase2FinalMessageRef.current = '';
-            hasPhase2StreamEventRef.current = false;
+            streamedMessageRef.current = '';
             break;
         }
     });
@@ -293,10 +259,7 @@ export function useChatRequest() {
       const runId = startAiRun();
       currentRunIdRef.current = runId;
       hasStreamingAssistantRef.current = false;
-      streamedPhase1MessageRef.current = '';
-      streamedPhase2MessageRef.current = '';
-      phase2FinalMessageRef.current = '';
-      hasPhase2StreamEventRef.current = false;
+      streamedMessageRef.current = '';
 
       const history = messages.map((msg) => ({
         role: msg.role as 'user' | 'assistant',
@@ -332,10 +295,7 @@ export function useChatRequest() {
         clearAiRun();
         currentRunIdRef.current = null;
         hasStreamingAssistantRef.current = false;
-        streamedPhase1MessageRef.current = '';
-        streamedPhase2MessageRef.current = '';
-        phase2FinalMessageRef.current = '';
-        hasPhase2StreamEventRef.current = false;
+        streamedMessageRef.current = '';
       }
     },
     [

@@ -1,57 +1,13 @@
 import type { IpcMainInvokeEvent } from 'electron';
 import type { AiChatRequest, AiChatEvent, OpenCodeChatChunk, OpenCodeJsonEvent, AgentActivityEvent } from './ai-types';
-import { buildPhase1Prompt, buildPhase2Prompt } from './ai-prompts';
-import { parsePhase1Response, parsePhase2Response } from './ai-parser';
+import { buildChatPrompt } from './ai-prompts';
+import { SIGNAL_CANVAS_OPEN, SIGNAL_CANVAS_CLOSE } from './ai-prompts';
+import { SignalScanner, parseChatResponse } from './ai-parser';
 import { chatWithOpenCode, getOpenCodeProjectPath, shutdownOpenCodeRuntime } from './unified-agent-adapter';
 
-const PHASE2_STREAM_CHUNK_SIZE = 12;
-const PHASE2_STREAM_TICK_MS = 16;
-const PHASE2_TIMEOUT_MS = 600_000;
+const CHAT_TIMEOUT_MS = 600_000;
 
-function decodeJsonStringFragment(value: string): string {
-  try {
-    return JSON.parse(`"${value}"`) as string;
-  } catch {
-    return value
-      .replace(/\\n/g, '\n')
-      .replace(/\\r/g, '\r')
-      .replace(/\\t/g, '\t')
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, '\\');
-  }
-}
-
-function extractMessageField(rawText: string): string | null {
-  const keyMatch = /"message"\s*:\s*"/.exec(rawText);
-  if (!keyMatch) {
-    return null;
-  }
-
-  let escaped = false;
-  let value = '';
-  for (let i = keyMatch.index + keyMatch[0].length; i < rawText.length; i += 1) {
-    const ch = rawText[i];
-
-    if (escaped) {
-      value += `\\${ch}`;
-      escaped = false;
-      continue;
-    }
-
-    if (ch === '\\') {
-      escaped = true;
-      continue;
-    }
-
-    if (ch === '"') {
-      return decodeJsonStringFragment(value);
-    }
-
-    value += ch;
-  }
-
-  return decodeJsonStringFragment(value);
-}
+// ─── 유틸 헬퍼 ──────────────────────────────────────────────────
 
 function getStringValue(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
@@ -159,6 +115,8 @@ function mapToAgentActivity(payload: OpenCodeJsonEvent): AgentActivityEvent | nu
   return null;
 }
 
+// ─── 프로바이더 호출 ────────────────────────────────────────────
+
 async function callProvider(
   prompt: string,
   modelId?: string,
@@ -167,7 +125,6 @@ async function callProvider(
   agent?: string
 ): Promise<string> {
   let capturedError: string | undefined;
-
 
   const result = await chatWithOpenCode(
     { prompt, model: modelId, variant, agent },
@@ -178,7 +135,6 @@ async function callProvider(
       onChunk?.(chunk);
     }
   );
-
 
   if (!result.success) {
     throw new Error(result.error || capturedError || 'OpenCode chat failed');
@@ -191,29 +147,7 @@ async function callProvider(
   return result.text ?? '';
 }
 
-async function streamPhaseMessageAfterResult(
-  sendEvent: (evt: AiChatEvent) => void,
-  runId: string,
-  phase: 'evaluating' | 'updating',
-  message: string
-): Promise<void> {
-  if (!message) {
-    return;
-  }
-
-  for (let end = PHASE2_STREAM_CHUNK_SIZE; end < message.length + PHASE2_STREAM_CHUNK_SIZE; end += PHASE2_STREAM_CHUNK_SIZE) {
-    sendEvent({
-      runId,
-      type: 'phase_message_stream',
-      phase,
-      message: message.slice(0, end),
-    });
-
-    if (end < message.length) {
-      await new Promise((resolve) => setTimeout(resolve, PHASE2_STREAM_TICK_MS));
-    }
-  }
-}
+// ─── 통합 워크플로우 엔진 ──────────────────────────────────────
 
 export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: AiChatRequest): Promise<void> {
   const { runId, prompt, history, canvasContent, selection, modelId, variant, writingGoal, fileMentions } = request;
@@ -233,105 +167,111 @@ export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: 
   try {
     sendEvent({ runId, type: 'phase', phase: 'evaluating' });
 
-    const phase1Prompt = buildPhase1Prompt(prompt, canvasContent, history, {
+    // 통합 프롬프트 생성 (1회)
+    const chatPrompt = buildChatPrompt(prompt, canvasContent, history, {
       selection,
       writingGoal,
       fileMentions,
       projectPath: getOpenCodeProjectPath(),
     });
 
-    let phase1RawBuffer = '';
-    let lastPhase1Message = '';
-    const phase1RawText = await callProvider(phase1Prompt, modelId, variant, (chunk) => {
-      if (chunk.event) {
-        const activity = mapToAgentActivity(chunk.event);
-        if (activity) {
-          sendEvent({
-            runId,
-            type: 'thinking_stream',
-            phase: 'evaluating',
-            activity,
-          });
+    // 시그널 스캐너 초기화
+    const scanner = new SignalScanner();
+    let messageAccum = '';
+    let canvasAccum = '';
+    let doneAccum = '';
+    let lastStreamedMessage = '';
+
+    // 단일 AI 호출
+    const rawText = await Promise.race([
+      callProvider(chatPrompt, modelId, variant, (chunk) => {
+        // thinking/tool 이벤트 처리
+        if (chunk.event) {
+          const activity = mapToAgentActivity(chunk.event);
+          if (activity) {
+            sendEvent({
+              runId,
+              type: 'thinking_stream',
+              phase: currentPhase,
+              activity,
+            });
+          }
         }
-      }
 
-      if (chunk.text) {
-        phase1RawBuffer += chunk.text;
-        const message = extractMessageField(phase1RawBuffer);
-        if (message !== null && message !== lastPhase1Message) {
-          lastPhase1Message = message;
-          sendEvent({
-            runId,
-            type: 'phase_message_stream',
-            phase: 'evaluating',
-            message,
-          });
+        // 텍스트 스트리밍 + 시그널 감지
+        if (chunk.text) {
+          const prevState = scanner.state;
+          const result = scanner.feed(chunk.text);
+
+          if (result.text) {
+            if (prevState === 'message' || result.signals.includes(SIGNAL_CANVAS_OPEN)) {
+              // 시그널 전 텍스트는 message 영역
+              messageAccum += result.text;
+
+              if (messageAccum !== lastStreamedMessage) {
+                lastStreamedMessage = messageAccum;
+                sendEvent({
+                  runId,
+                  type: 'phase_message_stream',
+                  phase: 'evaluating',
+                  message: messageAccum.trim(),
+                });
+              }
+            }
+          }
+
+          // ⟨CANVAS⟩ 시그널 감지 → phase 전환
+          if (result.signals.includes(SIGNAL_CANVAS_OPEN)) {
+            currentPhase = 'updating';
+            sendEvent({ runId, type: 'phase', phase: 'updating' });
+          }
+
+          // canvas 영역 텍스트 누적 + 실시간 스트리밍
+          if (scanner.state === 'canvas' && result.text && !result.signals.includes(SIGNAL_CANVAS_OPEN)) {
+            canvasAccum += result.text;
+            sendEvent({
+              runId,
+              type: 'canvas_content_stream',
+              content: canvasAccum.trim(),
+            });
+          }
+
+          // ⟨/CANVAS⟩ 이후 Done 메시지 누적 + 스트리밍
+          if (scanner.state === 'done' && result.text && !result.signals.includes(SIGNAL_CANVAS_CLOSE)) {
+            doneAccum += result.text;
+            // Done 메시지를 Do 메시지와 결합하여 스트리밍
+            const combined = messageAccum.trim() + '\n\n' + doneAccum.trim();
+            sendEvent({
+              runId,
+              type: 'phase_message_stream',
+              phase: 'updating',
+              message: combined,
+            });
+          }
         }
-      }
-    }, 'canvas-planner');
+      }, 'canvas-agent'),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Chat timed out')), CHAT_TIMEOUT_MS)),
+    ]);
 
-    const phase1Result = parsePhase1Response(phase1RawText);
-    const fallbackPhase1Message = (
-      (lastPhase1Message && lastPhase1Message.trim().length > 0 ? lastPhase1Message : null) ||
-      extractMessageField(phase1RawText) ||
-      phase1RawText
-    ).trim();
-    const phase1Message = phase1Result.message.trim().length > 0
-      ? phase1Result.message
-      : fallbackPhase1Message;
+    // 완료 후 최종 결과 파싱
+    const chatResult = parseChatResponse(rawText);
+    const doMessage = chatResult.message.trim().length > 0
+      ? chatResult.message
+      : (lastStreamedMessage.trim() || rawText.trim());
 
+    // 최종 메시지: Do + Done 결합
+    const finalMessage = chatResult.doneMessage
+      ? `${doMessage}\n\n${chatResult.doneMessage}`
+      : doMessage;
+
+    // chat_result 이벤트 전송
     sendEvent({
       runId,
-      type: 'phase1_result',
-      message: phase1Message,
-      needsCanvasUpdate: phase1Result.needsCanvasUpdate,
-      updatePlan: phase1Result.updatePlan,
+      type: 'chat_result',
+      message: finalMessage,
+      canvasContent: chatResult.canvasContent,
+      doneMessage: chatResult.doneMessage,
     });
-
-    if (phase1Result.needsCanvasUpdate && phase1Result.updatePlan) {
-      currentPhase = 'updating';
-      sendEvent({ runId, type: 'phase', phase: 'updating' });
-
-      const phase2Prompt = buildPhase2Prompt(prompt, canvasContent, phase1Result.updatePlan, writingGoal, getOpenCodeProjectPath());
-      const phase2RawText = await Promise.race([
-        callProvider(phase2Prompt, modelId, variant, (chunk) => {
-          if (!chunk.event) {
-            return;
-          }
-
-          const activity = mapToAgentActivity(chunk.event);
-          if (!activity) {
-            return;
-          }
-
-          sendEvent({
-            runId,
-            type: 'thinking_stream',
-            phase: 'updating',
-            activity,
-          });
-        }, 'canvas-writer'),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Phase 2 timed out')), PHASE2_TIMEOUT_MS)),
-      ]);
-
-      const phase2Result = parsePhase2Response(phase2RawText);
-
-      if (!phase2Result) {
-        // eslint-disable-next-line no-console
-        console.error('[ai-canvas] Phase 2 parse failed. rawText (first 500 chars):', phase2RawText.slice(0, 500));
-        sendEvent({ runId, type: 'error', phase: 'updating', error: 'Failed to parse Phase 2 response' });
-        return;
-      }
-
-      sendEvent({
-        runId,
-        type: 'phase2_result',
-        message: phase2Result.message,
-        canvasContent: phase2Result.canvasContent,
-      });
-
-      await streamPhaseMessageAfterResult(sendEvent, runId, 'updating', phase2Result.message);
-    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     sendEvent({ runId, type: 'error', phase: currentPhase, error: errorMessage });

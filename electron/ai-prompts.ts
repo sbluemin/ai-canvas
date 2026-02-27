@@ -1,55 +1,59 @@
-import { z } from 'zod';
 import { truncateToFit } from './ai-canvas-utils';
 import type { FileMention, WritingGoal } from './ai-types';
 
-export const CANVAS_PLANNER_PROMPT = `[ROLE]
-You are an expert **Ideation Planner** for "AI Canvas" - a collaborative thinking space where users crystallize their ideas into structured documents.
-You are ONLY the planner. You evaluate and plan - you do NOT execute changes yourself. A separate agent will execute your plan if canvas updates are needed.
+// ─── 시그널 토큰 ───────────────────────────────────────────────
+// 유니코드 수학 꺾쇠(U+27E8, U+27E9)를 사용하여 자연어/마크다운 충돌 방지
+export const SIGNAL_CANVAS_OPEN = '⟨CANVAS⟩';
+export const SIGNAL_CANVAS_CLOSE = '⟨/CANVAS⟩';
+
+// ─── 통합 프롬프트 ─────────────────────────────────────────────
+
+export const CANVAS_AGENT_PROMPT = `[ROLE]
+You are an expert collaborative partner for "AI Canvas" — a thinking space where users crystallize their ideas into structured markdown documents.
+You are both the planner and executor. You analyze the user's intent and, when appropriate, directly update the canvas.
 
 [GOAL]
-Understand user intent and determine whether the canvas needs modification, acting as a thoughtful partner who knows when to act and when to discuss.
+Understand user intent, respond naturally, and update the canvas ONLY when it genuinely advances the user's goal.
 
-[RESPONSE FORMAT]
-You MUST respond with a valid JSON object only. No text before or after.
-{
-  "message": "(MARKDOWN) Your response to the user - MUST be under 5 lines and concise (required)",
-  "needsCanvasUpdate": true or false,
-  "updatePlan": "Detailed plan of what changes to make (required when needsCanvasUpdate is true)"
-}
+[HOW TO RESPOND]
 
-[CRITICAL: MESSAGE TONE & LENGTH GUIDELINES]
-- **Maximum 5 lines**: Your "message" must never exceed 5 lines. Focus on the core value or next step.
-- Your "message" field must reflect your role as a PLANNER, not an executor:
+### When canvas update IS needed — follow this EXACT 3-step flow:
 
-### When needsCanvasUpdate = true:
-- Use PROGRESSIVE tone indicating the action is ABOUT TO HAPPEN, not completed
+**Step 1 — APPROACH (before the canvas):**
+Briefly explain your approach and direction (markdown, 1-3 lines).
+- What aspect of the document will you change and WHY this approach makes sense
+- e.g. "I'll restructure the table of contents into a hierarchical format to improve readability from the user's perspective."
+- This is your reasoning as a collaborator — show the user your intent before acting
 
-### When needsCanvasUpdate = false:
-- Provide analysis, suggestions, or ask clarifying questions
+**Step 2 — UPDATED CANVAS:**
+${SIGNAL_CANVAS_OPEN}
+(the complete updated markdown document — this replaces the entire canvas)
+${SIGNAL_CANVAS_CLOSE}
+
+**Step 3 — RATIONALE (after the canvas):**
+Briefly explain the key changes you made and WHY (1-3 lines).
+- Highlight what was added, removed, or restructured and the reasoning behind it
+- e.g. "Expanded from a 3-step to a 5-step structure, placing concrete action items at each stage to increase actionability."
+- This helps the user evaluate your changes with context
+
+### When canvas update is NOT needed:
+Just respond naturally with your message (analysis, suggestions, clarifying questions).
+Do NOT include any signals.
 
 [DECISION FRAMEWORK]
 Ask yourself: *"Would updating the canvas right now genuinely advance the user's goal?"*
+- If YES → 3-step flow (APPROACH → CANVAS → RATIONALE)
+- If NO → message only
 
 [GUIDELINES]
 - **Match User's Language** - Respond in the same language as the 'user request'
 - **Be Collaborative** - Act as a partner, not a reactive tool
 - **Be Concrete** - Avoid vague suggestions; provide specific insights
-- **Honor Writing Goals** - When a <goal_context> block is provided, treat it as persistent context: ensure purpose, audience, tone, target length, and explicit length budget shape every response and plan
+- **Honor Writing Goals** - When a <goal_context> block is provided, treat it as persistent context: ensure purpose, audience, tone, target length, and explicit length budget shape every response and update
+- **Complete Document** - When using ${SIGNAL_CANVAS_OPEN}, always include the ENTIRE updated document, not just the changed parts
 `;
 
-export const CANVAS_WRITER_PROMPT = `[ROLE]
-You are an expert **Concretization Agent** for "AI Canvas" - transforming plans into polished, concrete content.
-
-[GOAL]
-Execute the update plan precisely based on the current canvas content, then explain what you accomplished.
-
-[RESPONSE FORMAT]
-You MUST respond with a valid JSON object only. No text before or after.
-{
-  "message": "(MARKDOWN) Explain what you changed and why - MUST be under 5 lines and concise (required)",
-  "canvasContent": "The complete updated markdown document (required)"
-}
-`;
+// ─── OpenCode 에이전트 설정 타입 ────────────────────────────────
 
 type OpenCodeAgentConfig = {
   description: string;
@@ -77,18 +81,11 @@ type OpenCodeConfig = {
   agent: Record<string, OpenCodeAgentConfig | OpenCodeDisabledAgentConfig>;
 };
 
-export const OPENCODE_REQUIRED_AGENTS: Record<'canvas-planner' | 'canvas-writer', OpenCodeAgentConfig> = {
-  'canvas-planner': {
-    description: '캔버스 의도 평가 및 수정 계획 수립. 사용자 요청을 분석하여 캔버스 수정 필요 여부를 판단한다.',
+export const OPENCODE_REQUIRED_AGENTS: Record<'canvas-agent', OpenCodeAgentConfig> = {
+  'canvas-agent': {
+    description: '캔버스 의도 평가, 수정 계획 수립, 콘텐츠 생성을 통합 수행하는 단일 에이전트.',
     mode: 'all',
-    prompt: CANVAS_PLANNER_PROMPT,
-    tools: { write: false, edit: false, bash: false },
-    temperature: 0.1,
-  },
-  'canvas-writer': {
-    description: '수정 계획에 따라 캔버스 마크다운 콘텐츠를 구체화하여 생성한다.',
-    mode: 'all',
-    prompt: CANVAS_WRITER_PROMPT,
+    prompt: CANVAS_AGENT_PROMPT,
     tools: { write: false, edit: false, bash: false },
     temperature: 0.1,
   },
@@ -107,13 +104,15 @@ export function buildRuntimeConfigJson(): string {
       plan: { disable: true },
       general: { disable: true },
       explore: { disable: true },
-      // 앱 전용 커스텀 에이전트
+      // 앱 전용 통합 에이전트
       ...OPENCODE_REQUIRED_AGENTS,
     },
   };
 
   return JSON.stringify(runtimeConfig);
 }
+
+// ─── 프롬프트 옵션 ─────────────────────────────────────────────
 
 export interface PromptOptions {
   maxCanvasLength?: number;
@@ -133,6 +132,8 @@ export interface ConversationMessage {
   provider?: string;
 }
 
+// ─── 프롬프트 빌더 ─────────────────────────────────────────────
+
 function getTargetLengthBudget(targetLength: WritingGoal['targetLength']): string {
   switch (targetLength) {
     case 'short':
@@ -146,7 +147,11 @@ function getTargetLengthBudget(targetLength: WritingGoal['targetLength']): strin
   }
 }
 
-export function buildPhase1Prompt(
+/**
+ * 통합 채팅 프롬프트를 빌드한다.
+ * 기존 buildPhase1Prompt()를 대체하며, buildPhase2Prompt()는 더 이상 필요하지 않다.
+ */
+export function buildChatPrompt(
   userRequest: string,
   canvasContent: string,
   history: ConversationMessage[] = [],
@@ -208,42 +213,7 @@ ${userRequest}
 </user_request>`;
 }
 
-export function buildPhase2Prompt(
-  userRequest: string,
-  canvasContent: string,
-  updatePlan: string,
-  writingGoal?: WritingGoal,
-  projectPath?: string | null
-): string {
-  const writingGoalBlock = writingGoal
-    ? `
-<goal_context>
-[GOAL]
-Purpose: ${writingGoal.purpose}
-Audience: ${writingGoal.audience}
-Tone: ${writingGoal.tone}
-Target Length: ${writingGoal.targetLength}
-Length Budget: ${getTargetLengthBudget(writingGoal.targetLength)}
-[/GOAL]
-</goal_context>
-`
-    : '';
-
-  return `${buildCriticalConstraint(projectPath)}
-
-<user_request>
-${userRequest}
-</user_request>
-
-<current_canvas>
-${canvasContent}
-</current_canvas>
-
-<update_plan>
-${updatePlan}
-</update_plan>
-${writingGoalBlock}`;
-}
+// ─── 내부 유틸 ─────────────────────────────────────────────────
 
 function formatHistory(history: ConversationMessage[]): string {
   if (history.length === 0) return '';
@@ -265,57 +235,6 @@ function formatHistory(history: ConversationMessage[]): string {
 
 function buildCriticalConstraint(projectPath?: string | null): string {
   return `[CRITICAL CONSTRAINT]
-1. **READ-ONLY MODE** - You are running as a **json-only responder**. You MUST NOT use any write or edit.
+1. **READ-ONLY MODE** - You are running as a **signal-based responder**. You MUST NOT use any write or edit tools.
 2. **WORKING DIRECTORY** - Your current working directory is: \`${projectPath}\`. Be aware of this path and use it as context when handling user requests.`;
-}
-
-export type Phase1Response = {
-  message: string;
-  needsCanvasUpdate: boolean;
-  updatePlan?: string;
-};
-
-export function validatePhase1Response(data: unknown): Phase1Response | null {
-  if (!data || typeof data !== 'object') {
-    return null;
-  }
-
-  const obj = data as Record<string, unknown>;
-
-  if (typeof obj.message !== 'string' || typeof obj.needsCanvasUpdate !== 'boolean') {
-    return null;
-  }
-
-  let updatePlan: string | undefined;
-  if (obj.updatePlan !== undefined) {
-    if (typeof obj.updatePlan === 'string') {
-      updatePlan = obj.updatePlan;
-    } else if (typeof obj.updatePlan === 'object' && obj.updatePlan !== null) {
-      updatePlan = JSON.stringify(obj.updatePlan, null, 2);
-    }
-  }
-
-  return {
-    message: obj.message,
-    needsCanvasUpdate: obj.needsCanvasUpdate,
-    updatePlan,
-  };
-}
-
-export const Phase1ResponseSchema = z.object({
-  message: z.string(),
-  needsCanvasUpdate: z.boolean(),
-  updatePlan: z.string().optional(),
-});
-
-export const Phase2ResponseSchema = z.object({
-  message: z.string(),
-  canvasContent: z.string(),
-});
-
-export type Phase2Response = z.infer<typeof Phase2ResponseSchema>;
-
-export function validatePhase2Response(data: unknown): Phase2Response | null {
-  const result = Phase2ResponseSchema.safeParse(data);
-  return result.success ? result.data : null;
 }

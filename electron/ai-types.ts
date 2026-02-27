@@ -39,20 +39,17 @@ export type AiChatEvent =
   | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
   | { runId: string; type: 'phase_message_stream'; phase: 'evaluating' | 'updating'; message: string }
   | { runId: string; type: 'thinking_stream'; phase: 'evaluating' | 'updating'; activity: AgentActivityEvent }
-  | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
-  | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
+  | { runId: string; type: 'canvas_content_stream'; content: string }
+  | { runId: string; type: 'chat_result'; message: string; canvasContent?: string; doneMessage?: string }
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
   | { runId: string; type: 'done' };
 
-export interface Phase1Response {
+/** 통합 채팅 결과 — 시그널 파서가 message/canvasContent를 분리하여 반환 */
+export interface ChatResult {
   message: string;
-  needsCanvasUpdate: boolean;
-  updatePlan?: string;
-}
-
-export interface Phase2Response {
-  message: string;
-  canvasContent: string;
+  canvasContent?: string;
+  /** ⟨/CANVAS⟩ 이후 완료 메시지 (Do→Canvas→Done 3단계 흐름) */
+  doneMessage?: string;
 }
 
 export interface OpenCodeChatRequest {

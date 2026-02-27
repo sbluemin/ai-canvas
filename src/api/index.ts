@@ -15,8 +15,8 @@ type AiChatEvent =
         | { kind: 'step'; label: string; tool?: string; target?: string }
         | { kind: 'step_finish' };
     }
-  | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
-  | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
+  | { runId: string; type: 'canvas_content_stream'; content: string }
+  | { runId: string; type: 'chat_result'; message: string; canvasContent?: string; doneMessage?: string }
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
   | { runId: string; type: 'done' };
 

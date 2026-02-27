@@ -47,13 +47,12 @@ export type AiChatEvent =
       type: 'thinking_stream';
       phase: 'evaluating' | 'updating';
       activity:
-        | { kind: 'step_start'; label: string }
-        | { kind: 'tool_use'; tool: string; label: string; target?: string }
-        | { kind: 'thinking'; summary: string; detail?: string }
+        | { kind: 'thought'; text: string }
+        | { kind: 'step'; label: string; tool?: string; target?: string }
         | { kind: 'step_finish' };
     }
-  | { runId: string; type: 'phase1_result'; message: string; needsCanvasUpdate: boolean; updatePlan?: string }
-  | { runId: string; type: 'phase2_result'; message: string; canvasContent: string }
+  | { runId: string; type: 'canvas_content_stream'; content: string }
+  | { runId: string; type: 'chat_result'; message: string; canvasContent?: string; doneMessage?: string }
   | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
   | { runId: string; type: 'done' };
 

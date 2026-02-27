@@ -15,9 +15,9 @@ electron/
 ├── export.service.ts      # HTML/PDF/DOCX 내보내기
 ├── runtime.service.ts     # opencode 설치/로그인 안내/모드/상태 관리
 ├── ai-workflow.ts         # 2-phase 워크플로우 엔진
-├── ai-prompts.ts          # 프롬프트 상수/빌더/스키마
+├── ai-prompts.ts          # 통합 프롬프트/빌더/시그널 토큰
 ├── ai-canvas-utils.ts     # 토큰 추정/캔버스 truncation
-├── ai-parser.ts           # JSON 추출 + schema/fallback
+├── ai-parser.ts           # 시그널 스캐너 + 채팅 응답 파서
 ├── ai-parser.test.ts      # parser 회귀 테스트
 ├── ai-models.ts           # 모델 조회/파싱
 ├── ai-types.ts            # AI/OpenCode 공용 타입
@@ -34,7 +34,7 @@ electron/
 | 문서 내보내기 | `export.service.ts` | HTML/PDF/DOCX |
 | 런타임 설정 | `runtime.service.ts` | 프로젝트 로컬 opencode 설치/로그인 안내/모드 |
 | AI 실행 엔진 | `ai-workflow.ts` | phase 전환 + 이벤트 송신 |
-| 프롬프트/스키마 | `ai-prompts.ts` | planner/writer prompt + validator |
+| 프롬프트/시그널 | `ai-prompts.ts` | 통합 에이전트 prompt + 시그널 토큰 + validator |
 | OpenCode 런타임 API | `unified-agent-adapter.ts` | @sbluemin/unified-agent SDK 경유 |
 | 모델 조회 | `ai-models.ts` | adapter 경유 모델 목록 |
 
@@ -43,6 +43,7 @@ electron/
 - IPC 핸들러는 라우팅만 담당, 비즈니스 로직은 `*.service.ts`에 위임.
 - preload는 CJS 번들만 허용 (`--format=cjs`).
 - 정적 agent 프롬프트/런타임 설정은 `ai-prompts.ts`를 단일 소스로 사용하며, 실행 시 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다. (`.ai-canvas/.runtime`은 컨텍스트/인증 데이터 경로로 유지)
+- AI 응답은 시그널 토큰(`⟨CANVAS⟩`, `⟨/CANVAS⟩`) 기반 자연어로 처리되며, `ai-parser.ts`의 `SignalScanner`가 스트리밍 중 시그널을 감지한다.
 
 ## ANTI-PATTERNS
 - `nodeIntegration: true` 또는 preload 우회 접근 금지.
