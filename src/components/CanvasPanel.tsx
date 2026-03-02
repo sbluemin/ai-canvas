@@ -40,6 +40,7 @@ export function CanvasPanel() {
   const isDirtyRef = useRef(false);
 
   const isUpdating = aiRun?.phase === 'updating';
+  const [showDiffFlash, setShowDiffFlash] = useState(false);
 
   useEffect(() => {
     if (isUpdating) {
@@ -47,11 +48,17 @@ export function CanvasPanel() {
       setIsClosing(false);
     } else if (showOverlay && !isUpdating) {
       setIsClosing(true);
-      const timer = setTimeout(() => {
+      // 업데이트 완료 → diff flash 하이라이트 표시
+      setShowDiffFlash(true);
+      const flashTimer = setTimeout(() => setShowDiffFlash(false), 3000);
+      const overlayTimer = setTimeout(() => {
         setShowOverlay(false);
         setIsClosing(false);
       }, 2000);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(flashTimer);
+        clearTimeout(overlayTimer);
+      };
     }
   }, [isUpdating, showOverlay]);
 
@@ -162,6 +169,9 @@ export function CanvasPanel() {
                     <path d="M1.5 1h5l1 1H14.5a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-12A.5.5 0 0 1 1.5 1zM2 5v8h12V5H2zm0-1h12V3H7.293l-1-1H2v2z"/>
                   </svg>
                 </button>
+                {isUpdating && (
+                  <span className="canvas-header-spinner" aria-label="캔버스 업데이트 중" />
+                )}
                 <div className="document-title-area">
                   <div className="active-feature-name" title={activeFeatureName}>
                     {activeFeatureName}
@@ -221,6 +231,9 @@ export function CanvasPanel() {
             </div>
             <div className="canvas-content">
               <MilkdownEditor />
+              {showDiffFlash && (
+                <div className="canvas-diff-flash" />
+              )}
               {showOverlay && (
                 <div className={`canvas-updating-overlay ${isClosing ? 'closing' : ''}`}>
                   {!isClosing && (

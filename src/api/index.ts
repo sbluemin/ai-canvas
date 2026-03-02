@@ -1,24 +1,16 @@
 import type { AiProvider } from '../types';
 import type { FeatureSummary, AvailableModels } from '../store/types';
+import {
+  MOCK_MODELS,
+  startMockChatStream,
+  subscribeMockChatEvent,
+  type MockAiChatEvent,
+} from './mock-ai';
 
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
+const mode = isElectron ? 'electron' : 'browser-mock';
 
-type AiChatEvent =
-  | { runId: string; type: 'phase'; phase: 'evaluating' | 'updating' }
-  | { runId: string; type: 'phase_message_stream'; phase: 'evaluating' | 'updating'; message: string }
-  | {
-      runId: string;
-      type: 'thinking_stream';
-      phase: 'evaluating' | 'updating';
-      activity:
-        | { kind: 'thought'; text: string }
-        | { kind: 'step'; label: string; tool?: string; target?: string }
-        | { kind: 'step_finish' };
-    }
-  | { runId: string; type: 'canvas_content_stream'; content: string }
-  | { runId: string; type: 'chat_result'; message: string; canvasContent?: string; doneMessage?: string }
-  | { runId: string; type: 'error'; phase: 'evaluating' | 'updating'; error: string }
-  | { runId: string; type: 'done' };
+type AiChatEvent = MockAiChatEvent;
 
 export type { AiProvider };
 
@@ -75,6 +67,15 @@ export interface ChatRequestOptions {
 
 export const api = {
   isElectron,
+  mode,
+
+  async fetchModels(): Promise<{ success: boolean; models?: AvailableModels; error?: string }> {
+    if (!isElectron) {
+      return { success: true, models: MOCK_MODELS };
+    }
+
+    return window.electronAPI.ai.fetchModels() as Promise<{ success: boolean; models?: AvailableModels; error?: string }>;
+  },
 
   /**
    * AI 채팅 요청 (통합 IPC)
@@ -87,7 +88,13 @@ export const api = {
     options?: ChatRequestOptions
   ): Promise<{ success: boolean; error?: string }> {
     if (!isElectron) {
-      return { success: false, error: 'Chat is only available in Electron environment' };
+      startMockChatStream({
+        runId,
+        prompt,
+        canvasContent,
+        modelId: options?.modelId,
+      });
+      return { success: true };
     }
 
     return window.electronAPI.ai.chat({
@@ -108,7 +115,7 @@ export const api = {
    */
   onChatEvent(callback: (event: AiChatEvent) => void): () => void {
     if (!isElectron) {
-      return () => {};
+      return subscribeMockChatEvent(callback);
     }
     return window.electronAPI.ai.onChatEvent(callback);
   },

@@ -9,7 +9,7 @@ import { api } from '../api';
 import { AUTOSAVE_DELAY, generateId } from '../utils';
 import { Logo } from './Logo';
 import './ChatPanel.css';
-import { PlusIcon, SendIcon, ChevronDownIcon } from './Icons';
+import { PlusIcon, SendIcon, StopIcon, ChevronDownIcon } from './Icons';
 import { ChatModelSelector } from './ChatModelSelector';
 
 
@@ -173,23 +173,18 @@ function getProviderInfo(_provider?: string) {
   return AI_CANVAS_INFO;
 }
 
-function TypingDots() {
+/** Gemini 스타일 — Logo 회전 + "생각하는 과정 표시" 텍스트 */
+function ThinkingIndicator({ text }: { text?: string }) {
   return (
-    <span className="typing-indicator">
-      <span className="dot" />
-      <span className="dot" />
-      <span className="dot" />
+    <span className="thinking-indicator">
+      <span className="thinking-icon">
+        <Logo />
+      </span>
+      {text && <span className="thinking-label">{text}</span>}
     </span>
   );
 }
 
-function formatThinkingDuration(startedAt?: number, completedAt?: number): string {
-  if (!startedAt || !completedAt || completedAt <= startedAt) {
-    return '0.0s';
-  }
-
-  return `${((completedAt - startedAt) / 1000).toFixed(1)}s`;
-}
 
 export function ChatPanel() {
   const [input, setInput] = useState('');
@@ -528,7 +523,6 @@ export function ChatPanel() {
             // Thought와 Steps 분리
             const thought = agentActivities.find((a): a is Extract<AgentActivity, { kind: 'thought' }> => a.kind === 'thought');
             const steps = agentActivities.filter((a): a is Extract<AgentActivity, { kind: 'step' }> => a.kind === 'step');
-            const activitySummary = `${steps.length} steps, ${formatThinkingDuration(msg.activityStartedAt, msg.activityCompletedAt)}`;
 
             if (msg.role === 'assistant' && !msg.content && !showInlineProgress && !hasActivities) {
               return null;
@@ -537,90 +531,72 @@ export function ChatPanel() {
             
             return (
               <div key={msg.id} className={`message ${msg.role}`}>
-                {msg.role === 'assistant' && providerInfo && (
-                  <div className="message-header">
-                    <div className="ai-avatar">
-                      {providerInfo.icon}
+                {msg.role === 'assistant' && hasActivities ? (
+                  /* ─── Gemini-style: 메시지 헤더 = "생각하는 과정 표시" 토글 ─── */
+                  <>
+                    {isActivityComplete ? (
+                      <button
+                        type="button"
+                        className="thinking-toggle"
+                        onClick={() => setMessageActivityCollapsed(msg.id, !isActivityCollapsed)}
+                        aria-expanded={!isActivityCollapsed}
+                        aria-controls={activitiesId}
+                      >
+                        <div className="thinking-toggle-icon">
+                          <Logo />
+                        </div>
+                        <span className="thinking-toggle-label">생각하는 과정 표시</span>
+                        <ChevronDownIcon className={`thinking-toggle-chevron ${isActivityCollapsed ? '' : 'expanded'}`} />
+                      </button>
+                    ) : (
+                      <div className="thinking-toggle is-thinking" aria-live="polite">
+                        <div className="thinking-toggle-icon spinning">
+                          <Logo />
+                        </div>
+                        <span className="thinking-toggle-label">생각하는 과정 표시</span>
+                        <ChevronDownIcon className="thinking-toggle-chevron expanded" />
+                      </div>
+                    )}
+
+                    {/* 드롭다운 내용 — 진행 중이면 항상 열림, 완료 후 접기 가능 */}
+                    {(!isActivityComplete || !isActivityCollapsed) && (
+                      <div id={activitiesId} className="thinking-dropdown">
+                        {thought && (
+                          <div className="thinking-dropdown-section">
+                            <div className="thinking-dropdown-title">{thought.text.split('\n')[0]}</div>
+                            <div className="thinking-dropdown-body">
+                              <span className="thinking-dropdown-text">{thought.text}</span>
+                            </div>
+                          </div>
+                        )}
+                        {steps.length > 0 && steps.map((step, stepIdx) => (
+                          <div
+                            key={step.id}
+                            className={`thinking-dropdown-step ${step.status === 'running' ? 'running' : 'done'}`}
+                            style={{ animationDelay: `${Math.min(stepIdx * 45, 220)}ms` }}
+                          >
+                            <span className="thinking-dropdown-step-label">{step.label}</span>
+                            {step.tool && (
+                              <span className="thinking-dropdown-step-detail">
+                                {step.tool}{step.target ? `: ${step.target}` : ''}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  msg.role === 'assistant' && providerInfo && (
+                    <div className="message-header">
+                      <div className="ai-avatar">
+                        {providerInfo.icon}
+                      </div>
+                      <span className="ai-name">{providerInfo.name}</span>
                     </div>
-                    <span className="ai-name">{providerInfo.name}</span>
-                  </div>
+                  )
                 )}
                 <div className="message-content">
-                  {msg.role === 'assistant' && hasActivities && (
-                    <div className={`agent-activity ${isActivityComplete ? 'completed' : 'running'}`}>
-                      {isActivityComplete ? (
-                        <button
-                          type="button"
-                          className="agent-activity-toggle"
-                          onClick={() => setMessageActivityCollapsed(msg.id, !isActivityCollapsed)}
-                          aria-expanded={!isActivityCollapsed}
-                          aria-controls={activitiesId}
-                        >
-                          <span className="agent-activity-dot completed" />
-                          <span className="agent-activity-texts">
-                            <span className="agent-activity-label">Activity</span>
-                            <span className="agent-activity-meta">{activitySummary}</span>
-                          </span>
-                          <ChevronDownIcon className={`agent-activity-chevron ${isActivityCollapsed ? 'collapsed' : ''}`} />
-                        </button>
-                      ) : (
-                        <div className="agent-activity-running" aria-live="polite">
-                          <span className="agent-activity-dot pending" />
-                          <span className="agent-activity-texts">
-                            <span className="agent-activity-label">Activity</span>
-                            <span className="agent-activity-meta">In progress...</span>
-                          </span>
-                        </div>
-                      )}
-
-                      {!isActivityCollapsed && (
-                        <div id={activitiesId} className="agent-activity-body">
-                          {thought && (
-                            <div className="agent-section agent-section--analysis">
-                              <div className="agent-section-header">
-                                <span className="agent-indicator-analysis" aria-hidden="true" />
-                                <span className="agent-section-label">Analysis</span>
-                              </div>
-                              <div className="agent-thought">
-                                <span className="agent-thought-text">{thought.text}</span>
-                              </div>
-                            </div>
-                          )}
-                          {steps.length > 0 && (
-                            <div className="agent-section agent-section--actions">
-                              <div className="agent-section-header">
-                                <svg className="agent-indicator-actions" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                  <path d="M5 4L9 8L5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                  <path d="M9 12H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                <span className="agent-section-label">Actions</span>
-                              </div>
-                              <div className="agent-steps">
-                                {steps.map((step, stepIdx) => (
-                                  <div
-                                    key={step.id}
-                                    className={`agent-step ${step.status === 'running' ? 'running' : 'done'}`}
-                                    style={{ animationDelay: `${Math.min(stepIdx * 45, 220)}ms` }}
-                                  >
-                                    <span className={`agent-activity-dot ${step.status === 'running' ? 'pending' : 'completed'}`} />
-                                    <div className="agent-step-texts">
-                                      <span className="agent-step-label">{step.label}</span>
-                                      {step.tool && (
-                                        <span className="agent-step-detail">
-                                          {step.tool}{step.target ? `: ${step.target}` : ''}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   {msg.role === 'user' && msg.fileMentions && msg.fileMentions.length > 0 && (
                     <div className="message-file-mentions">
                       {msg.fileMentions.map((mention) => (
@@ -636,8 +612,7 @@ export function ChatPanel() {
                         <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.content}</Markdown>
                         {showInlineProgress && (
                           <div className="progress-indicator inline-progress">
-                            <TypingDots />
-                            <span className="progress-text">Updating canvas...</span>
+                            <ThinkingIndicator text="캔버스 업데이트 중..." />
                           </div>
                         )}
                       </>
@@ -648,11 +623,10 @@ export function ChatPanel() {
                     msg.role === 'assistant' &&
                     (showInlineProgress ? (
                       <div className="progress-indicator inline-progress">
-                        <TypingDots />
-                        <span className="progress-text">Updating canvas...</span>
+                        <ThinkingIndicator text="캔버스 업데이트 중..." />
                       </div>
                     ) : (
-                      isLoading && <TypingDots />
+                      isLoading && !hasActivities && <ThinkingIndicator />
                     ))
                   )}
                 </div>
@@ -663,17 +637,11 @@ export function ChatPanel() {
         )}
         {isLoading && !isUpdatingCanvas && !hasFailed && !hasAssistantTailMessage && (
           <div className="message assistant">
-            <div className="message-header">
-              <div className="ai-avatar">
-              {AI_CANVAS_INFO.icon}
+            <div className="thinking-toggle is-thinking" aria-live="polite">
+              <div className="thinking-toggle-icon spinning">
+                <Logo />
               </div>
-              <span className="ai-name">{AI_CANVAS_INFO.name}</span>
-            </div>
-            <div className="message-content">
-              <div className="progress-indicator">
-                <TypingDots />
-                <span className="progress-text">Generating response...</span>
-              </div>
+              <span className="thinking-toggle-label">생각하는 과정 표시</span>
             </div>
           </div>
         )}
@@ -704,13 +672,24 @@ export function ChatPanel() {
                 disabled={isLoading || isChatLocked}
                 rows={1}
               />
-              <button
-                type="submit"
-                className="send-btn"
-                disabled={isLoading || isChatLocked || !input.trim()}
-              >
-                <SendIcon />
-              </button>
+              {isLoading ? (
+                <button
+                  type="button"
+                  className="send-btn stop-btn"
+                  onClick={() => { /* 현재 요청 중지 — 향후 구현 */ }}
+                  title="응답 중지"
+                >
+                  <StopIcon />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  className="send-btn"
+                  disabled={isChatLocked || !input.trim()}
+                >
+                  <SendIcon />
+                </button>
+              )}
             </div>
           </form>
           {showMentionMenu && (

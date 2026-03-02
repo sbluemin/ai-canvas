@@ -139,7 +139,8 @@ ai-canvas/
 │   │   └── slices/               # 7개 slice (RuntimeSlice 추가)
 │   ├── hooks/useChatRequest.ts   # AI 채팅 오케스트레이션 훅
 │   ├── context/EditorContext.tsx  # Milkdown Editor ref + active 서식 상태(heading/inline/list) 공유 Context
-│   ├── api/index.ts              # Electron IPC 래퍼
+│   ├── api/index.ts              # Electron/Browser 분기 API 래퍼
+│   ├── api/mock-ai.ts            # 브라우저 자동화 테스트용 AI 목업 스트리밍 모듈
 │   ├── utils/                    # 유틸리티 (logger, id, parser, constants, sddDocument)
 │   ├── types/                    # 공용 타입 (chat.ts, api.ts, electron.d.ts)
 ├── electron/                     # 메인 프로세스 (→ electron/AGENTS.md)

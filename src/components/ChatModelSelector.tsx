@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useStore } from '../store/useStore';
 import type { RuntimeStatus } from '../store/types';
+import { api } from '../api';
 import './ChatModelSelector.css';
 
 function getRuntimeStateClass(status: RuntimeStatus | null): string {
@@ -56,12 +57,11 @@ export function ChatModelSelector() {
   const handleRefresh = useCallback(async (event?: ReactMouseEvent<HTMLButtonElement>) => {
     if (event) event.stopPropagation();
 
-    const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
-    if (!isElectron || modelsLoading) return;
+    if (modelsLoading) return;
 
     setModelsLoading(true);
     try {
-      const result = await window.electronAPI.ai.fetchModels();
+      const result = await api.fetchModels();
       if (result.success && result.models) {
         setAvailableModels(result.models);
       }

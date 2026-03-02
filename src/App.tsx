@@ -49,11 +49,8 @@ function App() {
   const isThemeHydratedRef = useRef(false);
 
   useEffect(() => {
-    const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
-    if (!isElectron) return;
-
     setModelsLoading(true);
-    window.electronAPI.ai.fetchModels()
+    api.fetchModels()
       .then((result) => {
         if (result.success && result.models) {
           setAvailableModels(result.models);

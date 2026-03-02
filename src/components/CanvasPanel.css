@@ -448,6 +448,56 @@
   pointer-events: auto;
 }
 
+/* ─── 헤더 로딩 스피너 (Gemini-Style) ─── */
+.canvas-header-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--accent-blue) 20%, transparent);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: headerSpinnerRotate 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes headerSpinnerRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Diff Flash 하이라이트 (업데이트 완료 후) ─── */
+.canvas-diff-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+  border: 2px solid color-mix(in srgb, var(--accent-blue) 20%, transparent);
+  border-radius: var(--radius-md);
+  animation: diffFlashFadeOut 3s ease-out forwards;
+}
+
+[data-theme='light'] .canvas-diff-flash {
+  background: color-mix(in srgb, var(--accent-blue) 6%, transparent);
+  border-color: color-mix(in srgb, var(--accent-blue) 15%, transparent);
+}
+
+@keyframes diffFlashFadeOut {
+  0% {
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--accent-blue) 35%, transparent);
+    background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+  }
+  30% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    border-color: transparent;
+    background: transparent;
+  }
+}
+
 .canvas-updating-overlay {
   position: absolute;
   inset: 0;
@@ -455,8 +505,8 @@
   z-index: 10;
   overflow: hidden;
   animation: circleExpand 2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;

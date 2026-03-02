@@ -113,8 +113,6 @@ export function useChatRequest() {
   const streamedMessageRef = useRef('');
 
   useEffect(() => {
-    if (!api.isElectron) return;
-
     const unsubscribe = api.onChatEvent((event) => {
       if (event.runId !== currentRunIdRef.current) {
         return;
