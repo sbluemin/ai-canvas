@@ -8,8 +8,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { Buffer } from 'node:buffer';
+import { getProjectDataDir, resolveProjectId } from './canvas-path';
 import {
-  AI_CANVAS_DIR,
   DEFAULT_CANVAS_NAME,
   DEFAULT_FEATURE_ID,
   DEFAULT_FEATURE_NAME,
@@ -31,10 +31,16 @@ import {
   fail,
 } from './utils';
 
+async function resolveProjectDataDir(projectPath: string): Promise<string> {
+  const projectId = await resolveProjectId(projectPath);
+  return getProjectDataDir(projectId);
+}
+
 // ─── 캔버스 디렉토리 ───
 
 export async function initCanvasDir(projectPath: string): Promise<ServiceResult<{ path: string }>> {
-  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const canvasDir = projectDataDir;
   try {
     await fs.mkdir(canvasDir, { recursive: true });
     return ok({ path: canvasDir });
@@ -46,7 +52,8 @@ export async function initCanvasDir(projectPath: string): Promise<ServiceResult<
 // ─── 캔버스 파일 목록 ───
 
 export async function listCanvasFiles(projectPath: string): Promise<ServiceResult<{ files: string[] }>> {
-  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const canvasDir = projectDataDir;
   try {
     const entries = await fs.readdir(canvasDir, { withFileTypes: true });
     const mdFiles: string[] = [];
@@ -85,7 +92,8 @@ interface TreeEntry {
 }
 
 export async function listFeatures(projectPath: string): Promise<ServiceResult<{ features: FeatureSummary[] }>> {
-  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const canvasDir = projectDataDir;
   try {
     const entries = await fs.readdir(canvasDir, { withFileTypes: true });
     const directories = entries.filter((entry) => entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== ASSET_DIR_NAME);
@@ -93,7 +101,7 @@ export async function listFeatures(projectPath: string): Promise<ServiceResult<{
     const features: FeatureSummary[] = [];
     for (let i = 0; i < directories.length; i += 1) {
       const featureId = directories[i].name;
-      const meta = await readFeatureMetaInternal(projectPath, featureId);
+      const meta = await readFeatureMetaInternal(projectDataDir, featureId);
       features.push(toFeatureSummary(featureId, meta, i));
     }
 
@@ -119,8 +127,9 @@ export async function createFeature(projectPath: string, featureId: string, name
     return fail('Invalid feature id.');
   }
 
+  const projectDataDir = await resolveProjectDataDir(projectPath);
   const now = new Date().toISOString();
-  const featureDir = getFeatureDirPath(projectPath, featureId);
+  const featureDir = getFeatureDirPath(projectDataDir, featureId);
   const featuresResult = await listFeatures(projectPath);
   const nextOrder = featuresResult.success
     ? (featuresResult.data?.features.reduce((maxOrder, feature) => Math.max(maxOrder, feature.order), -1) ?? -1) + 1
@@ -137,7 +146,7 @@ export async function createFeature(projectPath: string, featureId: string, name
       updatedAt: now,
       writingGoal: null,
     };
-    await writeFeatureMetaInternal(projectPath, featureId, meta);
+    await writeFeatureMetaInternal(projectDataDir, featureId, meta);
     return ok({ feature: toFeatureSummary(featureId, meta, 0) });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
@@ -152,14 +161,15 @@ export async function renameFeature(projectPath: string, oldFeatureId: string, n
     return fail('Invalid feature id.');
   }
 
-  const oldPath = getFeatureDirPath(projectPath, oldFeatureId);
-  const newPath = getFeatureDirPath(projectPath, newFeatureId);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const oldPath = getFeatureDirPath(projectDataDir, oldFeatureId);
+  const newPath = getFeatureDirPath(projectDataDir, newFeatureId);
 
   try {
     await fs.rename(oldPath, newPath);
-    const meta = await readFeatureMetaInternal(projectPath, newFeatureId);
+    const meta = await readFeatureMetaInternal(projectDataDir, newFeatureId);
     const now = new Date().toISOString();
-    await writeFeatureMetaInternal(projectPath, newFeatureId, {
+    await writeFeatureMetaInternal(projectDataDir, newFeatureId, {
       ...(meta ?? {}),
       name: newFeatureId,
       updatedAt: now,
@@ -175,7 +185,8 @@ export async function deleteFeature(projectPath: string, featureId: string): Pro
     return fail('Invalid feature id.');
   }
 
-  const featureDir = getFeatureDirPath(projectPath, featureId);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const featureDir = getFeatureDirPath(projectDataDir, featureId);
   try {
     await fs.rm(featureDir, { recursive: true, force: true });
     return ok();
@@ -190,7 +201,8 @@ export async function readFeatureMeta(projectPath: string, featureId: string): P
   }
 
   try {
-    const meta = await readFeatureMetaInternal(projectPath, featureId);
+    const projectDataDir = await resolveProjectDataDir(projectPath);
+    const meta = await readFeatureMetaInternal(projectDataDir, featureId);
     return ok({ meta });
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error));
@@ -203,7 +215,8 @@ export async function writeFeatureMeta(projectPath: string, featureId: string, m
   }
 
   try {
-    await writeFeatureMetaInternal(projectPath, featureId, meta);
+    const projectDataDir = await resolveProjectDataDir(projectPath);
+    await writeFeatureMetaInternal(projectDataDir, featureId, meta);
     return ok();
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error));
@@ -215,7 +228,8 @@ export async function listFeatureCanvasFiles(projectPath: string, featureId: str
     return fail('Invalid feature id.');
   }
 
-  const featureDir = getFeatureDirPath(projectPath, featureId);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const featureDir = getFeatureDirPath(projectDataDir, featureId);
   try {
     const entries = await fs.readdir(featureDir, { withFileTypes: true });
     const files = entries
@@ -316,8 +330,8 @@ function toFeatureSummary(featureId: string, meta: FeatureMeta | null, fallbackO
   };
 }
 
-async function readFeatureMetaInternal(projectPath: string, featureId: string): Promise<FeatureMeta | null> {
-  const metaPath = getFeatureMetaPath(projectPath, featureId);
+async function readFeatureMetaInternal(projectDataDir: string, featureId: string): Promise<FeatureMeta | null> {
+  const metaPath = getFeatureMetaPath(projectDataDir, featureId);
   try {
     const raw = await fs.readFile(metaPath, 'utf-8');
     const parsed = JSON.parse(raw) as FeatureMeta;
@@ -333,9 +347,9 @@ async function readFeatureMetaInternal(projectPath: string, featureId: string): 
   }
 }
 
-async function writeFeatureMetaInternal(projectPath: string, featureId: string, meta: FeatureMeta): Promise<void> {
-  const featureDir = getFeatureDirPath(projectPath, featureId);
-  const metaPath = getFeatureMetaPath(projectPath, featureId);
+async function writeFeatureMetaInternal(projectDataDir: string, featureId: string, meta: FeatureMeta): Promise<void> {
+  const featureDir = getFeatureDirPath(projectDataDir, featureId);
+  const metaPath = getFeatureMetaPath(projectDataDir, featureId);
   await fs.mkdir(featureDir, { recursive: true });
   await fs.writeFile(metaPath, JSON.stringify(meta), 'utf-8');
 }
@@ -373,7 +387,8 @@ async function collectProjectFilesRecursive(baseDir: string, currentDir: string,
 }
 
 export async function listCanvasTree(projectPath: string): Promise<ServiceResult<{ tree: TreeEntry[] }>> {
-  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const canvasDir = projectDataDir;
   try {
     const tree = await readDirRecursive(canvasDir, '');
     return ok({ tree });
@@ -387,6 +402,7 @@ export async function listCanvasTree(projectPath: string): Promise<ServiceResult
 
 export async function listProjectFiles(projectPath: string): Promise<ServiceResult<{ files: string[] }>> {
   try {
+    await resolveProjectDataDir(projectPath);
     const files: string[] = [];
     await collectProjectFilesRecursive(projectPath, projectPath, files);
     files.sort((a, b) => a.localeCompare(b));
@@ -405,7 +421,8 @@ export async function createCanvasFolder(projectPath: string, folderPath: string
   if (!isValidCanvasFolderPath(folderPath)) {
     return fail('Invalid folder path.');
   }
-  const fullPath = getCanvasFolderPath(projectPath, folderPath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const fullPath = getCanvasFolderPath(projectDataDir, folderPath);
   try {
     await fs.mkdir(fullPath, { recursive: true });
     return ok();
@@ -418,7 +435,8 @@ export async function deleteCanvasFolder(projectPath: string, folderPath: string
   if (!isValidCanvasFolderPath(folderPath)) {
     return fail('Invalid folder path.');
   }
-  const fullPath = getCanvasFolderPath(projectPath, folderPath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const fullPath = getCanvasFolderPath(projectDataDir, folderPath);
   try {
     await fs.rm(fullPath, { recursive: true, force: true });
     return ok();
@@ -431,8 +449,9 @@ export async function renameCanvasFolder(projectPath: string, oldFolderPath: str
   if (!isValidCanvasFolderPath(oldFolderPath) || !isValidCanvasFolderPath(newFolderPath)) {
     return fail('Invalid folder path.');
   }
-  const oldFullPath = getCanvasFolderPath(projectPath, oldFolderPath);
-  const newFullPath = getCanvasFolderPath(projectPath, newFolderPath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const oldFullPath = getCanvasFolderPath(projectDataDir, oldFolderPath);
+  const newFullPath = getCanvasFolderPath(projectDataDir, newFolderPath);
   try {
     await fs.rename(oldFullPath, newFullPath);
     return ok();
@@ -447,7 +466,8 @@ export async function readCanvasFile(projectPath: string, fileName: string): Pro
   if (!isValidCanvasFileName(fileName)) {
     return fail('Invalid file name.');
   }
-  const filePath = getCanvasFilePath(projectPath, fileName);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const filePath = getCanvasFilePath(projectDataDir, fileName);
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     return ok({ content });
@@ -460,7 +480,8 @@ export async function writeCanvasFile(projectPath: string, fileName: string, con
   if (!isValidCanvasFileName(fileName)) {
     return fail('Invalid file name.');
   }
-  const filePath = getCanvasFilePath(projectPath, fileName);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const filePath = getCanvasFilePath(projectDataDir, fileName);
   try {
     const dir = path.dirname(filePath);
     await fs.mkdir(dir, { recursive: true });
@@ -475,8 +496,9 @@ export async function renameCanvasFile(projectPath: string, oldFileName: string,
   if (!isValidCanvasFileName(oldFileName) || !isValidCanvasFileName(newFileName)) {
     return fail('Invalid file name.');
   }
-  const oldPath = getCanvasFilePath(projectPath, oldFileName);
-  const newPath = getCanvasFilePath(projectPath, newFileName);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const oldPath = getCanvasFilePath(projectDataDir, oldFileName);
+  const newPath = getCanvasFilePath(projectDataDir, newFileName);
   try {
     await fs.rename(oldPath, newPath);
     return ok();
@@ -489,7 +511,8 @@ export async function deleteCanvasFile(projectPath: string, fileName: string): P
   if (!isValidCanvasFileName(fileName)) {
     return fail('Invalid file name.');
   }
-  const filePath = getCanvasFilePath(projectPath, fileName);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const filePath = getCanvasFilePath(projectDataDir, fileName);
   try {
     await fs.unlink(filePath);
     return ok();
@@ -502,8 +525,9 @@ export async function moveCanvasFile(projectPath: string, oldFilePath: string, n
   if (!isValidCanvasFileName(oldFilePath) || !isValidCanvasFileName(newFilePath)) {
     return fail('Invalid file path.');
   }
-  const srcPath = getCanvasFilePath(projectPath, oldFilePath);
-  const destPath = getCanvasFilePath(projectPath, newFilePath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const srcPath = getCanvasFilePath(projectDataDir, oldFilePath);
+  const destPath = getCanvasFilePath(projectDataDir, newFilePath);
   try {
     const destDir = path.dirname(destPath);
     await fs.mkdir(destDir, { recursive: true });
@@ -515,13 +539,14 @@ export async function moveCanvasFile(projectPath: string, oldFilePath: string, n
 }
 
 export async function createDefaultCanvas(projectPath: string): Promise<ServiceResult<{ fileName: string }>> {
-  const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const canvasDir = projectDataDir;
   const featureDir = path.join(canvasDir, DEFAULT_FEATURE_ID);
   const filePath = path.join(featureDir, DEFAULT_CANVAS_NAME);
   try {
     await fs.mkdir(featureDir, { recursive: true });
     const now = new Date().toISOString();
-    await writeFeatureMetaInternal(projectPath, DEFAULT_FEATURE_ID, {
+    await writeFeatureMetaInternal(projectDataDir, DEFAULT_FEATURE_ID, {
       name: DEFAULT_FEATURE_NAME,
       description: '',
       icon: '',
@@ -543,7 +568,8 @@ export async function readChatSession(projectPath: string, featureId: string): P
   if (!isValidCanvasFolderName(featureId)) {
     return fail('Invalid feature id.');
   }
-  const filePath = getFeatureChatSessionPath(projectPath, featureId);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const filePath = getFeatureChatSessionPath(projectDataDir, featureId);
   try {
     const raw = await fs.readFile(filePath, 'utf-8');
     const parsed = JSON.parse(raw) as unknown;
@@ -563,9 +589,10 @@ export async function writeChatSession(projectPath: string, featureId: string, m
   if (!isValidCanvasFolderName(featureId)) {
     return fail('Invalid feature id.');
   }
-  const filePath = getFeatureChatSessionPath(projectPath, featureId);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const filePath = getFeatureChatSessionPath(projectDataDir, featureId);
   try {
-    const featureDir = getFeatureDirPath(projectPath, featureId);
+    const featureDir = getFeatureDirPath(projectDataDir, featureId);
     await fs.mkdir(featureDir, { recursive: true });
     await fs.writeFile(filePath, JSON.stringify(messages), 'utf-8');
     return ok();
@@ -575,7 +602,8 @@ export async function writeChatSession(projectPath: string, featureId: string, m
 }
 
 export async function readWorkspace(projectPath: string): Promise<ServiceResult<{ workspace: unknown }>> {
-  const workspacePath = getWorkspacePath(projectPath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const workspacePath = getWorkspacePath(projectDataDir);
   try {
     const raw = await fs.readFile(workspacePath, 'utf-8');
     const parsed = JSON.parse(raw) as unknown;
@@ -589,9 +617,10 @@ export async function readWorkspace(projectPath: string): Promise<ServiceResult<
 }
 
 export async function writeWorkspace(projectPath: string, workspace: unknown): Promise<ServiceResult> {
-  const workspacePath = getWorkspacePath(projectPath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const workspacePath = getWorkspacePath(projectDataDir);
   try {
-    const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+    const canvasDir = projectDataDir;
     await fs.mkdir(canvasDir, { recursive: true });
     await fs.writeFile(workspacePath, JSON.stringify(workspace), 'utf-8');
     return ok();
@@ -601,7 +630,8 @@ export async function writeWorkspace(projectPath: string, workspace: unknown): P
 }
 
 export async function readAutosaveStatus(projectPath: string): Promise<ServiceResult<{ status: unknown }>> {
-  const autosaveStatusPath = getAutosaveStatusPath(projectPath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const autosaveStatusPath = getAutosaveStatusPath(projectDataDir);
   try {
     const raw = await fs.readFile(autosaveStatusPath, 'utf-8');
     const parsed = JSON.parse(raw) as unknown;
@@ -615,9 +645,10 @@ export async function readAutosaveStatus(projectPath: string): Promise<ServiceRe
 }
 
 export async function writeAutosaveStatus(projectPath: string, status: unknown): Promise<ServiceResult> {
-  const autosaveStatusPath = getAutosaveStatusPath(projectPath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const autosaveStatusPath = getAutosaveStatusPath(projectDataDir);
   try {
-    const canvasDir = path.join(projectPath, AI_CANVAS_DIR);
+    const canvasDir = projectDataDir;
     await fs.mkdir(canvasDir, { recursive: true });
     await fs.writeFile(autosaveStatusPath, JSON.stringify(status), 'utf-8');
     return ok();
@@ -633,7 +664,8 @@ export async function saveImageAsset(
   base64: string,
   mimeType: string
 ): Promise<ServiceResult<{ relativePath: string; absolutePath: string }>> {
-  const assetDir = getAssetsDirPath(projectPath);
+  const projectDataDir = await resolveProjectDataDir(projectPath);
+  const assetDir = getAssetsDirPath(projectDataDir);
   const ext = mimeType === 'image/png'
     ? 'png'
     : mimeType === 'image/jpeg'

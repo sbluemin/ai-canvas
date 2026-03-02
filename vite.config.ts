@@ -5,6 +5,7 @@ import renderer from 'vite-plugin-electron-renderer';
 /// <reference types="vitest" />
 
 const isWebMode = process.env.npm_lifecycle_event?.includes('web') || process.argv.includes('--mode') && process.argv.includes('web');
+const isVitestMode = process.env.VITEST === 'true';
 
 const electronExternals = [
   'electron',
@@ -14,7 +15,7 @@ const electronExternals = [
 export default defineConfig({
   plugins: [
     react(),
-    ...(isWebMode ? [] : [
+    ...(isWebMode || isVitestMode ? [] : [
       electron([
         {
           entry: 'electron/main.ts',

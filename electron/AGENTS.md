@@ -12,6 +12,8 @@ electron/
 ├── utils.ts               # 경로/마크다운/IPC 헬퍼 + ServiceResult
 ├── ipc-handlers.ts        # 모든 IPC 채널 등록 단일 엔트리
 ├── project.service.ts     # Feature/캔버스 CRUD, 세션, 에셋, 파일 인덱스
+├── canvas-path.ts         # projectPath → 글로벌 데이터 경로(GUID) 리졸버 + registry
+├── canvas-path.test.ts    # canvas-path 경로/registry 단위 테스트
 ├── export.service.ts      # HTML/PDF/DOCX 내보내기
 ├── runtime.service.ts     # 글로벌 opencode 설치 확인/로그인 안내/상태 관리
 ├── ai-workflow.ts         # 2-phase 워크플로우 엔진
@@ -31,6 +33,7 @@ electron/
 | API 노출 | `preload.ts` | renderer 접근 가능한 표면적 |
 | IPC 핸들러 등록 | `ipc-handlers.ts` | 채널별 라우팅 일원화 |
 | 프로젝트 비즈니스 로직 | `project.service.ts` | Feature/캔버스 CRUD, 세션, 에셋 |
+| 프로젝트 데이터 경로 해석 | `canvas-path.ts` | 글로벌 루트/registry/GUID 매핑 |
 | 문서 내보내기 | `export.service.ts` | HTML/PDF/DOCX |
 | 런타임 설정 | `runtime.service.ts` | 글로벌 opencode 설치 확인/로그인 안내 |
 | AI 실행 엔진 | `ai-workflow.ts` | phase 전환 + 이벤트 송신 |

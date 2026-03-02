@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, type IpcMainInvokeEvent, shell } from 'elec
 import Store from 'electron-store';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { AI_CANVAS_DIR, handleIpc } from './utils';
+import { handleIpc } from './utils';
 import { executeAiChatWorkflow } from './ai-workflow';
 import type { AiChatRequest } from './ai-types';
 import { fetchModelsFromApi } from './ai-models';

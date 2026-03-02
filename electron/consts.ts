@@ -1,4 +1,4 @@
-export const AI_CANVAS_DIR = '.ai-canvas';
+export const GLOBAL_CANVAS_DIR_NAME = '.ai-canvas';
 export const DEFAULT_CANVAS_NAME = 'canvas.md';
 export const CHAT_SESSION_NAME = 'chat-session.json';
 export const FEATURE_META_NAME = 'meta.json';

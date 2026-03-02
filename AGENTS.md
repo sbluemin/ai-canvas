@@ -90,6 +90,12 @@
 
 > 에이전트 프롬프트/런타임 설정 단일 소스: `electron/ai-prompts.ts` (`CANVAS_AGENT_PROMPT`, `buildRuntimeConfigJson`). 실행 시 이를 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다.
 
+### 프로젝트 데이터 저장 경로
+1. 렌더러/IPC는 기존처럼 `projectPath`를 전달한다.
+2. 메인 프로세스(`project.service.ts`)는 `canvas-path.ts`를 통해 `projectPath`를 canonical path로 정규화한다.
+3. 글로벌 루트(`$HOME/.ai-canvas` 또는 `AI_CANVAS_DATA_DIR`)의 `registry/projects.json`에서 프로젝트 GUID를 조회/발급한다.
+4. 실제 캔버스 데이터는 `$ROOT/projects/<GUID>/` 하위에 저장된다.
+
 ### 이벤트 타입
 - `{ runId, type:'phase', phase:'evaluating'|'updating' }`
 - `{ runId, type:'phase_message_stream', phase, message }`
@@ -144,6 +150,8 @@ ai-canvas/
 │   ├── ipc-handlers.ts           # IPC 핸들러 통합 등록 (ai/dialog/fs/project/settings/window/runtime)
 │   ├── project.service.ts        # Feature/캔버스 CRUD, 세션, 에셋, 파일 인덱스
 │   ├── export.service.ts         # HTML/PDF/DOCX 내보내기
+│   ├── canvas-path.ts            # projectPath → 글로벌 데이터 경로(GUID) 리졸버 + registry
+│   ├── canvas-path.test.ts       # canvas-path 경로/registry 단위 테스트
 │   ├── runtime.service.ts        # runtime:* 상태조회/온보딩완료/터미널 실행
 │   ├── ai-workflow.ts            # 2-phase AI 워크플로우 엔진
 │   ├── ai-prompts.ts             # 통합 프롬프트 + 빌더 + 시그널 토큰

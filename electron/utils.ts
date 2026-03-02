@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { ipcMain, type IpcMainInvokeEvent } from 'electron';
 import {
-  AI_CANVAS_DIR,
+  GLOBAL_CANVAS_DIR_NAME,
   DEFAULT_CANVAS_NAME,
   CHAT_SESSION_NAME,
   FEATURE_META_NAME,
@@ -14,7 +14,7 @@ import {
 } from './consts';
 
 export {
-  AI_CANVAS_DIR,
+  GLOBAL_CANVAS_DIR_NAME,
   DEFAULT_CANVAS_NAME,
   CHAT_SESSION_NAME,
   FEATURE_META_NAME,
@@ -97,40 +97,40 @@ export function isValidCanvasFolderPath(folderPath: string): boolean {
   return segments.every((s) => s.length > 0 && !s.startsWith('.'));
 }
 
-export function getCanvasFolderPath(projectPath: string, folderPath: string): string {
-  return path.join(projectPath, AI_CANVAS_DIR, folderPath);
+export function getCanvasFolderPath(projectDataDir: string, folderPath: string): string {
+  return path.join(projectDataDir, folderPath);
 }
 
-export function getCanvasFilePath(projectPath: string, fileName: string): string {
-  return path.join(projectPath, AI_CANVAS_DIR, fileName);
+export function getCanvasFilePath(projectDataDir: string, fileName: string): string {
+  return path.join(projectDataDir, fileName);
 }
 
-export function getFeatureDirPath(projectPath: string, featureId: string): string {
-  return path.join(projectPath, AI_CANVAS_DIR, featureId);
+export function getFeatureDirPath(projectDataDir: string, featureId: string): string {
+  return path.join(projectDataDir, featureId);
 }
 
-export function getFeatureMetaPath(projectPath: string, featureId: string): string {
-  return path.join(getFeatureDirPath(projectPath, featureId), FEATURE_META_NAME);
+export function getFeatureMetaPath(projectDataDir: string, featureId: string): string {
+  return path.join(getFeatureDirPath(projectDataDir, featureId), FEATURE_META_NAME);
 }
 
-export function getChatSessionPath(projectPath: string): string {
-  return path.join(projectPath, AI_CANVAS_DIR, CHAT_SESSION_NAME);
+export function getChatSessionPath(projectDataDir: string): string {
+  return path.join(projectDataDir, CHAT_SESSION_NAME);
 }
 
-export function getFeatureChatSessionPath(projectPath: string, featureId: string): string {
-  return path.join(getFeatureDirPath(projectPath, featureId), CHAT_SESSION_NAME);
+export function getFeatureChatSessionPath(projectDataDir: string, featureId: string): string {
+  return path.join(getFeatureDirPath(projectDataDir, featureId), CHAT_SESSION_NAME);
 }
 
-export function getWorkspacePath(projectPath: string): string {
-  return path.join(projectPath, AI_CANVAS_DIR, WORKSPACE_NAME);
+export function getWorkspacePath(projectDataDir: string): string {
+  return path.join(projectDataDir, WORKSPACE_NAME);
 }
 
-export function getAutosaveStatusPath(projectPath: string): string {
-  return path.join(projectPath, AI_CANVAS_DIR, AUTOSAVE_STATUS_NAME);
+export function getAutosaveStatusPath(projectDataDir: string): string {
+  return path.join(projectDataDir, AUTOSAVE_STATUS_NAME);
 }
 
-export function getAssetsDirPath(projectPath: string): string {
-  return path.join(projectPath, AI_CANVAS_DIR, ASSET_DIR_NAME);
+export function getAssetsDirPath(projectDataDir: string): string {
+  return path.join(projectDataDir, ASSET_DIR_NAME);
 }
 
 export function markdownToBasicHtml(markdown: string): string {

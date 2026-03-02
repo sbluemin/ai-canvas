@@ -11,9 +11,10 @@ import {
 } from './utils';
 import { configureOpenCodeRuntime } from './unified-agent-adapter';
 import { buildRuntimeConfigJson } from './ai-prompts';
+import { getGlobalCanvasRoot } from './canvas-path';
 
 const execFileAsync = promisify(execFile);
-const GLOBAL_RUNTIME_DIR = path.join(os.homedir(), '.ai-canvas');
+const GLOBAL_RUNTIME_DIR = getGlobalCanvasRoot();
 const RUNTIME_STATE_PATH = path.join(GLOBAL_RUNTIME_DIR, 'runtime-state.json');
 
 type ActiveRuntime = 'global' | 'none';
