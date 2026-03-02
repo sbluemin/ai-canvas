@@ -29,7 +29,7 @@ describe('useStore', () => {
 
     test('adds a message with provider', () => {
       const { addMessage } = useStore.getState();
-      const provider: AiProvider = 'opencode';
+      const provider: AiProvider = 'pi';
 
       addMessage('assistant', 'Response', provider);
 

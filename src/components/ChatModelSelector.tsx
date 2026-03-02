@@ -10,8 +10,8 @@ function getRuntimeStateClass(status: RuntimeStatus | null): string {
 }
 
 function getRuntimeLabel(status: RuntimeStatus | null): string {
-  if (!status || status.activeRuntime === 'none') return 'Runtime Missing';
-  return 'Global Runtime';
+  if (!status || status.activeRuntime === 'none') return 'Auth Required';
+  return 'Runtime Ready';
 }
 
 export function ChatModelSelector() {
@@ -32,24 +32,23 @@ export function ChatModelSelector() {
   const [hoveredProvider, setHoveredProvider] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 중복 model.id 제거 (OpenCode 출력에서 같은 모델이 여러 번 열거될 수 있음)
   const models = useMemo(() => {
     const seen = new Set<string>();
-    return availableModels.opencode.filter((m) => {
+    return availableModels.pi.filter((m) => {
       if (seen.has(m.id)) return false;
       seen.add(m.id);
       return true;
     });
-  }, [availableModels.opencode]);
+  }, [availableModels.pi]);
 
-  const selectedModelId = selectedModels.opencode;
+  const selectedModelId = selectedModels.pi;
   const selectedModel = models.find((model) => model.id === selectedModelId) ?? null;
 
   const providers = Array.from(
     new Set(models.map((model) => model.providerId ?? model.id.split('/')[0]).filter((value): value is string => Boolean(value)))
   ).sort();
 
-  const selectedProvider = selectedModel?.providerId ?? selectedModelId?.split('/')[0] ?? providers[0] ?? 'opencode';
+  const selectedProvider = selectedModel?.providerId ?? selectedModelId?.split('/')[0] ?? providers[0] ?? 'pi';
   const runtimeClass = getRuntimeStateClass(runtimeStatus);
   const runtimeLabel = getRuntimeLabel(runtimeStatus);
 

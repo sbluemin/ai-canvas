@@ -20,7 +20,7 @@ async function makeTempDir(prefix: string): Promise<string> {
 
 async function loadCanvasPathModule() {
   vi.resetModules();
-  return import('./canvas-path');
+  return import('./path');
 }
 
 afterEach(async () => {

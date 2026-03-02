@@ -67,19 +67,16 @@ test.describe('Command Palette', () => {
     await electronApp.close();
   });
 
-  test('should show Open OpenCode Terminal command as disabled when runtime/project not ready', async () => {
+  test('should show Open Settings command', async () => {
     const { electronApp, mainWindow } = await launchMainWindow();
 
     await openCommandPalette(mainWindow);
 
     const commandItem = mainWindow
-      .locator('.command-palette-item', { hasText: 'Open OpenCode Terminal' })
+      .locator('.command-palette-item', { hasText: 'Open Settings' })
       .first();
     await expect(commandItem).toBeVisible({ timeout: 10000 });
-    await expect(commandItem).toBeDisabled();
-
-    const badge = mainWindow.locator('.command-palette-item-badge').first();
-    await expect(badge).toBeVisible();
+    await expect(commandItem).toBeEnabled();
 
     await electronApp.close();
   });

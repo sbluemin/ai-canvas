@@ -1,29 +1,42 @@
 # ELECTRON KNOWLEDGE BASE
 
 ## OVERVIEW
-`electron/`은 메인 프로세스, preload bridge, IPC handler, OpenCode 기반 AI 런타임을 담당한다.
+`electron/`은 메인 프로세스, preload bridge, IPC handler, pi SDK 기반 AI 런타임을 담당한다.
 
 ## STRUCTURE
 ```text
 electron/
-├── main.ts                # BrowserWindow, CSP, updater
-├── preload.ts             # contextBridge API (CJS 빌드)
-├── consts.ts              # 앱 상수
-├── utils.ts               # 경로/마크다운/IPC 헬퍼 + ServiceResult
-├── ipc-handlers.ts        # 모든 IPC 채널 등록 단일 엔트리
-├── project.service.ts     # Feature/캔버스 CRUD, 세션, 에셋, 파일 인덱스
-├── canvas-path.ts         # projectPath → 글로벌 데이터 경로(GUID) 리졸버 + registry
-├── canvas-path.test.ts    # canvas-path 경로/registry 단위 테스트
-├── export.service.ts      # HTML/PDF/DOCX 내보내기
-├── runtime.service.ts     # 글로벌 opencode 설치 확인/로그인 안내/상태 관리
-├── ai-workflow.ts         # 2-phase 워크플로우 엔진
-├── ai-prompts.ts          # 통합 프롬프트/빌더/시그널 토큰
-├── ai-canvas-utils.ts     # 토큰 추정/캔버스 truncation
-├── ai-parser.ts           # 시그널 스캐너 + 채팅 응답 파서
-├── ai-parser.test.ts      # parser 회귀 테스트
-├── ai-models.ts           # 모델 조회/파싱
-├── ai-types.ts            # AI/OpenCode 공용 타입
-└── unified-agent-adapter.ts # @sbluemin/unified-agent SDK 어댑터 (프로세스 관리 위임)
+├── main.ts                     # BrowserWindow, CSP, updater
+├── preload.ts                  # contextBridge API (CJS 빌드)
+├── ai/
+│   ├── workflow.ts             # 2-phase 워크플로우 엔진
+│   ├── prompts.ts              # 통합 프롬프트/빌더/시그널 토큰
+│   ├── parser.ts               # 시그널 스캐너 + 채팅 응답 파서
+│   ├── parser.test.ts          # parser 회귀 테스트
+│   ├── models.ts               # 모델 조회/파싱
+│   ├── types.ts                # AI 공용 타입
+│   ├── adapter.ts              # @mariozechner/pi-coding-agent SDK 어댑터
+│   └── canvas-utils.ts         # 토큰 추정/캔버스 truncation
+├── ipc/
+│   ├── index.ts                # IPC 등록 통합 엔트리
+│   ├── handlers/               # 채널군별 등록 (project/ai/settings/runtime/window)
+│   ├── oauth-prompt.ts         # OAuth 입력/안내 UI 헬퍼
+│   └── theme-store.ts          # 테마 저장소 read/write
+├── project/
+│   ├── index.ts                # 프로젝트 서비스 public API 재노출
+│   ├── path.ts                 # projectPath → 글로벌 데이터 경로(GUID) 리졸버 + registry
+│   ├── path.test.ts            # path/registry 단위 테스트
+│   ├── feature.service.ts      # Feature 메타/정렬/기본 문서 생성
+│   ├── canvas.service.ts       # 캔버스 파일·폴더 CRUD/트리/파일목록
+│   ├── state.service.ts        # 채팅 세션/workspace/autosave 영속화
+│   ├── assets.service.ts       # 이미지 에셋 저장
+│   ├── context.ts              # projectPath -> projectDataDir 해석
+│   └── types.ts                # 프로젝트 도메인 타입
+├── runtime/service.ts          # auth.json 기반 인증 상태/API Key/OAuth 관리
+├── export/service.ts           # HTML/PDF/DOCX 내보내기
+└── shared/
+    ├── consts.ts               # 앱 상수
+    └── utils.ts                # 경로/마크다운/IPC 헬퍼 + ServiceResult
 ```
 
 ## WHERE TO LOOK
@@ -31,22 +44,22 @@ electron/
 |------|----------|-------|
 | 앱 윈도우/CSP | `main.ts` | sandbox/contextIsolation 강제 |
 | API 노출 | `preload.ts` | renderer 접근 가능한 표면적 |
-| IPC 핸들러 등록 | `ipc-handlers.ts` | 채널별 라우팅 일원화 |
-| 프로젝트 비즈니스 로직 | `project.service.ts` | Feature/캔버스 CRUD, 세션, 에셋 |
-| 프로젝트 데이터 경로 해석 | `canvas-path.ts` | 글로벌 루트/registry/GUID 매핑 |
-| 문서 내보내기 | `export.service.ts` | HTML/PDF/DOCX |
-| 런타임 설정 | `runtime.service.ts` | 글로벌 opencode 설치 확인/로그인 안내 |
-| AI 실행 엔진 | `ai-workflow.ts` | phase 전환 + 이벤트 송신 |
-| 프롬프트/시그널 | `ai-prompts.ts` | 통합 에이전트 prompt + 시그널 토큰 + validator |
-| OpenCode 런타임 API | `unified-agent-adapter.ts` | @sbluemin/unified-agent SDK 경유 |
-| 모델 조회 | `ai-models.ts` | adapter 경유 모델 목록 |
+| IPC 핸들러 등록 | `ipc/index.ts` | 채널군별 등록 오케스트레이션 |
+| 프로젝트 비즈니스 로직 | `project/*.service.ts` | Feature/캔버스 CRUD, 세션, 에셋 |
+| 프로젝트 데이터 경로 해석 | `project/path.ts` | 글로벌 루트/registry/GUID 매핑 |
+| 문서 내보내기 | `export/service.ts` | HTML/PDF/DOCX |
+| 런타임 설정 | `runtime/service.ts` | auth 상태/온보딩 관리 |
+| AI 실행 엔진 | `ai/workflow.ts` | phase 전환 + 이벤트 송신 |
+| 프롬프트/시그널 | `ai/prompts.ts` | 통합 에이전트 prompt + 시그널 토큰 + validator |
+| AI Agent 런타임 API | `ai/adapter.ts` | @mariozechner/pi-coding-agent SDK 경유 |
+| 모델 조회 | `ai/models.ts` | adapter 경유 모델 목록 |
 
 ## CONVENTIONS
 - IPC 채널: prefix 네임스페이스 (`ai:`, `project:`, `fs:`, `dialog:`, `settings:`, `window:`, `runtime:`).
-- IPC 핸들러는 라우팅만 담당, 비즈니스 로직은 `*.service.ts`에 위임.
+- IPC 핸들러는 라우팅만 담당, 비즈니스 로직은 `project/*.service.ts`, `runtime/service.ts`, `ai/workflow.ts`에 위임.
 - preload는 CJS 번들만 허용 (`--format=cjs`).
-- 정적 agent 프롬프트/런타임 설정은 `ai-prompts.ts`를 단일 소스로 사용하며, 실행 시 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다.
-- AI 응답은 시그널 토큰(`⟨CANVAS⟩`, `⟨/CANVAS⟩`) 기반 자연어로 처리되며, `ai-parser.ts`의 `SignalScanner`가 스트리밍 중 시그널을 감지한다.
+- 정적 agent 프롬프트는 `ai/prompts.ts`를 단일 소스로 사용하며, pi SDK 세션에서 직접 사용한다.
+- AI 응답은 시그널 토큰(`⟨CANVAS⟩`, `⟨/CANVAS⟩`) 기반 자연어로 처리되며, `ai/parser.ts`의 `SignalScanner`가 스트리밍 중 시그널을 감지한다.
 
 ## ANTI-PATTERNS
 - `nodeIntegration: true` 또는 preload 우회 접근 금지.

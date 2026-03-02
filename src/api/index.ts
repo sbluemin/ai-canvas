@@ -36,6 +36,22 @@ export interface RuntimeModelsRefreshedEvent {
   error?: string;
 }
 
+export type RuntimeAuthProviderId = 'anthropic' | 'openai' | 'openai-codex' | 'github-copilot';
+
+export interface RuntimeAuthProvider {
+  id: RuntimeAuthProviderId;
+  label: string;
+  apiKeySupported: boolean;
+  oauthSupported: boolean;
+  connected: boolean;
+  credentialType: 'api_key' | 'oauth' | null;
+}
+
+export interface RuntimeAuthSnapshot {
+  providers: RuntimeAuthProvider[];
+  status: RuntimeStatus;
+}
+
 export interface ChatRequestOptions {
   selection?: {
     text: string;
@@ -267,14 +283,34 @@ export const api = {
     return window.electronAPI.runtime.checkStatus(projectPath);
   },
 
-  async runtimeOpenAuthTerminal(projectPath: string | null): Promise<{ success: boolean; error?: string }> {
+  async runtimeListAuthProviders(projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
-    return window.electronAPI.runtime.openAuthTerminal(projectPath);
+    return window.electronAPI.runtime.listAuthProviders(projectPath);
   },
 
-  async runtimeOpenTerminal(projectPath: string | null): Promise<{ success: boolean; error?: string }> {
+  async runtimeSetApiKey(
+    providerId: RuntimeAuthProviderId,
+    key: string,
+    projectPath?: string | null,
+  ): Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }> {
     if (!isElectron) return { success: false, error: 'Electron only' };
-    return window.electronAPI.runtime.openTerminal(projectPath);
+    return window.electronAPI.runtime.setApiKey(providerId, key, projectPath);
+  },
+
+  async runtimeLoginOAuth(
+    providerId: RuntimeAuthProviderId,
+    projectPath?: string | null,
+  ): Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.loginOAuth(providerId, projectPath);
+  },
+
+  async runtimeLogoutProvider(
+    providerId: RuntimeAuthProviderId,
+    projectPath?: string | null,
+  ): Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }> {
+    if (!isElectron) return { success: false, error: 'Electron only' };
+    return window.electronAPI.runtime.logoutProvider(providerId, projectPath);
   },
 
   async runtimeCompleteOnboarding(projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> {

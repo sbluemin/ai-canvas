@@ -1,5 +1,5 @@
-import { SIGNAL_CANVAS_OPEN, SIGNAL_CANVAS_CLOSE } from './ai-prompts';
-import type { ChatResult } from './ai-types';
+import { SIGNAL_CANVAS_OPEN, SIGNAL_CANVAS_CLOSE } from './prompts';
+import type { ChatResult } from './types';
 
 // ─── 시그널 토큰 상수 ──────────────────────────────────────────
 

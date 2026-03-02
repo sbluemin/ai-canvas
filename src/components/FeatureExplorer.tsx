@@ -80,7 +80,7 @@ function parseStoredMessages(rawMessages: unknown[] | undefined): Message[] {
       role,
       content: message.content,
       timestamp: Number.isNaN(parsedTimestamp.getTime()) ? new Date() : parsedTimestamp,
-      provider: message.provider === 'opencode' ? 'opencode' : undefined,
+      provider: message.provider === 'pi' ? 'pi' : undefined,
       fileMentions: Array.isArray(message.fileMentions) ? message.fileMentions as Message['fileMentions'] : undefined,
     });
   });

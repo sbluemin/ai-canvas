@@ -4,8 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
-import { registerIpcHandlers, readStoredThemeMode, type ThemeMode } from './ipc-handlers';
-import { shutdownOpenCodeRuntime } from './ai-workflow';
+import { registerIpcHandlers, readStoredThemeMode, type ThemeMode } from './ipc';
+import { shutdownAiAgentRuntime } from './ai/workflow';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -321,5 +321,5 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  shutdownOpenCodeRuntime();
+  shutdownAiAgentRuntime();
 });

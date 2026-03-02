@@ -10,7 +10,7 @@ interface ChatChunk {
   done?: boolean;
 }
 
-type AiProvider = 'opencode';
+type AiProvider = 'pi';
 
 interface AiChatRequest {
   runId: string;
@@ -70,7 +70,7 @@ interface ModelInfo {
   };
 }
 
-type AiProviderModels = Record<'opencode', ModelInfo[]>;
+type AiProviderModels = Record<'pi', ModelInfo[]>;
 
 interface AiAPI {
   chat: (request: AiChatRequest) => Promise<{ success: boolean; error?: string }>;
@@ -135,10 +135,28 @@ interface RuntimeModelsRefreshedEvent {
   error?: string;
 }
 
+type RuntimeAuthProviderId = 'anthropic' | 'openai' | 'openai-codex' | 'github-copilot';
+
+interface RuntimeAuthProvider {
+  id: RuntimeAuthProviderId;
+  label: string;
+  apiKeySupported: boolean;
+  oauthSupported: boolean;
+  connected: boolean;
+  credentialType: 'api_key' | 'oauth' | null;
+}
+
+interface RuntimeAuthSnapshot {
+  providers: RuntimeAuthProvider[];
+  status: RuntimeStatus;
+}
+
 interface RuntimeAPI {
   checkStatus: (projectPath?: string | null) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
-  openAuthTerminal: (projectPath: string | null) => Promise<{ success: boolean; error?: string }>;
-  openTerminal: (projectPath: string | null) => Promise<{ success: boolean; error?: string }>;
+  listAuthProviders: (projectPath?: string | null) => Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }>;
+  setApiKey: (providerId: RuntimeAuthProviderId, key: string, projectPath?: string | null) => Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }>;
+  loginOAuth: (providerId: RuntimeAuthProviderId, projectPath?: string | null) => Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }>;
+  logoutProvider: (providerId: RuntimeAuthProviderId, projectPath?: string | null) => Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }>;
   completeOnboarding: (projectPath?: string | null) => Promise<{ success: boolean; data?: RuntimeStatus; error?: string }>;
   clearContext: () => Promise<{ success: boolean; error?: string }>;
   onModelsRefreshed: (callback: (event: RuntimeModelsRefreshedEvent) => void) => () => void;

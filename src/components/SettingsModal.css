@@ -234,3 +234,239 @@
   font-size: 12px;
   font-weight: 500;
 }
+
+/* ─── Runtime Auth: Status Row ─── */
+.settings-runtime-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-tertiary), transparent 40%);
+  border: 1px solid var(--border-subtle);
+}
+
+.settings-runtime-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--status-error, #ef4444);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-error, #ef4444), transparent 85%);
+  animation: settings-dot-pulse 2s ease-in-out infinite;
+}
+
+.settings-runtime-dot.ready {
+  background: var(--status-success, #22c55e);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--status-success, #22c55e), transparent 85%),
+    0 0 8px color-mix(in srgb, var(--status-success, #22c55e), transparent 70%);
+  animation: none;
+}
+
+@keyframes settings-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.settings-runtime-status-text {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.settings-runtime-refresh-btn {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-runtime-refresh-btn:hover:not(:disabled) {
+  background: var(--hover-on-dark-strong);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.settings-runtime-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Runtime Auth: Provider List ─── */
+.settings-runtime-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* ─── Runtime Auth: Provider Card ─── */
+.settings-runtime-provider-card {
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: color-mix(in srgb, var(--bg-secondary), transparent 15%);
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: settings-card-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* staggered entry 애니메이션 — 각 카드가 순차적으로 등장 */
+.settings-runtime-provider-card:nth-child(1) { animation-delay: 0.04s; }
+.settings-runtime-provider-card:nth-child(2) { animation-delay: 0.1s; }
+.settings-runtime-provider-card:nth-child(3) { animation-delay: 0.16s; }
+.settings-runtime-provider-card:nth-child(4) { animation-delay: 0.22s; }
+
+@keyframes settings-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-runtime-provider-card:hover {
+  border-color: var(--border-light);
+  background: color-mix(in srgb, var(--bg-secondary), transparent 5%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Connected 상태 카드 — accent 라인 + 미세 배경 */
+.settings-runtime-provider-card.connected {
+  border-left-color: var(--status-success, #22c55e);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--status-success) 4%, transparent), transparent 60%),
+    color-mix(in srgb, var(--bg-secondary), transparent 10%);
+}
+
+.settings-runtime-provider-card.connected:hover {
+  border-left-color: var(--status-success, #22c55e);
+}
+
+/* Idle 상태 카드 */
+.settings-runtime-provider-card.idle {
+  border-left-color: var(--border-subtle);
+  opacity: 0.88;
+}
+
+.settings-runtime-provider-card.idle:hover {
+  opacity: 1;
+}
+
+.settings-runtime-provider-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-runtime-provider-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.settings-runtime-provider-badge {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.settings-runtime-provider-badge.connected {
+  color: var(--status-success, #22c55e);
+  border-color: color-mix(in srgb, var(--status-success, #22c55e), transparent 50%);
+  background: color-mix(in srgb, var(--status-success, #22c55e), transparent 88%);
+}
+
+/* ─── Runtime Auth: Provider Actions ─── */
+.settings-runtime-provider-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* API Key 입력 필드 — focus 시 accent 강조 */
+.settings-runtime-input {
+  flex: 1;
+  min-width: 120px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.settings-runtime-input::placeholder {
+  color: var(--text-muted);
+}
+
+.settings-runtime-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-blue) 30%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent-blue) 12%, transparent);
+}
+
+/* Primary 액션 버튼 (Save API Key, Login with OAuth) */
+.settings-runtime-action-btn {
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-blue-dim);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.settings-runtime-action-btn:hover:not(:disabled) {
+  background: var(--accent-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent-blue) 30%, transparent);
+}
+
+.settings-runtime-action-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Danger 버튼 (Logout) */
+.settings-runtime-action-btn.danger {
+  background: transparent;
+  color: var(--danger-text);
+  border: 1px solid color-mix(in srgb, var(--danger-text), transparent 60%);
+}
+
+.settings-runtime-action-btn.danger:hover:not(:disabled) {
+  background: var(--danger-bg-strong);
+  border-color: color-mix(in srgb, var(--danger-text), transparent 30%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--danger-text) 15%, transparent);
+}
+
+.settings-runtime-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

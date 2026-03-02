@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { GLOBAL_CANVAS_DIR_NAME } from './consts';
+import { GLOBAL_CANVAS_DIR_NAME } from '../shared/consts';
 
 const REGISTRY_DIR_NAME = 'registry';
 const REGISTRY_FILE_NAME = 'projects.json';

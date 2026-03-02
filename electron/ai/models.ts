@@ -1,4 +1,4 @@
-import { fetchModelsViaSdk, type AppModelInfo } from './unified-agent-adapter';
+import { fetchModelsViaSdk, type AppModelInfo } from './adapter';
 
 export interface ModelInfo {
   id: string;
@@ -18,7 +18,7 @@ export interface ModelInfo {
   };
 }
 
-type AiProvider = 'opencode';
+type AiProvider = 'pi';
 
 export type FetchModelsResult = Record<AiProvider, ModelInfo[]>;
 
@@ -35,6 +35,6 @@ function toModelInfo(m: AppModelInfo): ModelInfo {
 export async function fetchModelsFromApi(): Promise<FetchModelsResult> {
   const sdkModels = await fetchModelsViaSdk().catch(() => []);
   return {
-    opencode: sdkModels.map(toModelInfo),
+    pi: sdkModels.map(toModelInfo),
   };
 }

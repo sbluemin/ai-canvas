@@ -35,7 +35,7 @@ function parseStoredMessages(rawMessages: unknown[] | undefined): Message[] {
       role,
       content: item.content,
       timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
-      provider: item.provider === 'opencode' ? item.provider : undefined,
+      provider: item.provider === 'pi' ? 'pi' : undefined,
     });
   });
 
@@ -72,10 +72,15 @@ function parseSelectedModels(raw: unknown): Partial<SelectedModels> | null {
 
   const data = raw as Record<string, unknown>;
   const parsed: Partial<SelectedModels> = {};
-  const opencode = data.opencode;
-  if (typeof opencode === 'string' || opencode === null) {
-    parsed.opencode = opencode;
+  const pi = data.pi;
+  if (typeof pi === 'string' || pi === null) {
+    parsed.pi = pi;
   }
+
+      const legacyProviderValue = data.opencode;
+      if ((typeof legacyProviderValue === 'string' || legacyProviderValue === null) && parsed.pi === undefined) {
+        parsed.pi = legacyProviderValue;
+      }
 
   return Object.keys(parsed).length > 0 ? parsed : null;
 }

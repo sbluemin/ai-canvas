@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { SignalScanner, parseChatResponse } from './ai-parser';
-import { SIGNAL_CANVAS_OPEN, SIGNAL_CANVAS_CLOSE } from './ai-prompts';
+import { SignalScanner, parseChatResponse } from './parser';
+import { SIGNAL_CANVAS_OPEN, SIGNAL_CANVAS_CLOSE } from './prompts';
 
 // ─── parseChatResponse ─────────────────────────────────────────
 

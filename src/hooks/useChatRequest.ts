@@ -123,7 +123,7 @@ export function useChatRequest() {
         switch (event.type) {
           case 'phase_message_stream': {
             if (!hasStreamingAssistantRef.current) {
-              addMessage('assistant', '', 'opencode');
+              addMessage('assistant', '', 'pi');
               hasStreamingAssistantRef.current = true;
             }
 
@@ -134,7 +134,7 @@ export function useChatRequest() {
 
           case 'thinking_stream': {
             if (!hasStreamingAssistantRef.current) {
-              addMessage('assistant', '', 'opencode');
+              addMessage('assistant', '', 'pi');
               hasStreamingAssistantRef.current = true;
             }
 
@@ -190,7 +190,7 @@ export function useChatRequest() {
                   setLastMessageContent(finalMessage);
                 }
               } else {
-                addMessage('assistant', finalMessage, 'opencode');
+                addMessage('assistant', finalMessage, 'pi');
                 hasStreamingAssistantRef.current = true;
               }
 
@@ -267,7 +267,7 @@ export function useChatRequest() {
         ...(msg.provider ? { provider: msg.provider } : {}),
       }));
 
-      const modelId = selectedModels.opencode ?? undefined;
+      const modelId = selectedModels.pi ?? undefined;
       const result = await api.chat(
         runId,
         prompt,

@@ -1,5 +1,5 @@
-import { truncateToFit } from './ai-canvas-utils';
-import type { FileMention, WritingGoal } from './ai-types';
+import { truncateToFit } from './canvas-utils';
+import type { FileMention, WritingGoal } from './types';
 
 // ─── 시그널 토큰 ───────────────────────────────────────────────
 // 유니코드 수학 꺾쇠(U+27E8, U+27E9)를 사용하여 자연어/마크다운 충돌 방지
@@ -36,6 +36,15 @@ Briefly explain the key changes you made and WHY (1-3 lines).
 - e.g. "Expanded from a 3-step to a 5-step structure, placing concrete action items at each stage to increase actionability."
 - This helps the user evaluate your changes with context
 
+### Example OUTPUT
+'''markdown
+$APPROACH
+
+$UPDATED_CANVAS
+
+$RATIONALE
+'''
+
 ### When canvas update is NOT needed:
 Just respond naturally with your message (analysis, suggestions, clarifying questions).
 Do NOT include any signals.
@@ -52,65 +61,6 @@ Ask yourself: *"Would updating the canvas right now genuinely advance the user's
 - **Honor Writing Goals** - When a <goal_context> block is provided, treat it as persistent context: ensure purpose, audience, tone, target length, and explicit length budget shape every response and update
 - **Complete Document** - When using ${SIGNAL_CANVAS_OPEN}, always include the ENTIRE updated document, not just the changed parts
 `;
-
-// ─── OpenCode 에이전트 설정 타입 ────────────────────────────────
-
-type OpenCodeAgentConfig = {
-  description: string;
-  mode: 'all';
-  prompt: string;
-  tools: {
-    write: false;
-    edit: false;
-    bash: false;
-  };
-  temperature: number;
-};
-
-// 빌트인 에이전트를 비활성화하는 설정
-type OpenCodeDisabledAgentConfig = {
-  disable: true;
-};
-
-type OpenCodeConfig = {
-  $schema: string;
-  tools: {
-    bash: false;
-    write: false;
-  };
-  agent: Record<string, OpenCodeAgentConfig | OpenCodeDisabledAgentConfig>;
-};
-
-export const OPENCODE_REQUIRED_AGENTS: Record<'canvas-agent', OpenCodeAgentConfig> = {
-  'canvas-agent': {
-    description: '캔버스 의도 평가, 수정 계획 수립, 콘텐츠 생성을 통합 수행하는 단일 에이전트.',
-    mode: 'all',
-    prompt: CANVAS_AGENT_PROMPT,
-    tools: { write: false, edit: false, bash: false },
-    temperature: 0.1,
-  },
-};
-
-export function buildRuntimeConfigJson(): string {
-  const runtimeConfig: OpenCodeConfig = {
-    $schema: 'https://opencode.ai/config.json',
-    tools: {
-      bash: false,
-      write: false,
-    },
-    agent: {
-      // 빌트인 에이전트 비활성화
-      build: { disable: true },
-      plan: { disable: true },
-      general: { disable: true },
-      explore: { disable: true },
-      // 앱 전용 통합 에이전트
-      ...OPENCODE_REQUIRED_AGENTS,
-    },
-  };
-
-  return JSON.stringify(runtimeConfig);
-}
 
 // ─── 프롬프트 옵션 ─────────────────────────────────────────────
 
@@ -219,7 +169,7 @@ function formatHistory(history: ConversationMessage[]): string {
   if (history.length === 0) return '';
 
   const providerDisplayName: Record<string, string> = {
-    opencode: 'OpenCode',
+    pi: 'pi',
   };
 
   return history

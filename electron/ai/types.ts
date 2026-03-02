@@ -1,4 +1,4 @@
-export type AiProvider = 'opencode';
+export type AiProvider = 'pi';
 
 export interface WritingGoal {
   purpose: string;
@@ -52,7 +52,7 @@ export interface ChatResult {
   doneMessage?: string;
 }
 
-export interface OpenCodeChatRequest {
+export interface AiAgentChatRequest {
   prompt: string;
   systemInstruction?: string;
   model?: string;
@@ -60,20 +60,20 @@ export interface OpenCodeChatRequest {
   agent?: string;
 }
 
-export interface OpenCodeChatChunk {
+export interface AiAgentChatChunk {
   text?: string;
-  event?: OpenCodeJsonEvent;
+  event?: AiAgentJsonEvent;
   error?: string;
   done?: boolean;
 }
 
-export interface OpenCodeChatResult {
+export interface AiAgentChatResult {
   success: boolean;
   text?: string;
   error?: string;
 }
 
-export interface OpenCodeJsonEvent {
+export interface AiAgentJsonEvent {
   type?: string;
   name?: string;
   tool?: string | { name?: string };

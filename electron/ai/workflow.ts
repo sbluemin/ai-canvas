@@ -1,9 +1,9 @@
 import type { IpcMainInvokeEvent } from 'electron';
-import type { AiChatRequest, AiChatEvent, OpenCodeChatChunk, OpenCodeJsonEvent, AgentActivityEvent } from './ai-types';
-import { buildChatPrompt } from './ai-prompts';
-import { SIGNAL_CANVAS_OPEN, SIGNAL_CANVAS_CLOSE } from './ai-prompts';
-import { SignalScanner, parseChatResponse } from './ai-parser';
-import { chatWithOpenCode, getOpenCodeProjectPath, shutdownOpenCodeRuntime } from './unified-agent-adapter';
+import type { AiChatRequest, AiChatEvent, AiAgentChatChunk, AiAgentJsonEvent, AgentActivityEvent } from './types';
+import { buildChatPrompt, CANVAS_AGENT_PROMPT } from './prompts';
+import { SIGNAL_CANVAS_OPEN, SIGNAL_CANVAS_CLOSE } from './prompts';
+import { SignalScanner, parseChatResponse } from './parser';
+import { chatWithAiAgent, getAiAgentProjectPath, shutdownAiAgentRuntime } from './adapter';
 
 const CHAT_TIMEOUT_MS = 600_000;
 
@@ -11,6 +11,10 @@ const CHAT_TIMEOUT_MS = 600_000;
 
 function getStringValue(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getChunkTextValue(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 function firstLine(value: string): string {
@@ -21,7 +25,7 @@ function normalizePathTarget(raw: string): string {
   return raw.split(/[\\/]/).pop() ?? raw;
 }
 
-function resolveToolName(payload: OpenCodeJsonEvent): string | null {
+function resolveToolName(payload: AiAgentJsonEvent): string | null {
   if (typeof payload.tool === 'string') {
     return payload.tool;
   }
@@ -31,7 +35,7 @@ function resolveToolName(payload: OpenCodeJsonEvent): string | null {
   return getStringValue(payload.name);
 }
 
-function resolveToolTarget(payload: OpenCodeJsonEvent): string | undefined {
+function resolveToolTarget(payload: AiAgentJsonEvent): string | undefined {
   const directTarget = getStringValue(payload.target) || getStringValue(payload.path) || getStringValue(payload.file);
   if (directTarget) {
     return normalizePathTarget(directTarget);
@@ -53,18 +57,18 @@ function resolveToolTarget(payload: OpenCodeJsonEvent): string | undefined {
   return undefined;
 }
 
-function resolveThinkingText(payload: OpenCodeJsonEvent): string | null {
+function resolveThinkingText(payload: AiAgentJsonEvent): string | null {
   return (
-    getStringValue(payload.message) ||
-    getStringValue(payload.summary) ||
-    getStringValue(payload.reasoning) ||
-    getStringValue(payload.content) ||
-    getStringValue(payload.part?.text) ||
-    getStringValue(payload.text)
+    getChunkTextValue(payload.message) ||
+    getChunkTextValue(payload.summary) ||
+    getChunkTextValue(payload.reasoning) ||
+    getChunkTextValue(payload.content) ||
+    getChunkTextValue(payload.part?.text) ||
+    getChunkTextValue(payload.text)
   );
 }
 
-function mapToAgentActivity(payload: OpenCodeJsonEvent): AgentActivityEvent | null {
+function mapToAgentActivity(payload: AiAgentJsonEvent): AgentActivityEvent | null {
   const eventType = payload.type;
   if (!eventType) {
     return null;
@@ -92,9 +96,10 @@ function mapToAgentActivity(payload: OpenCodeJsonEvent): AgentActivityEvent | nu
 
   // 작업 시작 → step
   if (eventType === 'step_start') {
+    const stepLabel = resolveThinkingText(payload)?.trim();
     return {
       kind: 'step',
-      label: resolveThinkingText(payload) || '요청 분석 중...',
+      label: stepLabel || '요청 분석 중...',
     };
   }
 
@@ -121,13 +126,14 @@ async function callProvider(
   prompt: string,
   modelId?: string,
   variant?: string,
-  onChunk?: (chunk: OpenCodeChatChunk) => void,
-  agent?: string
+  onChunk?: (chunk: AiAgentChatChunk) => void,
+  agent?: string,
+  systemInstruction?: string,
 ): Promise<string> {
   let capturedError: string | undefined;
 
-  const result = await chatWithOpenCode(
-    { prompt, model: modelId, variant, agent },
+  const result = await chatWithAiAgent(
+    { prompt, model: modelId, variant, agent, systemInstruction },
     (chunk) => {
       if (chunk.error) {
         capturedError = chunk.error;
@@ -137,7 +143,7 @@ async function callProvider(
   );
 
   if (!result.success) {
-    throw new Error(result.error || capturedError || 'OpenCode chat failed');
+    throw new Error(result.error || capturedError || 'pi SDK chat failed');
   }
 
   if (capturedError) {
@@ -172,7 +178,7 @@ export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: 
       selection,
       writingGoal,
       fileMentions,
-      projectPath: getOpenCodeProjectPath(),
+      projectPath: getAiAgentProjectPath(),
     });
 
     // 시그널 스캐너 초기화
@@ -237,19 +243,38 @@ export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: 
           }
 
           // ⟨/CANVAS⟩ 이후 Done 메시지 누적 + 스트리밍
-          if (scanner.state === 'done' && result.text && !result.signals.includes(SIGNAL_CANVAS_CLOSE)) {
-            doneAccum += result.text;
-            // Done 메시지를 Do 메시지와 결합하여 스트리밍
-            const combined = messageAccum.trim() + '\n\n' + doneAccum.trim();
-            sendEvent({
-              runId,
-              type: 'phase_message_stream',
-              phase: 'updating',
-              message: combined,
-            });
+          if (scanner.state === 'done' && result.text) {
+            let doneFragment = '';
+
+            if (result.signals.includes(SIGNAL_CANVAS_CLOSE)) {
+              const closeSignalIdx = chunk.text.indexOf(SIGNAL_CANVAS_CLOSE);
+              if (closeSignalIdx !== -1) {
+                doneFragment = chunk.text.slice(closeSignalIdx + SIGNAL_CANVAS_CLOSE.length);
+              } else {
+                doneFragment = result.text;
+              }
+            } else {
+              doneFragment = result.text;
+            }
+
+            if (doneFragment.trim().length > 0) {
+              doneAccum += doneFragment;
+              const messagePart = messageAccum.trim();
+              const donePart = doneAccum.trim();
+              const combined = donePart.length > 0
+                ? (messagePart.length > 0 ? `${messagePart}\n\n${donePart}` : donePart)
+                : messagePart;
+
+              sendEvent({
+                runId,
+                type: 'phase_message_stream',
+                phase: 'updating',
+                message: combined,
+              });
+            }
           }
         }
-      }, 'canvas-agent'),
+      }, 'canvas-agent', CANVAS_AGENT_PROMPT),
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Chat timed out')), CHAT_TIMEOUT_MS)),
     ]);
 
@@ -280,4 +305,4 @@ export async function executeAiChatWorkflow(event: IpcMainInvokeEvent, request: 
   }
 }
 
-export { shutdownOpenCodeRuntime };
+export { shutdownAiAgentRuntime };

@@ -9,7 +9,8 @@ const isVitestMode = process.env.VITEST === 'true';
 
 const electronExternals = [
   'electron',
-  '@sbluemin/unified-agent',
+  '@mariozechner/pi-coding-agent',
+  '@mariozechner/pi-ai',
 ];
 
 export default defineConfig({

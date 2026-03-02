@@ -3,7 +3,7 @@
  */
 import { BrowserWindow } from 'electron';
 import fs from 'node:fs/promises';
-import { markdownToBasicHtml } from './utils';
+import { markdownToBasicHtml } from '../shared/utils';
 
 export interface ExportResult {
   success: boolean;

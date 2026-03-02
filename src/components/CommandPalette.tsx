@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../api';
 import { useStore } from '../store/useStore';
-import { TerminalIcon } from './Icons';
+import { GearIcon } from './Icons';
 import './CommandPalette.css';
 
 type PaletteCommand = {
-  id: 'open-opencode-terminal';
+  id: 'open-settings';
   label: string;
   disabled: boolean;
   disabledReason?: string;
-  run: () => Promise<void>;
+  run: () => void;
 };
 
 function matchesQuery(label: string, query: string): boolean {
@@ -28,44 +27,25 @@ export function CommandPalette() {
   const {
     isCommandPaletteOpen,
     closeCommandPalette,
-    runtimeStatus,
-    projectPath,
-    addToast,
+    toggleSettings,
   } = useStore();
 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const runtimeReady = !!runtimeStatus && runtimeStatus.activeRuntime !== 'none';
-  const projectReady = !!projectPath;
-
   const commands = useMemo<PaletteCommand[]>(() => {
-    const disabled = !runtimeReady || !projectReady;
-    const disabledReason = !projectReady
-      ? 'Open a project first'
-      : !runtimeReady
-        ? 'Runtime setup required'
-        : undefined;
-
     return [
       {
-        id: 'open-opencode-terminal',
-        label: 'Open OpenCode Terminal',
-        disabled,
-        disabledReason,
-        run: async () => {
-          const result = await api.runtimeOpenTerminal(projectPath);
-          if (result.success) {
-            addToast('success', 'OpenCode terminal opened');
-            return;
-          }
-
-          addToast('error', result.error ?? 'Failed to launch terminal');
+        id: 'open-settings',
+        label: 'Open Settings',
+        disabled: false,
+        run: () => {
+          toggleSettings();
         },
       },
     ];
-  }, [addToast, projectPath, projectReady, runtimeReady]);
+  }, [toggleSettings]);
 
   const filteredCommands = useMemo(() => {
     return commands.filter((command) => matchesQuery(command.label, query));
@@ -113,7 +93,7 @@ export function CommandPalette() {
         const command = filteredCommands[selectedIndex];
         if (!command || command.disabled) return;
 
-        void command.run();
+        command.run();
         closeCommandPalette();
       }
     };
@@ -160,7 +140,7 @@ export function CommandPalette() {
                 onMouseEnter={() => setSelectedIndex(index)}
                 onClick={() => {
                   if (command.disabled) return;
-                  void command.run();
+                  command.run();
                   closeCommandPalette();
                 }}
                 disabled={command.disabled}
@@ -168,7 +148,7 @@ export function CommandPalette() {
                 aria-selected={index === selectedIndex}
               >
                 <span className="command-palette-item-main">
-                  <TerminalIcon width={14} height={14} />
+                  <GearIcon width={14} height={14} />
                   <span>{command.label}</span>
                 </span>
                 {command.disabledReason && (

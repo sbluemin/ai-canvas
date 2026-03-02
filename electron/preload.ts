@@ -12,7 +12,7 @@ export interface ChatChunk {
   done?: boolean;
 }
 
-export type AiProvider = 'opencode';
+export type AiProvider = 'pi';
 
 export interface AiChatRequest {
   runId: string;
@@ -68,6 +68,22 @@ interface RuntimeModelsRefreshedEvent {
   success: boolean;
   models?: Record<string, unknown[]>;
   error?: string;
+}
+
+type RuntimeAuthProviderId = 'anthropic' | 'openai' | 'openai-codex' | 'github-copilot';
+
+interface RuntimeAuthProvider {
+  id: RuntimeAuthProviderId;
+  label: string;
+  apiKeySupported: boolean;
+  oauthSupported: boolean;
+  connected: boolean;
+  credentialType: 'api_key' | 'oauth' | null;
+}
+
+interface RuntimeAuthSnapshot {
+  providers: RuntimeAuthProvider[];
+  status: RuntimeStatus;
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -158,10 +174,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   runtime: {
     checkStatus: (projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
       ipcRenderer.invoke('runtime:check-status', projectPath),
-    openAuthTerminal: (projectPath: string | null): Promise<{ success: boolean; error?: string }> =>
-      ipcRenderer.invoke('runtime:open-auth-terminal', projectPath),
-    openTerminal: (projectPath: string | null): Promise<{ success: boolean; error?: string }> =>
-      ipcRenderer.invoke('runtime:open-terminal', projectPath),
+    listAuthProviders: (projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }> =>
+      ipcRenderer.invoke('runtime:list-auth-providers', projectPath),
+    setApiKey: (providerId: RuntimeAuthProviderId, key: string, projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }> =>
+      ipcRenderer.invoke('runtime:set-api-key', providerId, key, projectPath),
+    loginOAuth: (providerId: RuntimeAuthProviderId, projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }> =>
+      ipcRenderer.invoke('runtime:login-oauth', providerId, projectPath),
+    logoutProvider: (providerId: RuntimeAuthProviderId, projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeAuthSnapshot; error?: string }> =>
+      ipcRenderer.invoke('runtime:logout-provider', providerId, projectPath),
     completeOnboarding: (projectPath?: string | null): Promise<{ success: boolean; data?: RuntimeStatus; error?: string }> =>
       ipcRenderer.invoke('runtime:complete-onboarding', projectPath),
     clearContext: (): Promise<{ success: boolean; error?: string }> =>

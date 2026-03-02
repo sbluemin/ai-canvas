@@ -93,7 +93,7 @@ export function OnboardingWizard() {
           return;
         }
 
-        setRuntimeError('OpenCode가 아직 설치되지 않았습니다. 글로벌 설치 후 다시 확인해주세요.');
+        setRuntimeError('AI 인증이 아직 설정되지 않았습니다. Settings에서 API Key 또는 OAuth를 연결해주세요.');
         return;
       }
 
@@ -121,12 +121,12 @@ export function OnboardingWizard() {
 
         <div className="onboarding-body">
           <p>
-            OpenCode CLI를 글로벌 런타임으로 사용합니다.
-            먼저 시스템에 OpenCode를 설치한 뒤 아래 버튼으로 다시 확인해주세요.
+            AI 사용을 위해 인증 설정이 필요합니다.
+            Settings의 AI Runtime 탭에서 API Key 또는 OAuth를 설정한 뒤 다시 확인해주세요.
           </p>
           <div className="onboarding-action-row">
             <button type="button" className="onboarding-primary" onClick={refreshStatus} disabled={runtimeBusy}>
-              {runtimeBusy ? 'Checking...' : 'I Installed OpenCode'}
+              {runtimeBusy ? 'Checking...' : 'I Completed Auth Setup'}
             </button>
             <button type="button" className="onboarding-secondary" onClick={skipForNow} disabled={runtimeBusy}>
               Later

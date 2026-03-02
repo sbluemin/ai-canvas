@@ -18,7 +18,7 @@
 |------|------|
 | Frontend | React 19, TypeScript, Vite, Milkdown + PrismJS + KaTeX + Mermaid |
 | Desktop | Electron 34 |
-| AI | @sbluemin/unified-agent SDK + OpenCode CLI(글로벌 런타임), 시그널 토큰 기반 응답 |
+| AI | @mariozechner/pi-coding-agent SDK(in-process), auth.json 기반 API Key/OAuth 인증, 시그널 토큰 기반 응답 |
 | State | Zustand (7 slice 합성: `src/store/types.ts` 참조) |
 | Styling | CSS (plain imports, `[data-theme]` / `[data-platform]` 기반 테마) |
 
@@ -75,7 +75,7 @@
 - **App.tsx**: 루트 — Allotment 좌우 분할 (모바일: 단일 캔버스)
 - **CommandBar**: 상단 — ProjectSelector, Goal/Export/Settings
 - **ChatPanel**: 좌측 AI 채팅 (SSE 스트리밍, `@파일` 멘션, Feature별 세션 분리, 입력창 `Shift+Enter` 개행 + 자동 높이 확장 + 입력창 상단 `ChatModelSelector`)
-- **OnboardingWizard**: 글로벌 OpenCode 설치 확인/로그인 안내 온보딩
+- **OnboardingWizard**: AI 인증(API Key/OAuth) 설정 안내 온보딩
 - **CanvasPanel**: 우측 에디터 — MilkdownEditor, EditorToolbar, SelectionAiPopup, DiffPreview
 - **FeatureExplorer**: Feature 트리 사이드바 (생성/삭제/이름변경, 아이콘, 드래그 정렬, 컨텍스트 메뉴, `New Document...` 기반 Blank/SDD 생성)
 - **CommandPalette**: 전역 커맨드 팔레트 오버레이 (`Ctrl/Cmd+Shift+P`, MVP 1개 커맨드)
@@ -88,11 +88,11 @@
 4. ⟨/CANVAS⟩ 감지 또는 스트림 종료 → `chat_result` → 캔버스 반영
 5. 완료 → `done`
 
-> 에이전트 프롬프트/런타임 설정 단일 소스: `electron/ai-prompts.ts` (`CANVAS_AGENT_PROMPT`, `buildRuntimeConfigJson`). 실행 시 이를 `OPENCODE_CONFIG_CONTENT` 환경변수로 주입한다.
+> 에이전트 프롬프트 단일 소스: `electron/ai/prompts.ts` (`CANVAS_AGENT_PROMPT`). 런타임은 pi SDK in-process 세션으로 실행한다.
 
 ### 프로젝트 데이터 저장 경로
 1. 렌더러/IPC는 기존처럼 `projectPath`를 전달한다.
-2. 메인 프로세스(`project.service.ts`)는 `canvas-path.ts`를 통해 `projectPath`를 canonical path로 정규화한다.
+2. 메인 프로세스(`project/index.ts`)는 `project/path.ts`를 통해 `projectPath`를 canonical path로 정규화한다.
 3. 글로벌 루트(`$HOME/.ai-canvas` 또는 `AI_CANVAS_DATA_DIR`)의 `registry/projects.json`에서 프로젝트 GUID를 조회/발급한다.
 4. 실제 캔버스 데이터는 `$ROOT/projects/<GUID>/` 하위에 저장된다.
 
@@ -125,7 +125,7 @@ ai-canvas/
 │   │   ├── ChatPanel.tsx         # AI 채팅
 │   │   ├── ChatModelSelector.tsx # Chat 입력 헤더 모델 선택기
 │   │   ├── CanvasPanel.tsx       # 마크다운 에디터
-│   │   ├── OnboardingWizard.tsx  # OpenCode 온보딩 위저드
+│   │   ├── OnboardingWizard.tsx  # AI 인증 온보딩 위저드
 │   │   ├── FeatureExplorer.tsx   # Feature 트리 사이드바
 │   │   ├── CommandPalette.tsx    # 전역 커맨드 팔레트
 │   │   ├── MilkdownEditor.tsx    # Milkdown WYSIWYG
@@ -145,21 +145,12 @@ ai-canvas/
 ├── electron/                     # 메인 프로세스 (→ electron/AGENTS.md)
 │   ├── main.ts                   # BrowserWindow, CSP, updater
 │   ├── preload.ts                # contextBridge API (CJS 빌드)
-│   ├── consts.ts                 # 앱 상수
-│   ├── utils.ts                  # 경로/마크다운/IPC 헬퍼 + 공통 타입
-│   ├── ipc-handlers.ts           # IPC 핸들러 통합 등록 (ai/dialog/fs/project/settings/window/runtime)
-│   ├── project.service.ts        # Feature/캔버스 CRUD, 세션, 에셋, 파일 인덱스
-│   ├── export.service.ts         # HTML/PDF/DOCX 내보내기
-│   ├── canvas-path.ts            # projectPath → 글로벌 데이터 경로(GUID) 리졸버 + registry
-│   ├── canvas-path.test.ts       # canvas-path 경로/registry 단위 테스트
-│   ├── runtime.service.ts        # runtime:* 상태조회/온보딩완료/터미널 실행
-│   ├── ai-workflow.ts            # 2-phase AI 워크플로우 엔진
-│   ├── ai-prompts.ts             # 통합 프롬프트 + 빌더 + 시그널 토큰
-│   ├── ai-canvas-utils.ts        # 토큰 추정/캔버스 truncation
-│   ├── ai-parser.ts              # 시그널 스캐너 + 채팅 응답 파서
-│   ├── ai-models.ts              # 모델 파싱/조회
-│   ├── ai-types.ts               # AI/OpenCode 타입 정의
-│   └── unified-agent-adapter.ts  # @sbluemin/unified-agent SDK 어댑터
+│   ├── ai/                       # AI 런타임 모듈 (workflow/prompts/parser/models/types/adapter)
+│   ├── ipc/                      # IPC 등록 엔트리 + 채널별 handlers + OAuth/theme 유틸
+│   ├── project/                  # 프로젝트 데이터 경로/CRUD/세션/에셋 서비스
+│   ├── runtime/service.ts        # runtime:* 상태조회/온보딩/API Key/OAuth 관리
+│   ├── export/service.ts         # HTML/PDF/DOCX 내보내기
+│   └── shared/                   # 앱 상수/공통 유틸(ServiceResult, handleIpc 등)
 ├── tests/                        # Playwright E2E 테스트
 ├── .github/workflows/publish.yml # CI/CD (macOS + Windows → GitHub Release)
 └── version.json                  # nbgv 버저닝 (커밋 높이 기반)

@@ -25,7 +25,7 @@ src/store/
 | slice 조합 구조 | `useStore.ts` | 단일 store 구성 지점 |
 | 대화/실행 상태 | `slices/chatSlice.ts` | aiRun, messages, conversations |
 | 프로젝트/캔버스 상태 | `slices/projectSlice.ts` | Feature, canvas 파일/트리, autosave |
-| 모델/Variant 상태 | `slices/modelSlice.ts` | opencode model + variant 선택 |
+| 모델/Variant 상태 | `slices/modelSlice.ts` | pi 모델 + variant 선택 |
 | store 테스트 | `useStore.test.ts` | getState()/setState() 기반 |
 
 ## CONVENTIONS

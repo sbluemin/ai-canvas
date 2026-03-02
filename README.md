@@ -24,7 +24,7 @@ AI Canvas bridges this gap. The conversation itself becomes the document. AI doe
 
 ### AI Provider
 
-- **OpenCode**: OpenCode CLI Provider (`provider/model/variant` selection)
+- **Pi SDK**: In-process provider/model/variant selection
 
 ### Canvas Editor
 

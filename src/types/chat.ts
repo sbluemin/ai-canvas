@@ -1,4 +1,4 @@
-export type AiProvider = 'opencode';
+export type AiProvider = 'pi';
 
 /** Provider에서 가져온 모델 정보 */
 export interface ModelInfo {

@@ -1,36 +1,11 @@
-import { app, BrowserWindow, dialog, type IpcMainInvokeEvent, shell } from 'electron';
-import Store from 'electron-store';
+import { dialog, shell, type IpcMainInvokeEvent } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { handleIpc } from './utils';
-import { executeAiChatWorkflow } from './ai-workflow';
-import type { AiChatRequest } from './ai-types';
-import { fetchModelsFromApi } from './ai-models';
-import { exportDocument } from './export.service';
-import * as projectService from './project.service';
-import * as runtimeService from './runtime.service';
+import { handleIpc } from '../../shared/utils';
+import { exportDocument } from '../../export/service';
+import * as projectService from '../../project';
 
-export type ThemeMode = 'dark' | 'light' | 'system';
-
-type AppSettingsStoreSchema = {
-  theme?: ThemeMode;
-};
-
-const appSettingsStore = new Store<AppSettingsStoreSchema>({ name: 'app-settings' });
-
-function isThemeMode(value: unknown): value is ThemeMode {
-  return value === 'dark' || value === 'light' || value === 'system';
-}
-
-export function readStoredThemeMode(): ThemeMode {
-  const theme = appSettingsStore.get('theme');
-  return isThemeMode(theme) ? theme : 'dark';
-}
-
-export function registerIpcHandlers(
-  createWindow: () => BrowserWindow,
-  onThemeChanged?: (theme: ThemeMode) => void,
-) {
+export function registerProjectHandlers(): void {
   handleIpc('project:open-directory', async () => {
     const result = await dialog.showOpenDialog({ properties: ['openDirectory'], title: 'Select Project Folder' });
     if (result.canceled || result.filePaths.length === 0) {
@@ -232,76 +207,5 @@ export function registerIpcHandlers(
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
-  });
-
-  handleIpc('ai:chat', async (event: any, request: AiChatRequest) => {
-    await executeAiChatWorkflow(event, request);
-    return { success: true };
-  });
-
-  handleIpc('ai:fetch-models', async () => {
-    const models = await fetchModelsFromApi();
-    return { success: true, models };
-  });
-
-  handleIpc('settings:read', async () => {
-    return {
-      success: true,
-      settings: {
-        theme: readStoredThemeMode(),
-      },
-    };
-  });
-
-  handleIpc('settings:write', async (_event: unknown, settings: { theme?: unknown }) => {
-    if (!isThemeMode(settings?.theme)) {
-      return { success: false, error: 'Invalid theme value' };
-    }
-
-    appSettingsStore.set('theme', settings.theme);
-    onThemeChanged?.(settings.theme);
-    return { success: true };
-  });
-
-  handleIpc('runtime:check-status', async (_event: unknown, projectPath?: string | null) => {
-    return runtimeService.checkRuntimeStatus(projectPath ?? null);
-  });
-
-  handleIpc('runtime:open-auth-terminal', async (event, projectPath: string | null) => {
-    return runtimeService.openAuthTerminal(projectPath, async (result) => {
-      if (!result.success) {
-        event.sender.send('runtime:models-refreshed', { success: false, error: result.error });
-        return;
-      }
-
-      try {
-        await runtimeService.checkRuntimeStatus(projectPath);
-        const models = await fetchModelsFromApi();
-        event.sender.send('runtime:models-refreshed', { success: true, models });
-      } catch (error) {
-        event.sender.send('runtime:models-refreshed', {
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    });
-  });
-
-  handleIpc('runtime:open-terminal', async (_event, projectPath: string | null) => {
-    return runtimeService.openRuntimeTerminal(projectPath);
-  });
-
-  handleIpc('runtime:complete-onboarding', async (_event: unknown, projectPath?: string | null) => {
-    return runtimeService.completeRuntimeOnboarding(projectPath ?? null);
-  });
-
-  handleIpc('runtime:clear-context', async () => {
-    runtimeService.clearRuntimeContext();
-    return { success: true };
-  });
-
-  handleIpc('window:show-emoji-panel', async () => {
-    app.showEmojiPanel();
-    return { success: true };
   });
 }
