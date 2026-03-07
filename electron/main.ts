@@ -15,6 +15,10 @@ const isDev = process.env.NODE_ENV === 'development' || (!app.isPackaged && proc
 const APP_NAME = 'AI Canvas';
 app.setName(APP_NAME);
 
+if (isDev) {
+  app.commandLine.appendSwitch('remote-debugging-port', '9225');
+}
+
 let mainWindow: BrowserWindow | null = null;
 const windows = new Set<BrowserWindow>();
 type WindowStoreSchema = {
