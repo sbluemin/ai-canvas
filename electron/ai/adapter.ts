@@ -36,12 +36,7 @@ const SUPPORTED_AUTH_PROVIDERS = [
     apiKeySupported: true,
     oauthSupported: true,
   },
-  {
-    id: 'openai',
-    label: 'OpenAI (API Key)',
-    apiKeySupported: true,
-    oauthSupported: false,
-  },
+
   {
     id: 'openai-codex',
     label: 'OpenAI (OAuth: ChatGPT Plus/Pro)',

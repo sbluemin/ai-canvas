@@ -70,7 +70,7 @@ interface RuntimeModelsRefreshedEvent {
   error?: string;
 }
 
-type RuntimeAuthProviderId = 'anthropic' | 'openai' | 'openai-codex' | 'github-copilot';
+type RuntimeAuthProviderId = 'anthropic' | 'openai-codex' | 'github-copilot';
 
 interface RuntimeAuthProvider {
   id: RuntimeAuthProviderId;

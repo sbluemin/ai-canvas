@@ -11,7 +11,7 @@ import './SettingsModal.css';
 
 type SettingsTab = 'general' | 'runtime';
 
-const AUTH_PROVIDER_ORDER: RuntimeAuthProviderId[] = ['anthropic', 'openai', 'openai-codex', 'github-copilot'];
+const AUTH_PROVIDER_ORDER: RuntimeAuthProviderId[] = ['anthropic', 'openai-codex', 'github-copilot'];
 
 export function SettingsModal() {
   const {
@@ -31,7 +31,6 @@ export function SettingsModal() {
   const [providers, setProviders] = useState<RuntimeAuthProvider[]>([]);
   const [apiKeyInputs, setApiKeyInputs] = useState<Record<RuntimeAuthProviderId, string>>({
     anthropic: '',
-    openai: '',
     'openai-codex': '',
     'github-copilot': '',
   });

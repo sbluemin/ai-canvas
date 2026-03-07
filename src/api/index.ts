@@ -28,7 +28,7 @@ export interface RuntimeModelsRefreshedEvent {
   error?: string;
 }
 
-export type RuntimeAuthProviderId = 'anthropic' | 'openai' | 'openai-codex' | 'github-copilot';
+export type RuntimeAuthProviderId = 'anthropic' | 'openai-codex' | 'github-copilot';
 
 export interface RuntimeAuthProvider {
   id: RuntimeAuthProviderId;
